@@ -31,10 +31,27 @@ bun run lint
 ```
 
 ## 4. Scripts esperados por modulo
-- landing: bun run dev
-- app-web: bun run dev
+- landing:
+	- `bun run dev`
+	- `bun run build`
+	- `bun run test:e2e`
+- app-web:
+	- `bun run dev`
+	- `bun run build`
+	- `bun run test:e2e`
 - admin-dashboard: bun run dev
 - backend-api: bun run dev
+
+## 4.1 Variables de entorno por frontend
+Landing:
+- `VITE_APP_WEB_URL=http://localhost:5174`
+
+App web:
+- `VITE_API_BASE_URL=http://localhost:3000`
+
+Nota:
+- En estado actual, `app-web` consume `mockApi` local y no backend real.
+- El contrato para backend esta en `docs/MODULE_INTEGRATION_CONTRACTS.md`.
 
 ## 5. Arranque sugerido en equipo
 1. Clonar repo con submodulos.
@@ -49,3 +66,7 @@ bun run lint
 - test
 - e2e (playwright)
 - build por modulo
+
+Workflows actuales implementados:
+- `.github/workflows/landing-e2e.yml`
+- `.github/workflows/app-web-e2e.yml`
