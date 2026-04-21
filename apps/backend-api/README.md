@@ -1,11 +1,51 @@
 # backend-api
 
-API principal usando Bun + Hono.
+API principal de TerraShare usando Bun + Hono.
 
-Responsabilidades iniciales:
-- Auth y RBAC
-- Modulo de terrenos
-- Modulo de solicitudes
-- Modulo de contratos
-- Modulo de pagos
-- Modulo de chat
+## Estado del modulo
+- Estado actual: contrato de API documentado para alineacion Frontend/Backend.
+- Implementacion de endpoints: en progreso.
+- Fuente de verdad para integracion frontend: archivos dentro de `docs/`.
+
+## Objetivo funcional (v1)
+- Auth y RBAC base.
+- CRUD de terrenos y filtros.
+- Solicitudes de alquiler y flujo de estados.
+- Contratos y auditoria basica.
+- Pagos con Stripe Checkout Session.
+- Chat interno y contacto externo.
+
+## Auth y autorizacion
+- Proveedor de identidad: Clerk.
+- Providers habilitados: Google OAuth, Microsoft OAuth y OTP por email.
+- El frontend hace sign-in/sign-up en Clerk.
+- El backend valida `Authorization: Bearer <token>` emitido por Clerk.
+- Roles iniciales de aplicacion: `user` y `admin`.
+
+Importante para frontend:
+- En fase 1 no hay endpoint propio `POST /auth/login` en backend.
+- El endpoint principal para obtener sesion de aplicacion es `GET /api/v1/auth/me`.
+
+## Pagos (fase 1)
+- Proveedor: Stripe (SDK oficial).
+- Flujo definido: Checkout Session.
+- Confirmacion de pago: webhook (`POST /api/v1/webhooks/stripe`) como fuente de verdad.
+- El frontend no debe confirmar pago solo por `success_url`; debe consultar estado de pago en API.
+
+## Documentacion para frontend
+- Rutas y endpoints: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
+- Guia de integracion (Clerk + Stripe): [docs/INTEGRATION.md](docs/INTEGRATION.md)
+
+## Variables de entorno esperadas (referencia)
+- `API_PORT`
+- `API_BASE_URL`
+- `MONGODB_URI`
+- `CLERK_SECRET_KEY`
+- `CLERK_JWKS_URL`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `WHATSAPP_CONTACT_ENABLED=true|false`
+
+## Versionado
+- Prefijo de API: `/api/v1`.
+- Cambios breaking deben crear una nueva version o una estrategia formal de compatibilidad.
