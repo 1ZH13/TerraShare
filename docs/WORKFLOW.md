@@ -131,3 +131,23 @@ git fetch --prune
 
 Regla de equipo:
 - Antes de iniciar una nueva tarea o abrir un PR, sincronizar primero `main` y despues la rama de trabajo.
+
+## 10. Quien puede revisar un PR
+Regla operativa actual:
+- No es obligatorio asignar un reviewer manualmente para poder aprobar.
+- Cualquier colaborador con permisos `Write`, `Maintain` o `Admin` puede revisar y aprobar.
+- Se mantiene el requisito de 1 aprobacion minima antes del merge.
+
+Cuando si conviene asignar reviewer:
+- PR con alto impacto (auth, pagos, permisos, migraciones).
+- PR grande que toque multiples modulos.
+- Cambio que requiera feedback de un especialista del dominio.
+
+Configuracion recomendada en GitHub para mantener este comportamiento:
+- `Require a pull request before merging`: habilitado.
+- `Require approvals`: 1 o mas.
+- `Require review from Code Owners`: deshabilitado (si se desea que revise cualquier colaborador).
+- `Require conversation resolution before merging`: habilitado.
+
+Nota:
+- Si en el futuro se habilita `CODEOWNERS` obligatorio, entonces si sera necesario que aprueben los owners definidos para las rutas afectadas.
