@@ -96,3 +96,38 @@ Propuesta inicial:
 
 Nota:
 - Si el equipo prefiere simplicidad operativa, se puede migrar a monorepo puro sin submodulos mas adelante.
+
+## 9. Como actualizar el local despues de un merge
+Objetivo:
+- Que todo el equipo trabaje siempre sobre una base actualizada de `main`.
+
+Paso 1: actualizar `main` local
+```bash
+git checkout main
+git fetch origin
+git pull origin main
+```
+
+Paso 2: actualizar tu rama de trabajo activa
+Opcion recomendada (segura para la mayoria del equipo):
+```bash
+git checkout feature/<issue-id>-<slug>
+git fetch origin
+git merge origin/main
+```
+
+Opcion alternativa (historial lineal):
+```bash
+git checkout feature/<issue-id>-<slug>
+git fetch origin
+git rebase origin/main
+```
+
+Paso 3: limpieza de ramas ya fusionadas (opcional)
+```bash
+git branch -d feature/<rama-ya-mergeada>
+git fetch --prune
+```
+
+Regla de equipo:
+- Antes de iniciar una nueva tarea o abrir un PR, sincronizar primero `main` y despues la rama de trabajo.
