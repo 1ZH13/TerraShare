@@ -28,6 +28,10 @@ Guia practica para equipos frontend que integran con backend-api.
 3. Responde contexto de sesion de aplicacion en `GET /api/v1/auth/me`.
 4. Aplica RBAC por `role` (`user`, `admin`) y ownership.
 
+Estado implementado actual:
+- `GET /api/v1/auth/me` (token valido requerido).
+- `GET /api/v1/auth/admin/ping` (token valido + rol admin).
+
 ## 3. Header de autorizacion
 
 Ejemplo de request autenticado:
