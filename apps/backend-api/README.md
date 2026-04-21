@@ -1,48 +1,69 @@
 # backend-api
 
-API principal usando Bun + Hono.
+API principal de TerraShare usando Bun + Hono.
 
-Responsabilidades iniciales:
-- Auth y RBAC
-- Modulo de terrenos
-- Modulo de solicitudes
-- Modulo de contratos
-- Modulo de pagos
-- Modulo de chat
+## Estado del modulo
+- Estado actual: contrato de API documentado para alineacion Frontend/Backend.
+- Implementacion de endpoints: en progreso.
+- Fuente de verdad para integracion frontend: archivos dentro de `docs/`.
 
-## Estado actual
-- Aun sin implementacion de endpoints.
-- Definicion contract-first para trabajar en paralelo con `app-web`.
+## Objetivo funcional (v1)
+- Auth y RBAC base.
+- CRUD de terrenos y filtros.
+- Solicitudes de alquiler y flujo de estados.
+- Contratos y auditoria basica.
+- Pagos con Stripe Checkout Session.
+- Chat interno y contacto externo.
 
-## Contrato que debe exponer
-Referencia obligatoria:
-- `docs/MODULE_INTEGRATION_CONTRACTS.md`
+## Auth y autorizacion
+- Proveedor de identidad: Clerk.
+- Providers habilitados: Google OAuth, Microsoft OAuth y OTP por email.
+- El frontend hace sign-in/sign-up en Clerk.
+- El backend valida `Authorization: Bearer <token>` emitido por Clerk.
+- Roles iniciales de aplicacion: `user` y `admin`.
 
-Rutas minimas esperadas para integrar con frontend actual:
+Importante para frontend:
+- En fase 1 no hay endpoint propio `POST /auth/login` en backend.
+- El endpoint principal para obtener sesion de aplicacion es `GET /api/v1/auth/me`.
 
-Auth:
-- `POST /auth/login`
-- `POST /auth/register`
-- `POST /auth/logout`
-- `GET /auth/session`
+## Compatibilidad con app-web mock-first
+- Mientras se completa backend, `app-web` consume un servicio mock con contrato estable.
+- Para evitar regresiones, mantener equivalencia funcional con:
+	- `docs/MODULE_INTEGRATION_CONTRACTS.md`
+	- `apps/backend-api/docs/API_ENDPOINTS.md`
 
-Lands:
-- `GET /lands?type=&location=&maxPrice=&availableOn=`
-- `GET /lands/:landId`
-
-Rental requests:
+Rutas minimas esperadas para cerrar paridad de frontend:
 - `POST /rental-requests`
 - `GET /rental-requests/me`
 - `GET /owner/rental-requests`
 - `PATCH /owner/rental-requests/:requestId/status`
 
-## Reglas de negocio obligatorias
+Reglas de negocio obligatorias para solicitudes:
 1. Solo propietario del terreno puede aprobar o rechazar.
 2. Solo solicitudes `pending_owner` pueden pasar a `approved` o `rejected`.
-3. No se puede aprobar si existe solapamiento con otra solicitud ya aprobada
-	 para el mismo terreno.
+3. No se puede aprobar si existe solapamiento con otra solicitud aprobada del mismo terreno.
 
-## Nota de interoperabilidad
-- El frontend ya implementa estas reglas en modo mock (`app-web`).
-- Al liberar endpoints reales, se debe mantener paridad de contrato para evitar
-	regresiones de UI y pruebas E2E.
+## Pagos (fase 1)
+- Proveedor: Stripe (SDK oficial).
+- Flujo definido: Checkout Session.
+- Confirmacion de pago: webhook (`POST /api/v1/webhooks/stripe`) como fuente de verdad.
+- El frontend no debe confirmar pago solo por `success_url`; debe consultar estado de pago en API.
+
+## Documentacion para frontend
+- Rutas y endpoints: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
+- Guia de integracion (Clerk + Stripe): [docs/INTEGRATION.md](docs/INTEGRATION.md)
+- Contrato modulo cruzado: `docs/MODULE_INTEGRATION_CONTRACTS.md`
+
+## Variables de entorno esperadas (referencia)
+- `API_PORT`
+- `API_BASE_URL`
+- `MONGODB_URI`
+- `CLERK_SECRET_KEY`
+- `CLERK_JWKS_URL`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `WHATSAPP_CONTACT_ENABLED=true|false`
+
+## Versionado
+- Prefijo de API: `/api/v1`.
+- Cambios breaking deben crear una nueva version o una estrategia formal de compatibilidad.
