@@ -1,15 +1,15 @@
-name: Landing CI
+name: Web Public CI
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - "apps/landing/**"
+      - "apps/web/**"
       - ".github/workflows/landing-e2e.yml"
   push:
     branches: [main]
     paths:
-      - "apps/landing/**"
+      - "apps/web/**"
       - ".github/workflows/landing-e2e.yml"
 
 permissions:
@@ -17,12 +17,12 @@ permissions:
 
 jobs:
   build-and-e2e:
-    name: Build and E2E (landing)
+    name: Build and E2E (public landing/catalog)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: apps/landing
+        working-directory: apps/web
 
     steps:
       - name: Checkout repository
@@ -39,16 +39,16 @@ jobs:
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
 
-      - name: Build landing
+      - name: Build web app
         run: bun run build
 
-      - name: Run E2E smoke tests
-        run: bun run test:e2e
+      - name: Run public smoke tests
+        run: bun run test:e2e -- tests/e2e/landing.smoke.spec.js
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-landing
-          path: apps/landing/playwright-report
+          name: playwright-report-web-public
+          path: apps/web/playwright-report
           if-no-files-found: ignore
