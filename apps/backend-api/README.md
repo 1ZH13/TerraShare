@@ -3,10 +3,13 @@
 API principal de TerraShare usando Bun + Hono.
 
 ## Estado del modulo
-
-- Auth: `GET /api/v1/auth/me`, `GET /api/v1/auth/admin/ping` (implementado #23)
-- Lands: CRUD completo con filtros/paginacion/ownership (implementado #24)
-- Rental requests, contracts, payments, chat: en progreso (#25-#28)
+- Estado actual: contrato de API documentado para alineacion Frontend/Backend.
+- Implementacion de endpoints:
+  - Auth: `GET /api/v1/auth/me`, `GET /api/v1/auth/admin/ping` (implementado #23)
+  - Lands: CRUD completo con filtros/paginacion/ownership (implementado #24)
+  - Rental Requests: flujo de estados completo (implementado #25)
+  - remaining: contracts, payments, chat (en progreso)
+- Fuente de verdad para integracion frontend: archivos dentro de `docs/`.
 
 ## Objetivo funcional (v1)
 

@@ -27,4 +27,5 @@ export interface Env {
   API_PORT?: string;
   CLERK_JWKS_URL?: string;
   CLERK_ISSUER?: string;
+  ALLOW_DEV_AUTH_BYPASS?: string;
 }
