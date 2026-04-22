@@ -5,6 +5,7 @@ import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
 import ReservePage from "./pages/ReservePage";
+import ChatPage from "./pages/ChatPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 
@@ -120,6 +121,9 @@ function DashboardPage() {
       </div>
       <div className="panel" style={{ marginTop: "1.5rem" }}>
         <p>Contenido del dashboard (en desarrollo)</p>
+        <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <Link to="/chat" className="btn btn-primary">Ir al chat</Link>
+        </div>
       </div>
     </div>
   );
@@ -204,6 +208,11 @@ export default function App() {
           <DashboardLayout onSignOut={handleSignOut}>
             <DashboardPage />
           </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/chat" element={
+        <ProtectedRoute>
+          <ChatPage />
         </ProtectedRoute>
       } />
       <Route path="/dashboard/admin" element={
