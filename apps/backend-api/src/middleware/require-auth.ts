@@ -5,6 +5,7 @@ import { env } from "../config/env";
 import { failure } from "../lib/api-response";
 import type { AuthContextUser } from "../types";
 import { mapClerkClaimsToAuthUser } from "../lib/clerk-user";
+import { getStore } from "../store/in-memory-db";
 import type { AppEnv } from "../types";
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | undefined;
@@ -27,10 +28,34 @@ function getBearerToken(authorizationHeader: string | undefined): string | undef
   return token;
 }
 
+function upsertAuthUser(authUser: AuthContextUser) {
+  const store = getStore();
+  const existing = store.users.get(authUser.id);
+
+  if (!existing) {
+    store.users.set(authUser.id, authUser);
+    return authUser;
+  }
+
+  const merged: AuthContextUser = {
+    ...existing,
+    ...authUser,
+    profile: {
+      ...existing.profile,
+      ...authUser.profile,
+    },
+    role: authUser.role === "admin" ? "admin" : existing.role,
+    status: existing.status,
+  };
+
+  store.users.set(authUser.id, merged);
+  return merged;
+}
+
 export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   const roleHeader = c.req.header("x-dev-role");
   const userIdHeader = c.req.header("x-dev-user-id");
-  if (roleHeader || userIdHeader) {
+  if ((roleHeader || userIdHeader) && env.allowDevAuthBypass) {
     const devUser: AuthContextUser = {
       id: userIdHeader ?? "dev_user",
       clerkUserId: userIdHeader ?? "dev_user",
@@ -39,7 +64,13 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
       status: "active",
       profile: { fullName: "Developer" },
     };
-    c.set("authUser", devUser);
+
+    const persistedDevUser = upsertAuthUser(devUser);
+    if (persistedDevUser.status !== "active") {
+      return failure(c, 403, "FORBIDDEN", "User is blocked");
+    }
+
+    c.set("authUser", persistedDevUser);
     await next();
     return;
   }
@@ -56,11 +87,13 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
     });
 
     const authUser = mapClerkClaimsToAuthUser(payload);
-    if (authUser.status !== "active") {
+    const persistedUser = upsertAuthUser(authUser);
+
+    if (persistedUser.status !== "active") {
       return failure(c, 403, "FORBIDDEN", "User is blocked");
     }
 
-    c.set("authUser", authUser);
+    c.set("authUser", persistedUser);
     await next();
   } catch {
     return failure(c, 401, "UNAUTHORIZED", "Invalid or expired token");
