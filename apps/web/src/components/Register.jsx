@@ -1,38 +1,48 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useClerk } from "@clerk/clerk-react";
 
 export default function Register() {
   const { openSignUp } = useClerk();
+  const navigate = useNavigate();
+
+  const handleSignUp = (strategy) => {
+    openSignUp({
+      redirectUrl: "/dashboard",
+      afterInstantiation: () => {
+        navigate("/dashboard");
+      },
+    });
+  };
 
   return (
     <div className="page-shell">
-      <div className="panel slim-panel" style={{ marginTop: "2rem", maxWidth: "400px" }}>
+      <div className="glass-panel" style={{ marginTop: "2rem", maxWidth: "400px", margin: "2rem auto" }}>
         <div className="section-header compact">
           <h1>Crear cuenta</h1>
           <p>Unete a TerraShare</p>
         </div>
 
-        <div style={{ marginTop: "1.5rem" }}>
-          <button className="btn btn-primary" onClick={() => openSignUp({})} style={{ width: "100%", marginBottom: "1rem" }}>
+        <div className="btn-stack">
+          <button className="btn btn-primary btn-full" onClick={() => handleSignUp("oauth_google")}>
             Continuar con Google
           </button>
-          <button className="btn btn-ghost" onClick={() => openSignUp({})} style={{ width: "100%", marginBottom: "1rem" }}>
+          <button className="btn btn-ghost btn-full" onClick={() => handleSignUp("oauth_microsoft")}>
             Continuar con Microsoft
           </button>
-          <button className="btn btn-ghost" onClick={() => openSignUp({})} style={{ width: "100%" }}>
+          <button className="btn btn-ghost btn-full" onClick={() => handleSignUp("email")}>
             Continuar con email
           </button>
         </div>
 
-        <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-          <p style={{ margin: 0, opacity: 0.8 }}>
+        <div className="auth-link">
+          <p>
             ¿Ya tienes cuenta?{" "}
-            <Link to="/login" style={{ color: "var(--leaf-900)", fontWeight: 700 }}>Inicia sesion</Link>
+            <Link to="/login" className="auth-link-text">Inicia sesion</Link>
           </p>
         </div>
 
-        <div style={{ marginTop: "2rem", paddingTop: "1rem", borderTop: "1px solid rgba(19,33,24,0.1)" }}>
-          <Link to="/" style={{ color: "var(--leaf-900)" }}>← Volver al inicio</Link>
+        <div className="back-link">
+          <Link to="/" className="back-link-text">← Volver al inicio</Link>
         </div>
       </div>
     </div>

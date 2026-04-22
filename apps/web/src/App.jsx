@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import LandingPage from "./pages/LandingPage";
+import CatalogPage from "./pages/CatalogPage";
+import LandDetailPage from "./pages/LandDetailPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 
@@ -66,19 +68,22 @@ function AdminRoute({ children }) {
 function DashboardLayout({ children, onSignOut }) {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { user } = useUser();
+  const userName = user?.firstName || user?.fullName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Usuario";
 
   return (
     <div className="page-shell">
-      <header className="top-nav">
+      <nav className="glass-nav">
         <Link to="/dashboard" className="brand">TerraShare Dashboard</Link>
         <nav className="menu">
           <Link to="/dashboard" className={currentPath === "/dashboard" ? "active" : ""}>Mis solicitudes</Link>
           <Link to="/dashboard/lands">Mis terrenos</Link>
         </nav>
         <div className="auth-actions">
-          <button className="button ghost-button" onClick={onSignOut}>Cerrar sesion</button>
+          <span className="user-chip">{userName}</span>
+          <button className="btn btn-ghost" onClick={onSignOut}>Cerrar sesion</button>
         </div>
-      </header>
+      </nav>
       <main>{children}</main>
     </div>
   );
@@ -184,6 +189,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/catalog" element={<CatalogPage />} />
+      <Route path="/lands/:id" element={<LandDetailPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={
