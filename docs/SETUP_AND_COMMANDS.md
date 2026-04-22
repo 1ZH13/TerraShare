@@ -18,47 +18,49 @@ Cuenta admin inicial (solo local/dev):
 Regla obligatoria:
 - Cambiar credenciales antes de cualquier despliegue real.
 
-## 3. Comandos raiz (propuestos)
+## 3. Comandos raiz
 ```bash
 bun install
-bun run dev
-bun run dev:landing
-bun run dev:app
-bun run dev:admin
-bun run dev:api
-bun run test
-bun run lint
+bun run dev          # inicia web + backend-api en paralelo
+bun run dev:web      # solo frontend (puerto 5173)
+bun run dev:api       # solo backend (puerto 3000)
+bun run build        # build por modulo
+bun run test         # tests unitarios
+bun run test:e2e     # tests e2e (playwright)
 ```
 
-## 4. Scripts esperados por modulo
-- landing:
-	- `bun run dev`
-	- `bun run build`
-	- `bun run test:e2e`
-- app-web:
-	- `bun run dev`
-	- `bun run build`
-	- `bun run test:e2e`
-- admin-dashboard: bun run dev
-- backend-api: bun run dev
+## 4. Scripts por modulo
+- web:
+  - `bun run dev` (puerto 5173)
+  - `bun run build`
+  - `bun run test:e2e`
+- backend-api:
+  - `bun run dev` (puerto 3000)
+  - `bun run test`
+  - `bun run typecheck`
+- landing (legacy):
+  - `bun run dev`
+  - `bun run build`
 
 ## 4.1 Variables de entorno por frontend
-Landing:
-- `VITE_APP_WEB_URL=http://localhost:5174`
-
-App web:
+web (unificado):
 - `VITE_API_BASE_URL=http://localhost:3000`
+- `VITE_CLERK_PUBLISHABLE_KEY=pk_test_...`
+
+backend-api:
+- `CLERK_JWKS_URL=https://tu-proyecto.clerk.accounts.dev/.well-known/jwks.json`
+- `CLERK_ISSUER=https://tu-proyecto.clerk.accounts.dev`
+- `ALLOW_DEV_AUTH_BYPASS=true` (solo dev)
 
 Nota:
-- En estado actual, `app-web` consume `mockApi` local y no backend real.
+- El frontend consume `mockApi` local en modo dev (sin backend real).
 - El contrato para backend esta en `docs/MODULE_INTEGRATION_CONTRACTS.md`.
 
 ## 5. Arranque sugerido en equipo
-1. Clonar repo con submodulos.
-2. Configurar variables de entorno.
-3. Levantar MongoDB.
-4. Ejecutar bun install en raiz.
-5. Ejecutar bun run dev para levantar todo el entorno.
+1. Clonar repo.
+2. Configurar variables de entorno en cada modulo.
+3. Ejecutar `bun install` en raiz.
+4. Ejecutar `bun run dev` para levantar web + api.
 
 ## 6. CI esperado
 - bun install
