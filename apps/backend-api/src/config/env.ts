@@ -29,4 +29,7 @@ export const env = {
   get stripeWebhookSecret() {
     return getEnv("STRIPE_WEBHOOK_SECRET");
   },
+  get whatsappContactEnabled() {
+    return (getEnv("WHATSAPP_CONTACT_ENABLED") ?? "false") === "true";
+  },
 };

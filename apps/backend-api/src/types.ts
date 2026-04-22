@@ -30,4 +30,5 @@ export interface Env {
   ALLOW_DEV_AUTH_BYPASS?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  WHATSAPP_CONTACT_ENABLED?: string;
 }
