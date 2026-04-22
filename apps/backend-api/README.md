@@ -9,7 +9,9 @@ API principal de TerraShare usando Bun + Hono.
   - Lands: CRUD completo con filtros/paginacion/ownership (implementado #24)
   - Rental Requests: flujo de estados completo (implementado #25)
   - Contracts y auditoria: modulo contratos + audit trail (implementado #26)
-  - remaining: payments, chat (en progreso)
+  - Payments: checkout/list/detail/webhook (implementado #27)
+  - Chat: chats, mensajes y contacto externo (implementado #28)
+  - Admin dashboard: moderacion y usuarios (implementado #21/#22 base)
 - Fuente de verdad para integracion frontend: archivos dentro de `docs/`.
 
 ## Objetivo funcional (v1)
@@ -24,8 +26,34 @@ API principal de TerraShare usando Bun + Hono.
 ## Auth y autorizacion
 
 - Proveedor de identidad: Clerk.
-- El endpoint de sesion de aplicacion es `GET /api/v1/auth/me`.
+- Providers habilitados: Google OAuth, Microsoft OAuth y OTP por email.
+- El frontend hace sign-in/sign-up en Clerk.
+- El backend valida `Authorization: Bearer <token>` emitido por Clerk.
+- Roles iniciales de aplicacion: `user` y `admin`.
+
+Integracion actual:
+- `admin-dashboard` consume `GET /api/v1/auth/me` para contexto de sesion.
+- `admin-dashboard` consume `GET /api/v1/auth/admin/ping` para validar RBAC admin.
+- `admin-dashboard` consume `GET /api/v1/admin/lands/pending` para cola de moderacion.
+- `admin-dashboard` consume `PATCH /api/v1/admin/lands/:landId/moderate` para aprobar/rechazar.
+- `admin-dashboard` consume `GET /api/v1/admin/users` y `PATCH /api/v1/admin/users/:userId/status`.
+- `admin-dashboard` consume `GET /api/v1/audit-events` para trazabilidad.
+
+Importante para frontend:
 - En fase 1 no hay endpoint propio `POST /auth/login` en backend.
+- El endpoint de sesion de aplicacion es `GET /api/v1/auth/me`.
+
+## Operaciones admin (implementadas)
+
+- `GET /api/v1/admin/lands/pending`
+- `PATCH /api/v1/admin/lands/:landId/moderate`
+- `GET /api/v1/admin/users`
+- `PATCH /api/v1/admin/users/:userId/status`
+
+Reglas de negocio admin:
+1. Solo admin puede operar estas rutas.
+2. Solo publicaciones en `draft` pueden moderarse.
+3. Admin no puede bloquear otros usuarios con rol admin.
 
 ## Contratos de API
 
@@ -51,35 +79,31 @@ Reglas de negocio para solicitudes:
 - Fuente de verdad: webhook `POST /api/v1/webhooks/stripe`.
 - No usar `success_url` como confirmacion final.
 
-## Variables de entorno
-
-Copiar `.env.example` a `.env`. Referencia:
-
-```bash
-API_PORT=3000
-API_BASE_URL=http://localhost:3000
-MONGODB_URI=mongodb://127.0.0.1:27017
-CLERK_SECRET_KEY=...
-CLERK_JWKS_URL=...
-STRIPE_SECRET_KEY=...
-STRIPE_WEBHOOK_SECRET=...
-WHATSAPP_CONTACT_ENABLED=true|false
-```
+## Variables de entorno esperadas (referencia)
+- `API_PORT`
+- `API_BASE_URL`
+- `MONGODB_URI`
+- `CLERK_JWKS_URL`
+- `CLERK_ISSUER`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `WHATSAPP_CONTACT_ENABLED=true|false`
+- `ALLOW_DEV_AUTH_BYPASS=true|false` (tests/local)
 
 ## Comandos
 
 ```bash
 bun install
 bun run dev
-bun run build
-bun run test  # unit tests del store y routes
+bun run typecheck
+bun run test
 ```
 
-## Testing y CI
+## Testing
 
-- Unit tests: beside their respective source files (`*.test.ts`).
-- smoke tests de API: `src/routes/lands.test.ts`
-- Workflow CI: corre en cada push a `main`.
+- Unit/route tests con Bun (`src/routes/*.test.ts`).
+- Helpers de tests HTTP en `src/lib/http-test-utils.ts`.
+- Setup de entorno de test en `src/setup-test-env.ts`.
 
 ## Versionado
 

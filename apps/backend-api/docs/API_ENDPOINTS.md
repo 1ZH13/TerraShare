@@ -5,7 +5,8 @@ Este documento define el contrato de rutas para integracion con frontend.
 - Base path: `/api/v1`
 - Formato: `application/json`
 - Auth: `Authorization: Bearer <clerk_token>` en rutas protegidas
-- Estado actual: `planned` (sin implementacion productiva todavia)
+- Estado actual: implementacion activa para auth, lands, rental-requests, contracts,
+  audit-events, payments, chat y operaciones admin.
 
 ## Convenciones de respuesta
 
@@ -57,7 +58,7 @@ Respuesta de error:
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/health` | No | public | planned | #9 |
+| GET | `/health` | No | public | implemented | #9 |
 
 ## Auth (Clerk + RBAC)
 
@@ -149,13 +150,40 @@ Estados de solicitud (v1):
 | GET | `/audit-events` | Si | admin | implemented | #26 |
 | GET | `/audit-events/:eventId` | Si | admin | implemented | #26 |
 
+## Admin operations
+
+| Metodo | Ruta | Auth | Roles | Estado | Issue |
+| --- | --- | --- | --- | --- | --- |
+| GET | `/admin/lands/pending` | Si | admin | implemented | #21 |
+| PATCH | `/admin/lands/:landId/moderate` | Si | admin | implemented | #21 |
+| GET | `/admin/users` | Si | admin | implemented | #22 |
+| PATCH | `/admin/users/:userId/status` | Si | admin | implemented | #22 |
+
+`PATCH /admin/lands/:landId/moderate` request body:
+
+```json
+{
+  "decision": "approve",
+  "reason": "Cumple reglas de publicacion"
+}
+```
+
+`PATCH /admin/users/:userId/status` request body:
+
+```json
+{
+  "status": "blocked",
+  "reason": "Incumplimiento de terminos"
+}
+```
+
 ## Payments (Stripe SDK)
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
 | POST | `/payments/checkout-session` | Si | user, admin | implemented | #27 |
-| GET | `/payments/:paymentId` | Si | user, owner, admin | implemented | #27 |
-| GET | `/payments` | Si | user, owner, admin | implemented | #27 |
+| GET | `/payments/:paymentId` | Si | user, admin | implemented | #27 |
+| GET | `/payments` | Si | user, admin | implemented | #27 |
 | POST | `/webhooks/stripe` | No (firma Stripe) | system | implemented | #27 |
 
 `POST /payments/checkout-session` request example:
@@ -190,11 +218,11 @@ Estados de solicitud (v1):
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/chats` | Si | user, owner, admin | planned | #28 |
-| POST | `/chats` | Si | user, owner, admin | planned | #28 |
-| GET | `/chats/:chatId/messages` | Si | user, owner, admin | planned | #28 |
-| POST | `/chats/:chatId/messages` | Si | user, owner, admin | planned | #28 |
-| GET | `/chats/:chatId/external-contact` | Si | user, owner, admin | planned | #28 |
+| GET | `/chats` | Si | user, owner, admin | implemented | #28 |
+| POST | `/chats` | Si | user, owner, admin | implemented | #28 |
+| GET | `/chats/:chatId/messages` | Si | user, owner, admin | implemented | #28 |
+| POST | `/chats/:chatId/messages` | Si | user, owner, admin | implemented | #28 |
+| GET | `/chats/:chatId/external-contact` | Si | user, owner, admin | implemented | #28 |
 
 `GET /chats/:chatId/external-contact` response example:
 

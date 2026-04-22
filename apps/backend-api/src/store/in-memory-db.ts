@@ -8,6 +8,7 @@ import type {
   PaymentRecord,
   RentalRequestRecord,
 } from "./types";
+import type { AuthContextUser } from "../types";
 
 const store: InMemoryStore = {
   users: new Map(),
@@ -21,6 +22,53 @@ const store: InMemoryStore = {
 };
 
 const now = new Date().toISOString();
+
+const seedUsers: AuthContextUser[] = [
+  {
+    id: "admin_seed_01",
+    clerkUserId: "admin_seed_01",
+    email: "admin@terrashare.test",
+    role: "admin",
+    status: "active",
+    profile: {
+      fullName: "Admin TerraShare",
+    },
+  },
+  {
+    id: "user_owner_01",
+    clerkUserId: "user_owner_01",
+    email: "owner1@terrashare.test",
+    role: "user",
+    status: "active",
+    profile: {
+      fullName: "Propietario Uno",
+    },
+  },
+  {
+    id: "user_owner_02",
+    clerkUserId: "user_owner_02",
+    email: "owner2@terrashare.test",
+    role: "user",
+    status: "active",
+    profile: {
+      fullName: "Propietario Dos",
+    },
+  },
+  {
+    id: "user_tenant_01",
+    clerkUserId: "user_tenant_01",
+    email: "tenant1@terrashare.test",
+    role: "user",
+    status: "active",
+    profile: {
+      fullName: "Arrendatario Uno",
+    },
+  },
+];
+
+for (const user of seedUsers) {
+  store.users.set(user.id, user);
+}
 
 const seedLandA: LandRecord = {
   id: "land_seed_01",
@@ -69,8 +117,32 @@ const seedLandB: LandRecord = {
   updatedAt: now,
 };
 
+const seedLandC: LandRecord = {
+  id: "land_seed_03",
+  ownerId: "user_owner_02",
+  title: "Lote mixto en Los Santos",
+  description: "Publicacion en revision de moderacion.",
+  area: 90,
+  allowedUses: ["mixto"],
+  location: {
+    province: "Los Santos",
+    district: "Las Tablas",
+  },
+  availability: {
+    availableFrom: now,
+  },
+  priceRule: {
+    currency: "USD",
+    pricePerMonth: 600,
+  },
+  status: "draft",
+  createdAt: now,
+  updatedAt: now,
+};
+
 store.lands.set(seedLandA.id, seedLandA);
 store.lands.set(seedLandB.id, seedLandB);
+store.lands.set(seedLandC.id, seedLandC);
 
 const seedRequest: RentalRequestRecord = {
   id: "rr_seed_01",

@@ -8,6 +8,7 @@ Guia practica para equipos frontend que integran con backend-api.
 - API auth: token JWT de Clerk via `Authorization: Bearer <token>`.
 - Pagos: Stripe SDK con Checkout Session.
 - Confirmacion de pago: webhook Stripe en backend.
+- Operaciones admin: moderacion de publicaciones y gestion de estados de usuario.
 
 ## 2. Flujo de autenticacion (Clerk)
 
@@ -35,6 +36,10 @@ Estado implementado actual:
 - `GET /api/v1/lands`, `GET /api/v1/lands/:landId` (publicos).
 - `POST/GET/PATCH /api/v1/rental-requests...` con flujo de estados.
 - `POST/GET/PATCH /api/v1/contracts...` con auditoria.
+- `POST/GET /api/v1/payments...` y webhook Stripe.
+- `GET/POST /api/v1/chats...` y mensajes/contacto externo.
+- `GET/PATCH /api/v1/admin/lands...` para moderacion.
+- `GET/PATCH /api/v1/admin/users...` para bloqueo/reactivacion.
 
 ## 3. Header de autorizacion
 
@@ -74,6 +79,8 @@ Si falta token o es invalido, el backend responde `401`.
 | Home publica / catalogo | `GET /api/v1/lands` | No |
 | Detalle terreno publico | `GET /api/v1/lands/:landId` | No |
 | Dashboard usuario | `GET /api/v1/auth/me` | Si |
+| Login admin dashboard | `GET /api/v1/auth/me` | Si |
+| Guarda admin dashboard | `GET /api/v1/auth/admin/ping` | Si |
 | Publicar terreno | `POST /api/v1/lands` | Si |
 | Editar terreno propio | `PATCH /api/v1/lands/:landId` | Si |
 | Crear solicitud alquiler | `POST /api/v1/rental-requests` | Si |
@@ -83,6 +90,11 @@ Si falta token o es invalido, el backend responde `401`.
 | Lista de chats | `GET /api/v1/chats` | Si |
 | Mensajes de chat | `GET /api/v1/chats/:chatId/messages` | Si |
 | Contacto externo | `GET /api/v1/chats/:chatId/external-contact` | Si |
+| Cola moderacion admin | `GET /api/v1/admin/lands/pending` | Si |
+| Decision moderacion admin | `PATCH /api/v1/admin/lands/:landId/moderate` | Si |
+| Listado de usuarios admin | `GET /api/v1/admin/users` | Si |
+| Suspender/reactivar usuario | `PATCH /api/v1/admin/users/:userId/status` | Si |
+| Auditoria admin | `GET /api/v1/audit-events` | Si |
 
 ## 6. Variables de entorno necesarias
 
@@ -91,16 +103,18 @@ Backend:
 - `API_PORT`
 - `API_BASE_URL`
 - `MONGODB_URI`
-- `CLERK_SECRET_KEY`
 - `CLERK_JWKS_URL`
+- `CLERK_ISSUER`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `WHATSAPP_CONTACT_ENABLED`
+- `ALLOW_DEV_AUTH_BYPASS` (solo local/test)
 
 Frontend:
 
 - `VITE_API_BASE_URL`
 - `VITE_CLERK_PUBLISHABLE_KEY`
+- `VITE_API_PROXY_TARGET` (frontend local con proxy)
 
 ## 7. Codigos de error comunes
 

@@ -33,6 +33,11 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 - `apps/landing`: implementado (issue #1) con E2E y CI.
 - `apps/app-web`: implementado MVP inicial (issue #2) en modo mock:
 	catalogo, filtros, solicitud de alquiler y aprobacion/rechazo.
-- `apps/backend-api`: pendiente de implementacion, con contrato definido.
-- `apps/admin-dashboard`: pendiente de implementacion.
-- `packages/shared`: pendiente de implementacion de tipos/contratos compartidos.
+- `apps/backend-api`: implementacion v1 activa con `health`, `auth`, `lands`,
+	`rental-requests`, `contracts`, `payments`, `chat` y operaciones admin
+	(`admin/lands/pending`, `admin/lands/:landId/moderate`, `admin/users`,
+	`admin/users/:userId/status`).
+- `apps/admin-dashboard`: implementacion fase 1 extendida con login por token,
+	guardas admin y acciones reales de moderacion/publicaciones, gestion de
+	usuarios y lectura de auditoria.
+- `packages/shared`: contratos y tipos base publicados para consumo front/back.

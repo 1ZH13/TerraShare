@@ -9,6 +9,7 @@ import { rentalRequestRoutes } from "./routes/rental-requests";
 import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
+import { adminRoutes } from "./routes/admin";
 import type { AppEnv } from "./types";
 
 export function createApp() {
@@ -31,6 +32,7 @@ export function createApp() {
   app.route("/api/v1", contractRoutes);
   app.route("/api/v1", paymentRoutes);
   app.route("/api/v1", chatRoutes);
+  app.route("/api/v1", adminRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 

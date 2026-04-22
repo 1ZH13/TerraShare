@@ -7,16 +7,12 @@
 
 ## 2. Variables base (referencia)
 - MONGODB_URI
-- JWT_SECRET
-- PAYMENT_PROVIDER_KEY
+- CLERK_JWKS_URL
+- CLERK_ISSUER
+- STRIPE_SECRET_KEY
+- STRIPE_WEBHOOK_SECRET
 - WHATSAPP_CONTACT_ENABLED=true
-
-Cuenta admin inicial (solo local/dev):
-- ADMIN_SEED_EMAIL=terradmin@gmail.com
-- ADMIN_SEED_PASSWORD=123
-
-Regla obligatoria:
-- Cambiar credenciales antes de cualquier despliegue real.
+- ALLOW_DEV_AUTH_BYPASS=true|false (solo local/test)
 
 ## 3. Comandos raiz (propuestos)
 ```bash
@@ -39,8 +35,14 @@ bun run lint
 	- `bun run dev`
 	- `bun run build`
 	- `bun run test:e2e`
-- admin-dashboard: bun run dev
-- backend-api: bun run dev
+- admin-dashboard:
+	- `bun run dev`
+	- `bun run build`
+	- `bun run test:e2e`
+- backend-api:
+	- `bun run dev`
+	- `bun run typecheck`
+	- `bun run test`
 
 ## 4.1 Variables de entorno por frontend
 Landing:
@@ -49,9 +51,17 @@ Landing:
 App web:
 - `VITE_API_BASE_URL=http://localhost:3000`
 
+Admin dashboard:
+- `VITE_API_BASE_URL=` (opcional; vacio usa proxy local `/api`)
+- `VITE_API_PROXY_TARGET=http://127.0.0.1:3000`
+
 Nota:
 - En estado actual, `app-web` consume `mockApi` local y no backend real.
 - El contrato para backend esta en `docs/MODULE_INTEGRATION_CONTRACTS.md`.
+
+Tip operativo (PowerShell):
+- Para evitar errores de rutas anidadas, usar `Set-Location "c:/.../TerraShare/apps/<modulo>"`
+	antes de correr comandos por modulo.
 
 ## 5. Arranque sugerido en equipo
 1. Clonar repo con submodulos.
@@ -70,6 +80,7 @@ Nota:
 Workflows actuales implementados:
 - `.github/workflows/landing-e2e.yml`
 - `.github/workflows/app-web-e2e.yml`
+- `.github/workflows/admin-dashboard-e2e.yml`
 - `.github/workflows/require-linked-issue.yml`
 
 ## 7. GitHub CLI para PRs (buenas practicas)
