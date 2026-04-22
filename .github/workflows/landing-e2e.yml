@@ -43,7 +43,7 @@ jobs:
         run: bun run build
 
       - name: Run public smoke tests
-        run: bun run test:e2e -- tests/e2e/landing.smoke.spec.js
+        run: bun run test:e2e -- tests/e2e/public.smoke.spec.js
 
       - name: Upload Playwright report
         if: always()
