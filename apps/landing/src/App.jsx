@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 const appWebBaseUrl = import.meta.env.VITE_APP_WEB_URL || "http://localhost:5174";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 const registroUrl = `${appWebBaseUrl.replace(/\/$/, "")}/register`;
 const loginUrl = `${appWebBaseUrl.replace(/\/$/, "")}/login`;
 
@@ -33,10 +34,57 @@ const terrenos = [
 
 const filtrosUso = ["Todos", "Agricultura", "Ganaderia", "Mixto"];
 
+const pasos = [
+  {
+    numero: "1",
+    titulo: "Publica tu terreno",
+    descripcion: "Crea tu perfil de propietario y registra tus terrenos con fotos, ubicacion y condiciones."
+  },
+  {
+    numero: "2",
+    titulo: "Arrendatarios exploran",
+    descripcion: "Sin login pueden ver catalogo, filtro por uso y mapa. Activan cuenta cuando estan listos."
+  },
+  {
+    numero: "3",
+    titulo: "Solicitan y negocian",
+    descripcion: "Envian solicitud con periodo e uso propuesto. Tu revisas, aprobado o rechazas segun disponibilidad."
+  },
+  {
+    numero: "4",
+    titulo: "Cierran el trato",
+    descripcion: "Pago integrado via Stripe, chat interno para coordinar y contrato con trazabilidad completa."
+  }
+];
+
+const diferenciadores = [
+  {
+    icono: "📊",
+    titulo: "Datos estandarizados",
+    descripcion: "Informacion completa de agua, acceso, uso permitido y disponibilidad. Sin sorpresas."
+  },
+  {
+    icono: "🔍",
+    titulo: "Busqueda transparente",
+    descripcion: "Filtros por tipo de suelo, provincia y precio. Vista previa sin login."
+  },
+  {
+    icono: "⚡",
+    titulo: "Decision en menos de 48h",
+    descripcion: "Flujo rapido de solicitud a aprobacion. Notificaciones en cada cambio de estado."
+  },
+  {
+    icono: "🔒",
+    titulo: "Trazabilidad y contrato",
+    descripcion: "Registro de todas las acciones. Pagos seguros y historial completo para ambas partes."
+  }
+];
+
 function App() {
   const [usoSeleccionado, setUsoSeleccionado] = useState("Todos");
   const [correo, setCorreo] = useState("");
   const [mensajeCTA, setMensajeCTA] = useState("");
+  const [loadingCTA, setLoadingCTA] = useState(false);
 
   const resultados = useMemo(() => {
     if (usoSeleccionado === "Todos") {
@@ -45,7 +93,7 @@ function App() {
     return terrenos.filter((terreno) => terreno.uso === usoSeleccionado);
   }, [usoSeleccionado]);
 
-  const manejarCTA = (evento) => {
+  const manejarCTA = async (evento) => {
     evento.preventDefault();
 
     if (!correo.includes("@") || !correo.includes(".")) {
@@ -53,8 +101,32 @@ function App() {
       return;
     }
 
-    setMensajeCTA("Listo. Te contactaremos para activar tu cuenta en TerraShare.");
-    setCorreo("");
+    setLoadingCTA(true);
+    setMensajeCTA("");
+
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/v1/leads`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: correo, source: "landing" })
+      });
+
+      if (res.ok) {
+        setMensajeCTA("Listo. Te contactaremos para activar tu cuenta en TerraShare.");
+        setCorreo("");
+      } else {
+        const data = await res.json();
+        if (data.error?.code === "CONFLICT") {
+          setMensajeCTA("Este correo ya esta registrado. Intenta iniciar sesion.");
+        } else {
+          setMensajeCTA("Algo salio mal. Intenta de nuevo.");
+        }
+      }
+    } catch {
+      setMensajeCTA("Error de conexion. Verifica tu red e intenta de nuevo.");
+    } finally {
+      setLoadingCTA(false);
+    }
   };
 
   return (
@@ -68,7 +140,7 @@ function App() {
         </a>
         <nav className="menu">
           <a href="#catalogo">Explorar terrenos</a>
-          <a href="#mapa">Mapa con filtros</a>
+          <a href="#como-funciona">Como funciona</a>
           <a href={loginUrl}>Iniciar sesion</a>
           <a href={registroUrl} className="menu-cta">
             Crear cuenta
@@ -163,6 +235,48 @@ function App() {
           </div>
         </section>
 
+        <section id="como-funciona" className="como-funciona reveal">
+          <div className="section-head">
+            <h2>Como funciona</h2>
+            <p>
+              TerraShare conecta propietarios y arrendatarios en cuatro pasos
+              simples, sin procesos complejos ni kehilangan contactos informales.
+            </p>
+          </div>
+
+          <ol className="pasos-grid">
+            {pasos.map((paso) => (
+              <li key={paso.numero} className="paso-item">
+                <span className="paso-numero">{paso.numero}</span>
+                <div>
+                  <h3>{paso.titulo}</h3>
+                  <p>{paso.descripcion}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="por-que" className="por-que reveal">
+          <div className="section-head">
+            <h2>Por que TerraShare</h2>
+            <p>
+              Construimos esta plataforma para resolver los problemas que hacen
+              dificil el alquiler de tierras productivas en Panama.
+            </p>
+          </div>
+
+          <div className="diferenciadores-grid">
+            {diferenciadores.map((item) => (
+              <div key={item.titulo} className="diferenciador-card">
+                <span className="diferenciador-icono">{item.icono}</span>
+                <h3>{item.titulo}</h3>
+                <p>{item.descripcion}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section id="registro" className="registro reveal">
           <div className="section-head">
             <h2>CTA operacional: activa tu cuenta</h2>
@@ -185,15 +299,37 @@ function App() {
                 placeholder="tu@empresa.com"
                 type="email"
                 required
+                disabled={loadingCTA}
               />
-              <button className="btn btn-primary" type="submit">
-                Recibir acceso
+              <button className="btn btn-primary" type="submit" disabled={loadingCTA}>
+                {loadingCTA ? "Enviando..." : "Recibir acceso"}
               </button>
             </div>
-            {mensajeCTA ? <p className="feedback">{mensajeCTA}</p> : null}
+            {mensajeCTA ? <p className={`feedback ${mensajeCTA.includes("Error") || mensajeCTA.includes("mal") || mensajeCTA.includes("Intenta") ? "feedback-error" : ""}`}>{mensajeCTA}</p> : null}
           </form>
         </section>
       </main>
+
+      <footer className="footer">
+        <div className="footer-content">
+          <div className="footer-brand">
+            <span className="brand">TerraShare</span>
+            <p>Plataforma de alquiler de terrenos productivos en Panama.</p>
+          </div>
+          <div className="footer-links">
+            <a href="#catalogo">Explorar</a>
+            <a href={registroUrl}>Crear cuenta</a>
+            <a href={loginUrl}>Iniciar sesion</a>
+            <a href="#como-funciona">Como funciona</a>
+          </div>
+          <div className="footer-legal">
+            <p>&copy; {new Date().getFullYear()} TerraShare. Todos los derechos reservados.</p>
+            <p>
+              <a href="#">Terminos de servicio</a> &middot; <a href="#">Privacidad</a>
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

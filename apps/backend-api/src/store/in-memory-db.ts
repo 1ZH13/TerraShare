@@ -5,6 +5,7 @@ import type {
   ContractRecord,
   InMemoryStore,
   LandRecord,
+  LeadRecord,
   PaymentRecord,
   RentalRequestRecord,
 } from "./types";
@@ -18,6 +19,7 @@ const store: InMemoryStore = {
   chats: new Map(),
   chatMessages: new Map(),
   auditEvents: new Map(),
+  leads: new Map(),
 };
 
 const now = new Date().toISOString();
