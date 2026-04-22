@@ -15,7 +15,7 @@ test("landing smoke: hero, CTA y filtro de catalogo", async ({ page }) => {
   );
 
   await expect(
-    page.getByRole("link", { name: "Iniciar sesion" })
+    page.getByRole("navigation").getByRole("link", { name: "Iniciar sesion" })
   ).toHaveAttribute("href", "http://localhost:5174/login");
 
   await page.getByRole("button", { name: "Ganaderia" }).click();
