@@ -36,3 +36,10 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+
+# Local frontend cache
+apps/**/.vite/
+
+# Temporary PR body drafts
+pr_body*.txt
+pr_body*.md
