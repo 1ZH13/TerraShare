@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import LandingPage from "./pages/LandingPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminLandsPage from "./pages/AdminLandsPage";
+import { setTokenFn as setAdminTokenFn } from "./services/adminApi";
 
 function ProtectedRoute({ children }) {
   const { isLoaded } = useClerk();
@@ -85,14 +88,17 @@ function DashboardLayout({ children, onSignOut }) {
 }
 
 function AdminLayout({ children, onSignOut }) {
+  const location = useLocation();
+  const currentPath = location.pathname;
+
   return (
     <div className="admin-layout">
       <aside className="sidebar">
         <Link to="/dashboard/admin" className="brand">TerraShare Admin</Link>
         <nav>
-          <Link to="/dashboard/admin">Dashboard</Link>
-          <Link to="/dashboard/admin/users">Usuarios</Link>
-          <Link to="/dashboard/admin/lands">Terrenos</Link>
+          <Link to="/dashboard/admin" className={currentPath === "/dashboard/admin" ? "active" : ""}>Dashboard</Link>
+          <Link to="/dashboard/admin/users" className={currentPath === "/dashboard/admin/users" ? "active" : ""}>Usuarios</Link>
+          <Link to="/dashboard/admin/lands" className={currentPath === "/dashboard/admin/lands" ? "active" : ""}>Terrenos</Link>
         </nav>
         <div style={{ marginTop: "auto", paddingTop: "2rem" }}>
           <button className="btn btn-ghost" onClick={onSignOut} style={{ width: "100%", color: "white", borderColor: "rgba(255,255,255,0.3)" }}>
@@ -120,10 +126,29 @@ function DashboardPage() {
 }
 
 function AdminDashboardPage() {
-  const [users, setUsers] = useState([
-    { id: 1, name: "Juan Perez", email: "juan@example.com", status: "active" },
-    { id: 2, name: "Maria Garcia", email: "maria@example.com", status: "blocked" },
-  ]);
+  const [counts, setCounts] = useState({ total: 0, active: 0, blocked: 0, lands: 0 });
+  const [loading, setLoading] = useState(true);
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (!user) return;
+    user.getToken().then((token) => setAdminTokenFn(() => token));
+    // Load counts from admin endpoints
+    import("./services/adminApi").then(({ listAdminUsers, listAdminLands }) => {
+      Promise.all([
+        listAdminUsers({}).then((r) => r.data?.items ?? []),
+        listAdminLands({ status: "draft" }).then((r) => r.data?.items ?? []),
+      ]).then(([users, landsDraft]) => {
+        setCounts({
+          total: users.length,
+          active: users.filter((u) => u.status === "active").length,
+          blocked: users.filter((u) => u.status === "blocked").length,
+          lands: landsDraft.length,
+        });
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    });
+  }, [user]);
 
   return (
     <div>
@@ -132,32 +157,14 @@ function AdminDashboardPage() {
         <p>Gestion de usuarios y plataforma</p>
       </div>
       <div className="stats-grid" style={{ marginTop: "1.5rem" }}>
-        <div className="stat-card"><h3>Usuarios</h3><p>{users.length}</p></div>
-        <div className="stat-card"><h3>Activos</h3><p>{users.filter(u => u.status === "active").length}</p></div>
-        <div className="stat-card"><h3>Bloqueados</h3><p>{users.filter(u => u.status === "blocked").length}</p></div>
-        <div className="stat-card"><h3>Terrenos</h3><p>--</p></div>
+        <div className="stat-card"><h3>Total usuarios</h3><p>{loading ? "..." : counts.total}</p></div>
+        <div className="stat-card"><h3>Activos</h3><p>{loading ? "..." : counts.active}</p></div>
+        <div className="stat-card"><h3>Bloqueados</h3><p>{loading ? "..." : counts.blocked}</p></div>
+        <div className="stat-card"><h3>Terrenos pendientes</h3><p>{loading ? "..." : counts.lands}</p></div>
       </div>
       <div className="panel" style={{ marginTop: "1.5rem" }}>
-        <h2>Usuarios recientes</h2>
-        <table className="table" style={{ marginTop: "1rem" }}>
-          <thead>
-            <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>{u.name}</td>
-                <td>{u.email}</td>
-                <td><span className={`status-badge ${u.status === "active" ? "status-active" : "status-blocked"}`}>{u.status}</span></td>
-                <td>
-                  <button className="btn btn-ghost" style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
-                    {u.status === "active" ? "Bloquear" : "Activar"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <h2>Resumen rapido</h2>
+        <p style={{ opacity: 0.7 }}>Usa el menu lateral para gestionar usuarios y moderar terrenos.</p>
       </div>
     </div>
   );
@@ -166,6 +173,14 @@ function AdminDashboardPage() {
 export default function App() {
   const { signOut } = useClerk();
   const { isSignedIn, isLoaded } = useUser();
+
+  // Inject Clerk token for admin API calls
+  const { user } = useUser();
+  useEffect(() => {
+    if (user) {
+      user.getToken().then((token) => setAdminTokenFn(() => token));
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -197,6 +212,20 @@ export default function App() {
         <AdminRoute>
           <AdminLayout onSignOut={handleSignOut}>
             <AdminDashboardPage />
+          </AdminLayout>
+        </AdminRoute>
+      } />
+      <Route path="/dashboard/admin/users" element={
+        <AdminRoute>
+          <AdminLayout onSignOut={handleSignOut}>
+            <AdminUsersPage />
+          </AdminLayout>
+        </AdminRoute>
+      } />
+      <Route path="/dashboard/admin/lands" element={
+        <AdminRoute>
+          <AdminLayout onSignOut={handleSignOut}>
+            <AdminLandsPage />
           </AdminLayout>
         </AdminRoute>
       } />

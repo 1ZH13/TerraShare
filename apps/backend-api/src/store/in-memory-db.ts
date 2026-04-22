@@ -1,4 +1,5 @@
 import type {
+  AdminUserSummary,
   AuditEventRecord,
   ChatRecord,
   ChatMessageRecord,
@@ -8,6 +9,7 @@ import type {
   LeadRecord,
   PaymentRecord,
   RentalRequestRecord,
+  UserRecord,
 } from "./types";
 
 const store: InMemoryStore = {
@@ -23,6 +25,64 @@ const store: InMemoryStore = {
 };
 
 const now = new Date().toISOString();
+
+// Seed users — mirrors Clerk identities for dev/admin flows
+const seedUsers: UserRecord[] = [
+  {
+    id: "user_owner_01",
+    clerkUserId: "user_owner_01",
+    email: "owner@terrashare.test",
+    role: "user",
+    status: "active",
+    profile: { fullName: "Propietario Demo" },
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "user_owner_02",
+    clerkUserId: "user_owner_02",
+    email: "owner2@terrashare.test",
+    role: "user",
+    status: "active",
+    profile: { fullName: "Propietario Dos" },
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "user_tenant_01",
+    clerkUserId: "user_tenant_01",
+    email: "tenant@terrashare.test",
+    role: "user",
+    status: "active",
+    profile: { fullName: "Arrendatario Demo" },
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "user_tenant_99",
+    clerkUserId: "user_tenant_99",
+    email: "tenant99@terrashare.test",
+    role: "user",
+    status: "active",
+    profile: { fullName: "Arrendatario Test" },
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "user_admin_01",
+    clerkUserId: "user_admin_01",
+    email: "admin@terrashare.test",
+    role: "admin",
+    status: "active",
+    profile: { fullName: "Administrador" },
+    createdAt: now,
+    updatedAt: now,
+  },
+];
+
+for (const user of seedUsers) {
+  store.users.set(user.id, user);
+}
 
 const seedLandA: LandRecord = {
   id: "land_seed_01",
