@@ -172,3 +172,27 @@ export interface InMemoryStore {
   auditEvents: Map<string, AuditEventRecord>;
   leads: Map<string, LeadRecord>;
 }
+
+export interface UserRecord extends AuthContextUser {
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUserSummary {
+  id: string;
+  clerkUserId: string;
+  email: string;
+  role: AppRole;
+  status: UserStatus;
+  profile: { fullName: string; phone?: string };
+  createdAt: string;
+}
+
+export interface AdminLandSummary {
+  id: string;
+  ownerId: string;
+  ownerEmail: string;
+  title: string;
+  status: LandStatus;
+  createdAt: string;
+}

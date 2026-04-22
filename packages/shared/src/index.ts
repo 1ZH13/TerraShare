@@ -70,3 +70,7 @@ export type {
   AuditEventDto,
   AuditEventFilterDto,
 } from "./dto/audit";
+
+// Schemas (Zod)
+export * from "./schemas";
+export type { z } from "zod";
