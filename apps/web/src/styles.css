@@ -212,9 +212,27 @@ textarea:focus {
   padding: 0.95rem;
 }
 
-.land-card h2 {
-  margin: 0.45rem 0;
-  font-size: 1.2rem;
+.land-card h3 {
+  margin: 0.4rem 0;
+  font-size: 1.15rem;
+}
+
+.land-card p {
+  margin: 0.3rem 0;
+  line-height: 1.45;
+}
+
+.filters-panel {
+  margin-top: 0.85rem;
+}
+
+.results-panel {
+  margin-top: 0.75rem;
+}
+
+
+.detail-panel {
+  margin-top: 0.85rem;
 }
 
 .card-badge {
