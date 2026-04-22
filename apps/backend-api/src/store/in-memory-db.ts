@@ -163,3 +163,14 @@ store.contracts.set(seedContract.id, seedContract);
 export function getStore() {
   return store;
 }
+
+export function resetStore() {
+  // Reset rr_seed_01 to its initial pending_owner state for test isolation.
+  // Payments.test.ts approves it, which blocks rental-requests.test.ts from
+  // approving it again (overlapping dates check in POST /rental-requests).
+  const req = store.rentalRequests.get("rr_seed_01");
+  if (req) {
+    req.status = "pending_owner";
+    req.updatedAt = new Date().toISOString();
+  }
+}

@@ -1,4 +1,7 @@
 import { createApp } from "../app";
+import { resetStore } from "../store/in-memory-db";
+
+export { resetStore };
 
 export async function requestJson(
   path: string,

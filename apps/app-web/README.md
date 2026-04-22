@@ -8,8 +8,36 @@ Aplicacion principal para propietarios y arrendatarios.
 - Flujo completo de solicitud de alquiler (arrendatario).
 - Bandeja de propietario con acciones de aprobar/rechazar.
 - Seguimiento de estado de solicitudes por arrendatario.
-- Implementacion en modo mock para avanzar frontend sin bloquear backend.
+- **Conectado a API real de backend-api** (issue #7) — ya no usa modo mock para datos.
 - Adopcion de tipos compartidos desde `@terrashare/shared` (issue #5).
+
+## Arquitectura de datos (issue #7)
+
+El app-web consume directamente los endpoints de `backend-api`:
+
+```
+CatalogPage  → GET  /api/v1/lands                  (listado con filtros)
+LandDetail   → GET  /api/v1/lands/:landId          (detalle)
+ReservePage  → POST /api/v1/rental-requests        (crear solicitud)
+MyRequests   → GET  /api/v1/rental-requests?tenantId=X
+OwnerPage    → GET  /api/v1/rental-requests?ownerId=X
+OwnerPage    → PATCH /api/v1/rental-requests/:id/status (approve/reject)
+```
+
+**Auth:** `Authorization: Bearer <clerk_token>` — el token se inyecta automaticamente via `setTokenFn()` desde el efecto de Clerk en `App()`.
+
+**Adaptadores:** `src/services/api.js` traduce los registros del backend al formato que espera el UI:
+
+| Campo backend | Campo UI |
+|---|---|
+| `priceRule.pricePerMonth` | `monthlyPrice` |
+| `location.province/district` | `province/district` |
+| `area` | `areaHectares` |
+| `allowedUses[0]` | `type` |
+| `availability.availableFrom/availableTo` | `availableFrom/availableTo` |
+| `period.startDate/endDate` | `startDate/endDate` |
+
+Los estados de solicitud usan strings puros (`pending_owner`, `approved`, `rejected`, `cancelled`, `pending_payment`, `paid`) segun el contrato de `backend-api`.
 
 ## Estructura de contratos (issue #5)
 
@@ -20,17 +48,7 @@ LandDto         → campos compartidos para terrenos
 RentalRequestDto → campos compartidos para solicitudes
 ```
 
-Traduccion de campos internos (mock → shared):
-
-| Campo UI | Campo shared |
-|---|---|
-| `name` | `title` |
-| `type` | `allowedUses[0]` |
-| `monthlyPrice` | `priceRule.pricePerMonth` |
-| `areaHectares` | `area` |
-| `startDate/endDate` | `period.startDate/endDate` |
-
-Archivo de adapters: `src/services/fieldAdapters.js`
+Archivo de adapters: `src/services/api.js` (funciones `adaptLand`, `adaptRentalRequest`).
 
 ## Rutas actuales
 
@@ -38,26 +56,19 @@ Archivo de adapters: `src/services/fieldAdapters.js`
 |---|---|
 | `/` | Catalogo de terrenos |
 | `/lands/:landId` | Detalle de terreno |
-| `/login` | Inicio de sesion |
-| `/register` | Registro de cuenta (tenant) |
+| `/login` | Inicio de sesion (Clerk) |
+| `/register` | Registro de cuenta (Clerk) |
 | `/reserve/:landId` | Crear solicitud de alquiler |
 | `/my-requests` | Seguimiento de solicitudes |
 | `/owner/requests` | Bandeja de propietario |
 
-## Cuentas semilla (modo mock)
-
-- Arrendatario: `tenant@terrashare.test` / `123456`
-- Propietario: `owner@terrashare.test` / `123456`
-
 ## Variables de entorno
-
-Copiar `.env.example` a `.env`.
 
 ```bash
 VITE_API_BASE_URL=http://localhost:3000
 ```
 
-Nota: `VITE_API_BASE_URL` queda preparado para migracion a API real.
+El backend debe estar corriendo para que la app funcione. Para desarrollo local, inicia `backend-api` en puerto 3000.
 
 ## Comandos
 
@@ -78,10 +89,9 @@ bunx playwright install chromium
 
 ## Testing y CI
 
-- E2E smoke: `tests/e2e/appweb.smoke.spec.js`
+- E2E smoke: `tests/e2e/appweb.smoke.spec.js` — los tests E2E siguen usando `mockApi.js` en modo standalone (no requiere backend).
 - Config Playwright: `playwright.config.js`
 - Workflow CI: `.github/workflows/app-web-e2e.yml`
-- CI corre typecheck de `packages/shared` antes del build (issue #5).
 
 ## Integracion con otros modulos
 
