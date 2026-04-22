@@ -46,6 +46,7 @@ Minimo requerido:
 - 1 revisor obligatorio.
 - Todos los checks de GitHub Actions en verde.
 - Prohibido merge directo a main.
+- El body del PR debe incluir keyword de cierre de issue (`Closes #<id>`, `Fixes #<id>` o `Resolves #<id>`).
 
 Recomendado:
 - No hay limite fijo de lineas por PR.
@@ -73,6 +74,7 @@ Configurar para main:
 - Require approvals: 1.
 - Dismiss stale approvals when new commits are pushed.
 - Require status checks to pass before merging.
+- Marcar como requerido el check `Require closing keyword`.
 - Require conversation resolution before merging.
 - Restrict who can push directly a main.
 
@@ -83,6 +85,10 @@ Checks sugeridos:
 - test unit/integration
 - playwright e2e (smoke)
 - security scan basico (dependencias)
+
+Check implementado para gobernanza de issues:
+- `Require closing keyword` (`.github/workflows/require-linked-issue.yml`)
+- Valida que el body del PR tenga una keyword de cierre de issue.
 
 ## 8. Estrategia de repositorio
 Se adopta una estrategia de monorepo con submodulos Git para separar ownership por modulo.
@@ -151,3 +157,26 @@ Configuracion recomendada en GitHub para mantener este comportamiento:
 
 Nota:
 - Si en el futuro se habilita `CODEOWNERS` obligatorio, entonces si sera necesario que aprueben los owners definidos para las rutas afectadas.
+
+## 11. Edicion segura del body del PR (evitar texto corrupto)
+Problema conocido:
+- Si se edita el body del PR con archivos temporales en codificacion incorrecta, GitHub puede mostrar caracteres corruptos.
+
+Recomendacion:
+- Preferir `gh pr edit <numero> --body "texto"` para cambios directos.
+- Si se usa `--body-file`, guardar el archivo explicitamente en UTF-8.
+
+Ejemplo con PowerShell (UTF-8 explicito):
+```powershell
+$body = @"
+## Resumen
+- Cambio principal.
+
+Closes #123
+"@
+$body | Out-File -FilePath pr_body_utf8.md -Encoding utf8
+gh pr edit 123 --body-file pr_body_utf8.md
+```
+
+Higiene:
+- No commitear archivos temporales de cuerpo de PR (`pr_body*.txt`, `pr_body*.md`).

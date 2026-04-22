@@ -42,3 +42,10 @@ Ejemplo:
 ```bash
 VITE_APP_WEB_URL=http://localhost:5174
 ```
+
+## Integracion entre modulos
+- La landing no consume backend directo en esta fase.
+- El contrato funcional de navegacion y datos esta documentado en:
+	`docs/MODULE_INTEGRATION_CONTRACTS.md`
+- Cuando `app-web` migre de mock a API real, la landing no requiere cambios
+	mientras se mantengan rutas de `register` y `login`.

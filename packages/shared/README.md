@@ -28,3 +28,12 @@ bun run build
 ## Notas
 - Fuente de contrato funcional para frontend: `apps/backend-api/docs/API_ENDPOINTS.md`.
 - Todo cambio breaking en DTOs debe actualizar la documentacion de endpoints.
+
+## Plan inmediato de adopcion
+1. Publicar tipos compartidos para `Land` y `RentalRequest` usados por `app-web`.
+2. Centralizar enum de estados de solicitud (`draft`, `pending_owner`, `approved`, `rejected`, `cancelled`).
+3. Compartir esquemas de validacion para decisiones del propietario (`approved`/`rejected`) y filtros.
+
+## Criterio de adopcion
+- `app-web`, `backend-api` y `admin-dashboard` deben consumir este paquete para reducir drift.
+- Referencia temporal adicional de alineacion: `docs/MODULE_INTEGRATION_CONTRACTS.md`.

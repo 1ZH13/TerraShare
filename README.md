@@ -8,6 +8,7 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 - Flujo de trabajo (issues + PR): [docs/WORKFLOW.md](docs/WORKFLOW.md)
 - Estructura de repositorio: [docs/REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
 - Setup y comandos: [docs/SETUP_AND_COMMANDS.md](docs/SETUP_AND_COMMANDS.md)
+- Contratos entre modulos: [docs/MODULE_INTEGRATION_CONTRACTS.md](docs/MODULE_INTEGRATION_CONTRACTS.md)
 
 ## Stack tecnologico
 - Frontend: React + Vite
@@ -29,4 +30,9 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 - Login opcional para ver; obligatorio para acciones de negocio.
 
 ## Estado actual
-Solo documentacion inicial. Aun no hay implementacion de frontend/backend.
+- `apps/landing`: implementado (issue #1) con E2E y CI.
+- `apps/app-web`: implementado MVP inicial (issue #2) en modo mock:
+	catalogo, filtros, solicitud de alquiler y aprobacion/rechazo.
+- `apps/backend-api`: pendiente de implementacion, con contrato definido.
+- `apps/admin-dashboard`: pendiente de implementacion.
+- `packages/shared`: pendiente de implementacion de tipos/contratos compartidos.

@@ -26,6 +26,23 @@ Importante para frontend:
 - En fase 1 no hay endpoint propio `POST /auth/login` en backend.
 - El endpoint principal para obtener sesion de aplicacion es `GET /api/v1/auth/me`.
 
+## Compatibilidad con app-web mock-first
+- Mientras se completa backend, `app-web` consume un servicio mock con contrato estable.
+- Para evitar regresiones, mantener equivalencia funcional con:
+	- `docs/MODULE_INTEGRATION_CONTRACTS.md`
+	- `apps/backend-api/docs/API_ENDPOINTS.md`
+
+Rutas minimas esperadas para cerrar paridad de frontend:
+- `POST /rental-requests`
+- `GET /rental-requests/me`
+- `GET /owner/rental-requests`
+- `PATCH /owner/rental-requests/:requestId/status`
+
+Reglas de negocio obligatorias para solicitudes:
+1. Solo propietario del terreno puede aprobar o rechazar.
+2. Solo solicitudes `pending_owner` pueden pasar a `approved` o `rejected`.
+3. No se puede aprobar si existe solapamiento con otra solicitud aprobada del mismo terreno.
+
 ## Pagos (fase 1)
 - Proveedor: Stripe (SDK oficial).
 - Flujo definido: Checkout Session.
@@ -35,6 +52,7 @@ Importante para frontend:
 ## Documentacion para frontend
 - Rutas y endpoints: [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md)
 - Guia de integracion (Clerk + Stripe): [docs/INTEGRATION.md](docs/INTEGRATION.md)
+- Contrato modulo cruzado: `docs/MODULE_INTEGRATION_CONTRACTS.md`
 
 ## Variables de entorno esperadas (referencia)
 - `API_PORT`
