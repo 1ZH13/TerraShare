@@ -118,10 +118,10 @@ Notas:
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| POST | `/rental-requests` | Si | user, admin | planned | #25 |
-| GET | `/rental-requests` | Si | user, admin | planned | #25 |
-| GET | `/rental-requests/:requestId` | Si | user, owner, admin | planned | #25 |
-| PATCH | `/rental-requests/:requestId/status` | Si | owner, admin | planned | #25 |
+| POST | `/rental-requests` | Si | user, admin | implemented | #25 |
+| GET | `/rental-requests` | Si | user, admin | implemented | #25 |
+| GET | `/rental-requests/:requestId` | Si | user, owner, admin | implemented | #25 |
+| PATCH | `/rental-requests/:requestId/status` | Si | owner, admin | implemented | #25 |
 
 Estados de solicitud (v1):
 
