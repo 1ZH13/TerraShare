@@ -67,7 +67,8 @@ Notas:
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/auth/me` | Si | user, admin | planned | #23 |
+| GET | `/auth/me` | Si | user, admin | implemented | #23 |
+| GET | `/auth/admin/ping` | Si | admin | implemented | #23 |
 
 `GET /auth/me` response example:
 
