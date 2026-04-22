@@ -23,4 +23,10 @@ export const env = {
   get allowDevAuthBypass() {
     return (getEnv("ALLOW_DEV_AUTH_BYPASS") ?? "false") === "true";
   },
+  get stripeSecretKey() {
+    return getEnv("STRIPE_SECRET_KEY");
+  },
+  get stripeWebhookSecret() {
+    return getEnv("STRIPE_WEBHOOK_SECRET");
+  },
 };

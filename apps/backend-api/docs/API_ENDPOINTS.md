@@ -153,10 +153,10 @@ Estados de solicitud (v1):
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| POST | `/payments/checkout-session` | Si | user, admin | planned | #27 |
-| GET | `/payments/:paymentId` | Si | user, owner, admin | planned | #27 |
-| GET | `/payments` | Si | user, owner, admin | planned | #27 |
-| POST | `/webhooks/stripe` | No (firma Stripe) | system | planned | #27 |
+| POST | `/payments/checkout-session` | Si | user, admin | implemented | #27 |
+| GET | `/payments/:paymentId` | Si | user, owner, admin | implemented | #27 |
+| GET | `/payments` | Si | user, owner, admin | implemented | #27 |
+| POST | `/webhooks/stripe` | No (firma Stripe) | system | implemented | #27 |
 
 `POST /payments/checkout-session` request example:
 
