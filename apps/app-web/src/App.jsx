@@ -10,7 +10,10 @@ import {
   useParams,
   useSearchParams
 } from "react-router-dom";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import { api, RENTAL_REQUEST_STATUS } from "./services/mockApi";
+import Login from "./components/Login";
+import Register from "./components/Register";
 
 const statusLabels = {
   [RENTAL_REQUEST_STATUS.draft]: "Borrador",
@@ -836,26 +839,27 @@ function OwnerRequestsPage({ user, setToast }) {
 }
 
 function App() {
-  const [user, setUser] = useState(() => api.getSessionUser());
+  const { user, isLoaded, openSignIn, openSignUp, signOut } = useClerk();
+  const { isSignedIn } = useUser();
   const [toast, setToast] = useState(null);
 
-  const handleLogin = async ({ email, password }) => {
-    const sessionUser = await api.login({ email, password });
-    setUser(sessionUser);
-    return sessionUser;
-  };
+  useEffect(() => {
+    if (isSignedIn) {
+      setToast({ type: "success", message: "Bienvenido!" });
+    }
+  }, [isSignedIn]);
 
-  const handleRegister = async ({ name, email, password }) => {
-    const sessionUser = await api.register({ name, email, password });
-    setUser(sessionUser);
-    return sessionUser;
-  };
-
-  const handleLogout = () => {
-    api.logout();
-    setUser(null);
+  const handleLogout = async () => {
+    await signOut();
     setToast({ type: "success", message: "Sesion cerrada." });
   };
+
+  const currentUser = isSignedIn ? { 
+    id: user?.id, 
+    email: user?.primaryEmailAddress?.emailAddress,
+    role: user?.publicMetadata?.role || "user",
+    profile: { fullName: user?.fullName }
+  } : null;
 
   return (
     <div className="page-shell">
@@ -878,10 +882,10 @@ function App() {
         </nav>
 
         <div className="auth-actions">
-          {user ? (
+          {isSignedIn && currentUser ? (
             <>
               <p className="session-chip">
-                {user.name} · {user.role}
+                {currentUser.profile.fullName} · {currentUser.role}
               </p>
               <button type="button" className="button ghost-button" onClick={handleLogout}>
                 Cerrar sesion
@@ -904,50 +908,40 @@ function App() {
 
       <main>
         <Routes>
-          <Route path="/" element={<CatalogPage user={user} />} />
-          <Route path="/lands/:landId" element={<LandDetailPage user={user} />} />
-          <Route
-            path="/login"
-            element={
-              <LoginPage
-                user={user}
-                onLogin={handleLogin}
-                setToast={setToast}
-              />
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <RegisterPage
-                user={user}
-                onRegister={handleRegister}
-                setToast={setToast}
-              />
-            }
-          />
+          <Route path="/" element={<CatalogPage user={currentUser} />} />
+          <Route path="/lands/:landId" element={<LandDetailPage user={currentUser} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route
             path="/reserve/:landId"
             element={
-              <ProtectedRoute user={user}>
-                <ReservePage user={user} setToast={setToast} />
-              </ProtectedRoute>
+              isSignedIn ? (
+                <ReservePage user={currentUser} setToast={setToast} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
           />
           <Route
             path="/my-requests"
             element={
-              <ProtectedRoute user={user}>
-                <MyRequestsPage user={user} />
-              </ProtectedRoute>
+              isSignedIn ? (
+                <MyRequestsPage user={currentUser} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
           />
           <Route
             path="/owner/requests"
             element={
-              <OwnerRoute user={user}>
-                <OwnerRequestsPage user={user} setToast={setToast} />
-              </OwnerRoute>
+              currentUser?.role === "owner" ? (
+                <OwnerRequestsPage user={currentUser} setToast={setToast} />
+              ) : isSignedIn ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
