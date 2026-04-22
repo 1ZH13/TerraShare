@@ -1,4 +1,7 @@
-import type { AppRole, AuthContextUser } from "../types";
+import type { AppRole, AuthContextUser, UserStatus } from "../types";
+
+// Re-export for consumers of store/types
+export type { UserStatus } from "../types";
 
 export type LandUse =
   | "agricultura"

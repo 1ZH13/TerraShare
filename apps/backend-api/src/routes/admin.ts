@@ -4,8 +4,8 @@ import { failure, success } from "../lib/api-response";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { getStore } from "../store/in-memory-db";
-import type { AdminLandSummary, AdminUserSummary, UserStatus } from "../../store/types";
-import type { AppEnv } from "../../types";
+import type { AdminLandSummary, AdminUserSummary, UserStatus } from "../store/types";
+import type { AppEnv } from "../types";
 
 export const adminRoutes = new Hono<AppEnv>();
 
@@ -79,7 +79,7 @@ adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, asyn
 
   // Cannot block yourself
   if (userId === authUser.id) {
-    return failure(c, 400, "BUSINESS_RULE", "Cannot modify own account status");
+    return failure(c, 400, "BUSINESS_RULE_VIOLATION", "Cannot modify own account status");
   }
 
   const updated = { ...user, status: nextStatus, updatedAt: new Date().toISOString() };
@@ -88,7 +88,7 @@ adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, asyn
   createAuditEvent({
     actor: authUser,
     entity: "user",
-    action: nextStatus === "blocked" ? "blocked" : "activated",
+    action: "status_changed",
     entityId: userId,
     metadata: { email: user.email },
   });
