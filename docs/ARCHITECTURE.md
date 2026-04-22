@@ -1,33 +1,22 @@
 # Arquitectura tecnica - TerraShare
 
 ## 1. Stack acordado
-- Frontend: React + Vite
-- Backend: Bun + Hono
+- Frontend: React + Vite + Clerk (unificado en `apps/web`)
+- Backend: Bun + Hono (`apps/backend-api`)
 - Base de datos: MongoDB + Mongoose
 - Runtime y package manager: Bun
 - Testing E2E: Playwright
 - CI/CD: GitHub Actions
-- Graficos: Recharts (recomendado para React)
 
-Contexto de negocio confirmado:
-- Pais objetivo inicial: Panama.
-- Moneda operativa: USD/PAB (paridad 1:1).
-- Descubrimiento de terrenos: mapa + listado con filtros.
-- Chat: mixto (interno + opcion externa por WhatsApp con telefono).
-
-## 2. Decision de estilos (recomendacion)
-Se recomienda Tailwind CSS + tokens de diseno con variables CSS.
-
-Motivos:
-- Velocidad para construir UI en equipo.
-- Consistencia visual con sistema de utilidades.
-- Facil de mantener una paleta tematica (tierra, vegetacion, agua).
-
-Paleta sugerida:
-- Primary: verdes naturales (accion principal)
-- Secondary: marrones tierra (cards, fondos suaves)
-- Accent: azul agua (estados informativos)
-- Warning/Error: naranja y rojo estandar accesible
+## 2. Estructura de apps
+```
+apps/
+  web/           # Frontend unificado (landing + dashboard + admin)
+  backend-api/   # API Bun + Hono
+  legacy/        # Apps anteriores (referencia)
+packages/
+  shared/       # DTOs y tipos compartidos
+```
 
 ## 3. Diagrama de arquitectura
 ```mermaid

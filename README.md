@@ -11,28 +11,23 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 - Contratos entre modulos: [docs/MODULE_INTEGRATION_CONTRACTS.md](docs/MODULE_INTEGRATION_CONTRACTS.md)
 
 ## Stack tecnologico
-- Frontend: React + Vite
-- Backend: Bun + Hono
+- Frontend: React + Vite + Clerk (unificado en `apps/web`)
+- Backend: Bun + Hono (`apps/backend-api`)
 - Base de datos: MongoDB + Mongoose
-- Estilos: Tailwind CSS (con tokens de diseno)
-- Graficos: Recharts
 - Testing E2E: Playwright
 - CI/CD: GitHub Actions
 
-## Regla de colaboracion
-- Todo cambio entra por Pull Request.
-- Cada PR requiere revision y aprobacion de otro companero.
-- No se hace merge si los checks de CI fallan.
-
-## Decisiones de producto ya definidas
-- Mapa + listado con filtros en el MVP.
-- Chat mixto (interno + opcion externa por WhatsApp).
-- Login opcional para ver; obligatorio para acciones de negocio.
-
 ## Estado actual
-- `apps/landing`: implementado (issue #1) con E2E y CI.
-- `apps/app-web`: implementado MVP inicial (issue #2) en modo mock:
-	catalogo, filtros, solicitud de alquiler y aprobacion/rechazo.
-- `apps/backend-api`: pendiente de implementacion, con contrato definido.
-- `apps/admin-dashboard`: pendiente de implementacion.
-- `packages/shared`: pendiente de implementacion de tipos/contratos compartidos.
+- `apps/web`: frontend unificado (landing + dashboard + admin)
+- `apps/backend-api`: API con auth, lands, rental requests, contracts, payments, chat
+- `apps/legacy/`: apps anteriores (landing, app-web, admin-dashboard) - referencia
+- `packages/shared`: DTOs y tipos compartidos
+
+## Rutas de la app web
+| Ruta | Descripcion | Acceso |
+|------|------------|--------|
+| `/` | Landing | Publico |
+| `/login` | Login | Publico |
+| `/register` | Registro | Publico |
+| `/dashboard` | Dashboard usuario | Auth |
+| `/dashboard/admin` | Panel admin | Admin |
