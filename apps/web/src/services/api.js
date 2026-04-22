@@ -57,6 +57,12 @@ export const listLands = async (filters = {}) => {
   return res?.data?.items ?? [];
 };
 
+/** POST /api/v1/rental-requests */
+export const createRentalRequest = async (payload) => {
+  const res = await request("POST", "/api/v1/rental-requests", payload);
+  return res?.data ?? null;
+};
+
 /** GET /api/v1/lands/:landId */
 export const getLandById = async (landId) => {
   const res = await request("GET", `/api/v1/lands/${landId}`);
@@ -84,4 +90,4 @@ export const adaptLand = (land) => {
   };
 };
 
-export const api = { setTokenFn, listLands, getLandById, adaptLand };
+export const api = { setTokenFn, listLands, getLandById, createRentalRequest, adaptLand };
