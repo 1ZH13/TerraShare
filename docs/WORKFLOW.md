@@ -14,10 +14,11 @@ Regla:
 - chore/<slug>
 
 Convencion por modulo:
-- feature/landing/<issue-id>-<slug>
-- feature/app-web/<issue-id>-<slug>
-- feature/admin-dashboard/<issue-id>-<slug>
+- feature/web/<issue-id>-<slug>
 - feature/backend-api/<issue-id>-<slug>
+- feature/landing/<issue-id>-<slug>
+- fix/<issue-id>-<slug>
+- chore/<slug>
 
 ## 3. Flujo operativo
 1. Crear issue con alcance y criterios de aceptacion.
@@ -55,10 +56,9 @@ Recomendado:
 
 ## 6.1 Trabajo por modulos e issues
 Etiquetas recomendadas:
-- module:landing
-- module:app-web
-- module:admin-dashboard
+- module:web (frontend unificado)
 - module:backend-api
+- module:landing (legacy)
 - module:shared
 
 Plantilla de plan por issue:

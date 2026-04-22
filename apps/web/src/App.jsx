@@ -1,0 +1,206 @@
+import { useState } from "react";
+import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useClerk, useUser } from "@clerk/clerk-react";
+import LandingPage from "./pages/LandingPage";
+import Login from "./components/Login";
+import Register from "./components/Register";
+
+function ProtectedRoute({ children }) {
+  const { isLoaded } = useClerk();
+  const { isSignedIn } = useUser();
+  const location = useLocation();
+
+  if (!isLoaded) {
+    return (
+      <div className="page-shell">
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p>Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const { isLoaded } = useClerk();
+  const { isSignedIn, user } = useUser();
+
+  if (!isLoaded) {
+    return (
+      <div className="page-shell">
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p>Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const userRole = user?.publicMetadata?.role;
+  if (userRole !== "admin") {
+    return (
+      <div className="page-shell">
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <h1>Acceso denegado</h1>
+          <p>No tienes permisos de administrador.</p>
+          <Link to="/dashboard" className="btn btn-ghost" style={{ marginTop: "1rem" }}>
+            Volver al dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+}
+
+function DashboardLayout({ children, onSignOut }) {
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  return (
+    <div className="page-shell">
+      <header className="top-nav">
+        <Link to="/dashboard" className="brand">TerraShare Dashboard</Link>
+        <nav className="menu">
+          <Link to="/dashboard" className={currentPath === "/dashboard" ? "active" : ""}>Mis solicitudes</Link>
+          <Link to="/dashboard/lands">Mis terrenos</Link>
+        </nav>
+        <div className="auth-actions">
+          <button className="button ghost-button" onClick={onSignOut}>Cerrar sesion</button>
+        </div>
+      </header>
+      <main>{children}</main>
+    </div>
+  );
+}
+
+function AdminLayout({ children, onSignOut }) {
+  return (
+    <div className="admin-layout">
+      <aside className="sidebar">
+        <Link to="/dashboard/admin" className="brand">TerraShare Admin</Link>
+        <nav>
+          <Link to="/dashboard/admin">Dashboard</Link>
+          <Link to="/dashboard/admin/users">Usuarios</Link>
+          <Link to="/dashboard/admin/lands">Terrenos</Link>
+        </nav>
+        <div style={{ marginTop: "auto", paddingTop: "2rem" }}>
+          <button className="btn btn-ghost" onClick={onSignOut} style={{ width: "100%", color: "white", borderColor: "rgba(255,255,255,0.3)" }}>
+            Cerrar sesion
+          </button>
+        </div>
+      </aside>
+      <main className="main-content">{children}</main>
+    </div>
+  );
+}
+
+function DashboardPage() {
+  return (
+    <div>
+      <div className="section-header">
+        <h1>Mi Dashboard</h1>
+        <p>Gestiona tus solicitudes y terrenos</p>
+      </div>
+      <div className="panel" style={{ marginTop: "1.5rem" }}>
+        <p>Contenido del dashboard (en desarrollo)</p>
+      </div>
+    </div>
+  );
+}
+
+function AdminDashboardPage() {
+  const [users, setUsers] = useState([
+    { id: 1, name: "Juan Perez", email: "juan@example.com", status: "active" },
+    { id: 2, name: "Maria Garcia", email: "maria@example.com", status: "blocked" },
+  ]);
+
+  return (
+    <div>
+      <div className="section-header">
+        <h1>Panel de Administracion</h1>
+        <p>Gestion de usuarios y plataforma</p>
+      </div>
+      <div className="stats-grid" style={{ marginTop: "1.5rem" }}>
+        <div className="stat-card"><h3>Usuarios</h3><p>{users.length}</p></div>
+        <div className="stat-card"><h3>Activos</h3><p>{users.filter(u => u.status === "active").length}</p></div>
+        <div className="stat-card"><h3>Bloqueados</h3><p>{users.filter(u => u.status === "blocked").length}</p></div>
+        <div className="stat-card"><h3>Terrenos</h3><p>--</p></div>
+      </div>
+      <div className="panel" style={{ marginTop: "1.5rem" }}>
+        <h2>Usuarios recientes</h2>
+        <table className="table" style={{ marginTop: "1rem" }}>
+          <thead>
+            <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id}>
+                <td>{u.name}</td>
+                <td>{u.email}</td>
+                <td><span className={`status-badge ${u.status === "active" ? "status-active" : "status-blocked"}`}>{u.status}</span></td>
+                <td>
+                  <button className="btn btn-ghost" style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
+                    {u.status === "active" ? "Bloquear" : "Activar"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const { signOut } = useClerk();
+  const { isSignedIn, isLoaded } = useUser();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="page-shell">
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p>Cargando TerraShare...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <DashboardLayout onSignOut={handleSignOut}>
+            <DashboardPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/dashboard/admin" element={
+        <AdminRoute>
+          <AdminLayout onSignOut={handleSignOut}>
+            <AdminDashboardPage />
+          </AdminLayout>
+        </AdminRoute>
+      } />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
