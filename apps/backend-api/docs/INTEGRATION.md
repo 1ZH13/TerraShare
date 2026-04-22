@@ -31,6 +31,8 @@ Guia practica para equipos frontend que integran con backend-api.
 Estado implementado actual:
 - `GET /api/v1/auth/me` (token valido requerido).
 - `GET /api/v1/auth/admin/ping` (token valido + rol admin).
+- `GET/POST/PATCH/DELETE /api/v1/lands...` con filtros, paginacion y ownership.
+- `GET /api/v1/lands`, `GET /api/v1/lands/:landId` (publicos).
 
 ## 3. Header de autorizacion
 
