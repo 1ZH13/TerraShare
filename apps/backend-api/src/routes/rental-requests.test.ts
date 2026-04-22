@@ -5,11 +5,16 @@
 // This is the business rule working correctly (non-overlapping check), but the test
 // setup needs a land without existing approved requests to isolate this unit test.
 // Related: issue #6 (landing), but the fix belongs to #25 (rental requests).
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, beforeEach } from "bun:test";
 
-import { requestJson } from "../lib/http-test-utils";
+import { requestJson, resetStore } from "../lib/http-test-utils";
 
 describe("rental requests routes", () => {
+  beforeEach(() => {
+    // Reset rr_seed_01 to pending_owner so tests are independent from
+    // payments.test.ts which may have left it in "approved" state.
+    resetStore();
+  });
   it("creates rental request for a different owner land", async () => {
     const { response, payload } = await requestJson("/api/v1/rental-requests", {
       method: "POST",
