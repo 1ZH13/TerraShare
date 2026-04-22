@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import LandingPage from "./pages/LandingPage";
+import CatalogPage from "./pages/CatalogPage";
+import LandDetailPage from "./pages/LandDetailPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminLandsPage from "./pages/AdminLandsPage";
 import { setTokenFn as setAdminTokenFn } from "./services/adminApi";
+import { setTokenFn as setApiTokenFn } from "./services/api";
 
 function ProtectedRoute({ children }) {
   const { isLoaded } = useClerk();
@@ -174,11 +177,13 @@ export default function App() {
   const { signOut } = useClerk();
   const { isSignedIn, isLoaded } = useUser();
 
-  // Inject Clerk token for admin API calls
-  const { user } = useUser();
+  // Inject Clerk token for API calls
   useEffect(() => {
     if (user) {
-      user.getToken().then((token) => setAdminTokenFn(() => token));
+      user.getToken().then((token) => {
+        setAdminTokenFn(() => token);
+        setApiTokenFn(() => token);
+      });
     }
   }, [user]);
 
@@ -199,6 +204,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/catalog" element={<CatalogPage />} />
+      <Route path="/lands/:landId" element={<LandDetailPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={
