@@ -20,4 +20,7 @@ export const env = {
   get clerkIssuer() {
     return requireEnv("CLERK_ISSUER");
   },
+  get allowDevAuthBypass() {
+    return (getEnv("ALLOW_DEV_AUTH_BYPASS") ?? "false") === "true";
+  },
 };
