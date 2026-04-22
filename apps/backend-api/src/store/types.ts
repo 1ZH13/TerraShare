@@ -152,6 +152,15 @@ export interface AuditEventRecord {
   createdAt: string;
 }
 
+export type LeadSource = "landing" | "app-web" | "admin-dashboard";
+
+export interface LeadRecord {
+  id: string;
+  email: string;
+  source: LeadSource;
+  createdAt: string;
+}
+
 export interface InMemoryStore {
   users: Map<string, AuthContextUser>;
   lands: Map<string, LandRecord>;
@@ -161,4 +170,5 @@ export interface InMemoryStore {
   chats: Map<string, ChatRecord>;
   chatMessages: Map<string, ChatMessageRecord[]>;
   auditEvents: Map<string, AuditEventRecord>;
+  leads: Map<string, LeadRecord>;
 }

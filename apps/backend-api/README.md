@@ -9,7 +9,9 @@ API principal de TerraShare usando Bun + Hono.
   - Lands: CRUD completo con filtros/paginacion/ownership (implementado #24)
   - Rental Requests: flujo de estados completo (implementado #25)
   - Contracts y auditoria: modulo contratos + audit trail (implementado #26)
-  - remaining: payments, chat (en progreso)
+  - Payments: Stripe Checkout Session + webhook (implementado #27)
+  - Chat: mensajeria interna + contacto externo (implementado #28)
+  - Leads: captura de emails desde landing (implementado #6)
 - Fuente de verdad para integracion frontend: archivos dentro de `docs/`.
 
 ## Objetivo funcional (v1)
@@ -44,6 +46,17 @@ Reglas de negocio para solicitudes:
 1. Solo propietario del terreno puede aprobar o rechazar.
 2. Solo solicitudes `pending_owner` pueden pasar a `approved` o `rejected`.
 3. No se puede aprobar si existe solapamiento con otra aprobada del mismo terreno.
+
+## Leads (captura desde landing)
+
+- `POST /api/v1/leads` — Registra un lead con email y source (`landing`|`app-web`|`admin-dashboard`).
+  - Validacion de formato de email.
+  - Deteccion de duplicados (responde 409 si el email ya existe).
+  - Respuesta: `{ok: true, data: {id, email, createdAt}}` con status 201.
+- `GET /api/v1/leads` — Lista todos los leads ordenados por fecha de creacion (mas reciente primero).
+  - Respuesta: `{ok: true, data: {leads: [...], total: N}}`.
+- Almacenamiento: in-memory store (MongoDB en fase de produccion).
+- consumido por: `apps/landing` (formulario CTA), futuro: `apps/admin-dashboard` para visualizacion.
 
 ## Pagos (fase 1)
 

@@ -5,6 +5,7 @@ import { requestIdMiddleware } from "./middleware/request-id";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
 import { landRoutes } from "./routes/lands";
+import { leadRoutes } from "./routes/leads";
 import { rentalRequestRoutes } from "./routes/rental-requests";
 import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
@@ -27,6 +28,7 @@ export function createApp() {
   app.route("/api/v1", healthRoutes);
   app.route("/api/v1", authRoutes);
   app.route("/api/v1", landRoutes);
+  app.route("/api/v1", leadRoutes);
   app.route("/api/v1", rentalRequestRoutes);
   app.route("/api/v1", contractRoutes);
   app.route("/api/v1", paymentRoutes);
