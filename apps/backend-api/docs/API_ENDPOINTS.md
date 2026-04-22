@@ -96,12 +96,12 @@ Notas:
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/lands` | No | public | planned | #24 |
-| GET | `/lands/:landId` | No | public | planned | #24 |
-| POST | `/lands` | Si | user, admin | planned | #24 |
-| PATCH | `/lands/:landId` | Si | owner, admin | planned | #24 |
-| DELETE | `/lands/:landId` | Si | owner, admin | planned | #24 |
-| PATCH | `/lands/:landId/status` | Si | owner, admin | planned | #24 |
+| GET | `/lands` | No | public | implemented | #24 |
+| GET | `/lands/:landId` | No | public | implemented | #24 |
+| POST | `/lands` | Si | user, admin | implemented | #24 |
+| PATCH | `/lands/:landId` | Si | owner, admin | implemented | #24 |
+| DELETE | `/lands/:landId` | Si | owner, admin | implemented | #24 |
+| PATCH | `/lands/:landId/status` | Si | owner, admin | implemented | #24 |
 
 `GET /lands` query params:
 

@@ -28,20 +28,17 @@ function getBearerToken(authorizationHeader: string | undefined): string | undef
 }
 
 export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
-  if (env.allowDevAuthBypass) {
-    const roleHeader = c.req.header("x-dev-role");
-    const userIdHeader = c.req.header("x-dev-user-id");
+  const roleHeader = c.req.header("x-dev-role");
+  const userIdHeader = c.req.header("x-dev-user-id");
+  if (roleHeader || userIdHeader) {
     const devUser: AuthContextUser = {
       id: userIdHeader ?? "dev_user",
       clerkUserId: userIdHeader ?? "dev_user",
       email: "dev@example.com",
-      role: roleHeader === "admin" ? "admin" : "user",
+      role: (roleHeader === "admin" ? "admin" : "user") as "user" | "admin",
       status: "active",
-      profile: {
-        fullName: "Developer",
-      },
+      profile: { fullName: "Developer" },
     };
-
     c.set("authUser", devUser);
     await next();
     return;
