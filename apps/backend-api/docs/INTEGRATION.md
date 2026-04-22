@@ -31,6 +31,11 @@ Guia practica para equipos frontend que integran con backend-api.
 Estado implementado actual:
 - `GET /api/v1/auth/me` (token valido requerido).
 - `GET /api/v1/auth/admin/ping` (token valido + rol admin).
+- `GET /api/v1/lands`, `GET /api/v1/lands/:landId` y CRUD protegido de lands.
+- `POST/GET/PATCH /api/v1/rental-requests...` con flujo de estados.
+- `POST/GET /api/v1/contracts...` y endpoints de auditoria admin.
+- `POST/GET /api/v1/payments...` + `POST /api/v1/webhooks/stripe`.
+- `GET/POST /api/v1/chats...` y contacto externo por WhatsApp.
 
 ## 3. Header de autorizacion
 
@@ -116,7 +121,18 @@ Frontend:
 - Manejar estados de solicitud (`pending_owner`, `approved`, `rejected`, `cancelled`, `pending_payment`, `paid`).
 - Mostrar errores por `error.code` y `error.message`.
 
-## 9. Referencias
+## 9. Desarrollo local rapido (bypass auth)
+
+Para pruebas locales de frontend/backend sin token real de Clerk:
+
+- Backend: `ALLOW_DEV_AUTH_BYPASS=true`
+- En requests protegidos enviar:
+  - `x-dev-user-id: <id-usuario>`
+  - `x-dev-role: admin` (opcional; por defecto `user`)
+
+Esto solo aplica en desarrollo local.
+
+## 10. Referencias
 
 - Endpoints detallados: [API_ENDPOINTS.md](API_ENDPOINTS.md)
 - Contexto de arquitectura: [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md)

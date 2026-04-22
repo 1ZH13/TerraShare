@@ -5,7 +5,7 @@ Este documento define el contrato de rutas para integracion con frontend.
 - Base path: `/api/v1`
 - Formato: `application/json`
 - Auth: `Authorization: Bearer <clerk_token>` en rutas protegidas
-- Estado actual: `planned` (sin implementacion productiva todavia)
+- Estado actual: `implemented` para endpoints base de v1 (auth, lands, rental-requests, contracts, audit, payments, chat)
 
 ## Convenciones de respuesta
 
@@ -57,7 +57,7 @@ Respuesta de error:
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/health` | No | public | planned | #9 |
+| GET | `/health` | No | public | implemented | #9 |
 
 ## Auth (Clerk + RBAC)
 
@@ -96,12 +96,12 @@ Notas:
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/lands` | No | public | planned | #24 |
-| GET | `/lands/:landId` | No | public | planned | #24 |
-| POST | `/lands` | Si | user, admin | planned | #24 |
-| PATCH | `/lands/:landId` | Si | owner, admin | planned | #24 |
-| DELETE | `/lands/:landId` | Si | owner, admin | planned | #24 |
-| PATCH | `/lands/:landId/status` | Si | owner, admin | planned | #24 |
+| GET | `/lands` | No | public | implemented | #24 |
+| GET | `/lands/:landId` | No | public | implemented | #24 |
+| POST | `/lands` | Si | user, admin | implemented | #24 |
+| PATCH | `/lands/:landId` | Si | owner, admin | implemented | #24 |
+| DELETE | `/lands/:landId` | Si | owner, admin | implemented | #24 |
+| PATCH | `/lands/:landId/status` | Si | owner, admin | implemented | #24 |
 
 `GET /lands` query params:
 
@@ -118,10 +118,10 @@ Notas:
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| POST | `/rental-requests` | Si | user, admin | planned | #25 |
-| GET | `/rental-requests` | Si | user, admin | planned | #25 |
-| GET | `/rental-requests/:requestId` | Si | user, owner, admin | planned | #25 |
-| PATCH | `/rental-requests/:requestId/status` | Si | owner, admin | planned | #25 |
+| POST | `/rental-requests` | Si | user, admin | implemented | #25 |
+| GET | `/rental-requests` | Si | user, admin | implemented | #25 |
+| GET | `/rental-requests/:requestId` | Si | user, owner, admin | implemented | #25 |
+| PATCH | `/rental-requests/:requestId/status` | Si | owner, admin | implemented | #25 |
 
 Estados de solicitud (v1):
 
@@ -137,26 +137,26 @@ Estados de solicitud (v1):
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| POST | `/contracts` | Si | owner, admin | planned | #26 |
-| GET | `/contracts` | Si | user, owner, admin | planned | #26 |
-| GET | `/contracts/:contractId` | Si | user, owner, admin | planned | #26 |
-| PATCH | `/contracts/:contractId/status` | Si | owner, admin | planned | #26 |
+| POST | `/contracts` | Si | owner, admin | implemented | #26 |
+| GET | `/contracts` | Si | user, owner, admin | implemented | #26 |
+| GET | `/contracts/:contractId` | Si | user, owner, admin | implemented | #26 |
+| PATCH | `/contracts/:contractId/status` | Si | owner, admin | implemented | #26 |
 
 ## Audit events
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/audit-events` | Si | admin | planned | #26 |
-| GET | `/audit-events/:eventId` | Si | admin | planned | #26 |
+| GET | `/audit-events` | Si | admin | implemented | #26 |
+| GET | `/audit-events/:eventId` | Si | admin | implemented | #26 |
 
 ## Payments (Stripe SDK)
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| POST | `/payments/checkout-session` | Si | user, admin | planned | #27 |
-| GET | `/payments/:paymentId` | Si | user, owner, admin | planned | #27 |
-| GET | `/payments` | Si | user, owner, admin | planned | #27 |
-| POST | `/webhooks/stripe` | No (firma Stripe) | system | planned | #27 |
+| POST | `/payments/checkout-session` | Si | user, admin | implemented | #27 |
+| GET | `/payments/:paymentId` | Si | user, owner, admin | implemented | #27 |
+| GET | `/payments` | Si | user, owner, admin | implemented | #27 |
+| POST | `/webhooks/stripe` | No (firma Stripe) | system | implemented | #27 |
 
 `POST /payments/checkout-session` request example:
 
@@ -190,11 +190,11 @@ Estados de solicitud (v1):
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/chats` | Si | user, owner, admin | planned | #28 |
-| POST | `/chats` | Si | user, owner, admin | planned | #28 |
-| GET | `/chats/:chatId/messages` | Si | user, owner, admin | planned | #28 |
-| POST | `/chats/:chatId/messages` | Si | user, owner, admin | planned | #28 |
-| GET | `/chats/:chatId/external-contact` | Si | user, owner, admin | planned | #28 |
+| GET | `/chats` | Si | user, owner, admin | implemented | #28 |
+| POST | `/chats` | Si | user, owner, admin | implemented | #28 |
+| GET | `/chats/:chatId/messages` | Si | user, owner, admin | implemented | #28 |
+| POST | `/chats/:chatId/messages` | Si | user, owner, admin | implemented | #28 |
+| GET | `/chats/:chatId/external-contact` | Si | user, owner, admin | implemented | #28 |
 
 `GET /chats/:chatId/external-contact` response example:
 
@@ -230,3 +230,4 @@ Para mantener front/back sincronizados (issue #29), los DTOs deben exponerse en 
 - Tratar este archivo como contrato de integracion hasta que cada endpoint pase a `implemented`.
 - Para vistas publicas usar `GET /lands` y `GET /lands/:landId` sin token.
 - Para cualquier accion transaccional usar token de Clerk.
+- En ambiente local de desarrollo se puede usar bypass de auth con `ALLOW_DEV_AUTH_BYPASS=true` y headers `x-dev-user-id` / `x-dev-role`.

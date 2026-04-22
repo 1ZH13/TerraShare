@@ -4,7 +4,7 @@ API principal de TerraShare usando Bun + Hono.
 
 ## Estado del modulo
 - Estado actual: contrato de API documentado para alineacion Frontend/Backend.
-- Implementacion de endpoints: en progreso (`GET /api/v1/health`, `GET /api/v1/auth/me` y `GET /api/v1/auth/admin/ping` disponibles).
+- Implementacion de endpoints: base v1 implementada para auth, lands, rental-requests, contracts, audit, payments y chat.
 - Fuente de verdad para integracion frontend: archivos dentro de `docs/`.
 
 ## Objetivo funcional (v1)
@@ -60,9 +60,28 @@ Reglas de negocio obligatorias para solicitudes:
 - `MONGODB_URI`
 - `CLERK_SECRET_KEY`
 - `CLERK_JWKS_URL`
+- `CLERK_ISSUER`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `WHATSAPP_CONTACT_ENABLED=true|false`
+- `ALLOW_DEV_AUTH_BYPASS=true|false`
+
+## Desarrollo local
+
+Comandos:
+
+```bash
+bun install
+bun run dev
+bun run typecheck
+bun test
+```
+
+Para pruebas locales sin token real de Clerk:
+- activar `ALLOW_DEV_AUTH_BYPASS=true`
+- enviar headers en rutas protegidas:
+  - `x-dev-user-id: <id>`
+  - `x-dev-role: admin` (opcional)
 
 ## Versionado
 - Prefijo de API: `/api/v1`.
