@@ -34,6 +34,7 @@ Estado implementado actual:
 - `GET/POST/PATCH/DELETE /api/v1/lands...` con filtros, paginacion y ownership.
 - `GET /api/v1/lands`, `GET /api/v1/lands/:landId` (publicos).
 - `POST/GET/PATCH /api/v1/rental-requests...` con flujo de estados.
+- `POST/GET/PATCH /api/v1/contracts...` con auditoria.
 
 ## 3. Header de autorizacion
 
