@@ -25,13 +25,7 @@ export interface AppEnv {
 
 export interface Env {
   API_PORT?: string;
-  API_BASE_URL?: string;
-  MONGODB_URI?: string;
-  CLERK_SECRET_KEY?: string;
   CLERK_JWKS_URL?: string;
   CLERK_ISSUER?: string;
-  STRIPE_SECRET_KEY?: string;
-  STRIPE_WEBHOOK_SECRET?: string;
-  WHATSAPP_CONTACT_ENABLED?: string;
   ALLOW_DEV_AUTH_BYPASS?: string;
 }
