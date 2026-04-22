@@ -4,6 +4,10 @@ import { failure } from "./lib/api-response";
 import { requestIdMiddleware } from "./middleware/request-id";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
+import { landRoutes } from "./routes/lands";
+import { rentalRequestRoutes } from "./routes/rental-requests";
+import { contractRoutes } from "./routes/contracts";
+import { paymentRoutes } from "./routes/payments";
 import type { AppEnv } from "./types";
 
 export function createApp() {
@@ -21,6 +25,10 @@ export function createApp() {
 
   app.route("/api/v1", healthRoutes);
   app.route("/api/v1", authRoutes);
+  app.route("/api/v1", landRoutes);
+  app.route("/api/v1", rentalRequestRoutes);
+  app.route("/api/v1", contractRoutes);
+  app.route("/api/v1", paymentRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 

@@ -3,6 +3,7 @@ import type { MiddlewareHandler } from "hono";
 
 import { env } from "../config/env";
 import { failure } from "../lib/api-response";
+import type { AuthContextUser } from "../types";
 import { mapClerkClaimsToAuthUser } from "../lib/clerk-user";
 import type { AppEnv } from "../types";
 
@@ -27,6 +28,25 @@ function getBearerToken(authorizationHeader: string | undefined): string | undef
 }
 
 export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
+  if (env.allowDevAuthBypass) {
+    const roleHeader = c.req.header("x-dev-role");
+    const userIdHeader = c.req.header("x-dev-user-id");
+    const devUser: AuthContextUser = {
+      id: userIdHeader ?? "dev_user",
+      clerkUserId: userIdHeader ?? "dev_user",
+      email: "dev@example.com",
+      role: roleHeader === "admin" ? "admin" : "user",
+      status: "active",
+      profile: {
+        fullName: "Developer",
+      },
+    };
+
+    c.set("authUser", devUser);
+    await next();
+    return;
+  }
+
   const token = getBearerToken(c.req.header("authorization"));
   if (!token) {
     return failure(c, 401, "UNAUTHORIZED", "Missing or invalid bearer token");
