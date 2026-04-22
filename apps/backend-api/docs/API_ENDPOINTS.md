@@ -137,17 +137,17 @@ Estados de solicitud (v1):
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| POST | `/contracts` | Si | owner, admin | planned | #26 |
-| GET | `/contracts` | Si | user, owner, admin | planned | #26 |
-| GET | `/contracts/:contractId` | Si | user, owner, admin | planned | #26 |
-| PATCH | `/contracts/:contractId/status` | Si | owner, admin | planned | #26 |
+| POST | `/contracts` | Si | owner, admin | implemented | #26 |
+| GET | `/contracts` | Si | user, owner, admin | implemented | #26 |
+| GET | `/contracts/:contractId` | Si | user, owner, admin | implemented | #26 |
+| PATCH | `/contracts/:contractId/status` | Si | owner, admin | implemented | #26 |
 
 ## Audit events
 
 | Metodo | Ruta | Auth | Roles | Estado | Issue |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/audit-events` | Si | admin | planned | #26 |
-| GET | `/audit-events/:eventId` | Si | admin | planned | #26 |
+| GET | `/audit-events` | Si | admin | implemented | #26 |
+| GET | `/audit-events/:eventId` | Si | admin | implemented | #26 |
 
 ## Payments (Stripe SDK)
 
