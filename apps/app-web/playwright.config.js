@@ -8,6 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
+<<<<<<< Updated upstream:apps/app-web/playwright.config.js
     baseURL: "http://127.0.0.1:4174",
     trace: "on-first-retry"
   },
@@ -16,11 +17,27 @@ export default defineConfig({
     url: "http://127.0.0.1:4174",
     reuseExistingServer: !process.env.CI,
     timeout: 120000
+=======
+    baseURL: "http://127.0.0.1:4173",
+    trace: "on-first-retry",
+  },
+  webServer: {
+    command: "bun run dev -- --host 127.0.0.1 --port 4173",
+    url: "http://127.0.0.1:4173",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+>>>>>>> Stashed changes:apps/web/playwright.config.js
   },
   projects: [
     {
       name: "chromium",
+<<<<<<< Updated upstream:apps/app-web/playwright.config.js
       use: { ...devices["Desktop Chrome"] }
     }
   ]
+=======
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
+>>>>>>> Stashed changes:apps/web/playwright.config.js
 });

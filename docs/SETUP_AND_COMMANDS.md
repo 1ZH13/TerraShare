@@ -78,9 +78,15 @@ Tip operativo (PowerShell):
 - build por modulo
 
 Workflows actuales implementados:
+<<<<<<< Updated upstream
 - `.github/workflows/landing-e2e.yml`
 - `.github/workflows/app-web-e2e.yml`
 - `.github/workflows/admin-dashboard-e2e.yml`
+=======
+- `.github/workflows/landing-e2e.yml` (smoke publico de `apps/web`)
+- `.github/workflows/app-web-e2e.yml` (smoke de auth/protegido de `apps/web`)
+- `.github/workflows/backend-api-ci.yml`
+>>>>>>> Stashed changes
 - `.github/workflows/require-linked-issue.yml`
 
 ## 7. GitHub CLI para PRs (buenas practicas)

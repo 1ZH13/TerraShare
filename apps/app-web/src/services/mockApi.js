@@ -1,6 +1,12 @@
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
 const USERS_STORAGE_KEY = "terrashare.appweb.users";
 const REQUESTS_STORAGE_KEY = "terrashare.appweb.requests";
 const SESSION_STORAGE_KEY = "terrashare.appweb.session";
+=======
+const USERS_STORAGE_KEY = "terrashare.web.users";
+const REQUESTS_STORAGE_KEY = "terrashare.web.requests";
+const SESSION_STORAGE_KEY = "terrashare.web.session";
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
 const NETWORK_DELAY_MS = 180;
 
 const seedUsers = [
@@ -9,22 +15,35 @@ const seedUsers = [
     name: "Olga Propietaria",
     email: "owner@terrashare.test",
     password: "123456",
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     role: "owner"
+=======
+    role: "owner",
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   },
   {
     id: "usr-tenant-1",
     name: "Rafael Arrendatario",
     email: "tenant@terrashare.test",
     password: "123456",
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     role: "tenant"
+=======
+    role: "tenant",
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   },
   {
     id: "usr-tenant-2",
     name: "Marta Productora",
     email: "marta@terrashare.test",
     password: "123456",
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     role: "tenant"
   }
+=======
+    role: "tenant",
+  },
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
 ];
 
 const seedLands = [
@@ -42,7 +61,11 @@ const seedLands = [
     allowedUses: ["agricultura"],
     waterSource: "Pozo y rio cercano",
     summary:
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
       "Terreno plano con acceso vehicular y punto de carga cercano para produccion continua."
+=======
+      "Terreno plano con acceso vehicular y punto de carga cercano para produccion continua.",
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   },
   {
     id: "land-2",
@@ -58,7 +81,11 @@ const seedLands = [
     allowedUses: ["ganaderia", "mixto"],
     waterSource: "Toma de quebrada",
     summary:
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
       "Lote con pasto natural, cerramiento parcial y espacio para manejo de animales."
+=======
+      "Lote con pasto natural, cerramiento parcial y espacio para manejo de animales.",
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   },
   {
     id: "land-3",
@@ -74,7 +101,11 @@ const seedLands = [
     allowedUses: ["agricultura", "ganaderia", "mixto"],
     waterSource: "Sistema de riego",
     summary:
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
       "Parcela flexible para proyectos de ciclo corto con infraestructura de riego."
+=======
+      "Parcela flexible para proyectos de ciclo corto con infraestructura de riego.",
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   },
   {
     id: "land-4",
@@ -90,8 +121,13 @@ const seedLands = [
     allowedUses: ["agricultura"],
     waterSource: "Canal secundario",
     summary:
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
       "Espacio amplio para cultivo extensivo con acceso logistica de carga pesada."
   }
+=======
+      "Espacio amplio para cultivo extensivo con acceso logistica de carga pesada.",
+  },
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
 ];
 
 const seedRequests = [
@@ -105,7 +141,11 @@ const seedRequests = [
     message: "Tengo equipo y personal para iniciar en dos semanas.",
     status: "pending_owner",
     createdAt: "2026-04-21T10:00:00.000Z",
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     updatedAt: "2026-04-21T10:00:00.000Z"
+=======
+    updatedAt: "2026-04-21T10:00:00.000Z",
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   },
   {
     id: "req-101",
@@ -117,8 +157,13 @@ const seedRequests = [
     message: "Busco contrato corto para ciclo de prueba.",
     status: "approved",
     createdAt: "2026-04-20T18:35:00.000Z",
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     updatedAt: "2026-04-20T20:00:00.000Z"
   }
+=======
+    updatedAt: "2026-04-20T20:00:00.000Z",
+  },
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
 ];
 
 export const RENTAL_REQUEST_STATUS = {
@@ -126,6 +171,7 @@ export const RENTAL_REQUEST_STATUS = {
   pendingOwner: "pending_owner",
   approved: "approved",
   rejected: "rejected",
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
   cancelled: "cancelled"
 };
 
@@ -135,17 +181,34 @@ const delay = (ms) => new Promise((resolve) => {
   setTimeout(resolve, ms);
 });
 
+=======
+  cancelled: "cancelled",
+  pendingPayment: "pending_payment",
+  paid: "paid",
+};
+
+const clone = (value) => JSON.parse(JSON.stringify(value));
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
 const normalizeEmail = (email) => email.trim().toLowerCase();
 
 const sanitizeUser = (user) => {
   if (!user) {
     return null;
   }
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
+=======
+
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   return {
     id: user.id,
     name: user.name,
     email: user.email,
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     role: user.role
+=======
+    role: user.role,
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   };
 };
 
@@ -181,7 +244,11 @@ const getRequests = () => {
       return parsed;
     }
   } catch {
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     // If storage is corrupted, recover with seed data.
+=======
+    // Recover with seed data.
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   }
 
   localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(seedRequests));
@@ -193,9 +260,13 @@ const saveRequests = (requests) => {
 };
 
 const isIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
 
 const isDateInRange = (date, start, end) => date >= start && date <= end;
 
+=======
+const isDateInRange = (date, start, end) => date >= start && date <= end;
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
 const hasOverlap = (firstStart, firstEnd, secondStart, secondEnd) =>
   firstStart <= secondEnd && secondStart <= firstEnd;
 
@@ -210,7 +281,11 @@ const enrichRequest = (request) => {
     tenantName: tenant?.name || "Arrendatario no encontrado",
     tenantEmail: tenant?.email || "",
     monthlyPrice: land?.monthlyPrice || 0,
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     landType: land?.type || ""
+=======
+    landType: land?.type || "",
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   };
 };
 
@@ -239,6 +314,7 @@ const ensureSession = () => {
   return sanitizeUser(user);
 };
 
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
 const listLands = async (filters = {}) => {
   const {
     type = "all",
@@ -247,6 +323,66 @@ const listLands = async (filters = {}) => {
     availableOn = ""
   } = filters;
 
+=======
+export const getSessionUser = () => ensureSession();
+
+export const login = async ({ email, password }) => {
+  const candidate = getAllUsers().find(
+    (user) => normalizeEmail(user.email) === normalizeEmail(email),
+  );
+
+  if (!candidate || candidate.password !== password) {
+    return withError("Credenciales invalidas.");
+  }
+
+  localStorage.setItem(SESSION_STORAGE_KEY, candidate.id);
+  return withResponse(sanitizeUser(candidate));
+};
+
+export const register = async ({ name, email, password }) => {
+  const cleanName = name.trim();
+  const cleanEmail = normalizeEmail(email);
+
+  if (cleanName.length < 3) {
+    return withError("El nombre debe tener al menos 3 caracteres.");
+  }
+
+  if (!cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+    return withError("Ingresa un correo valido.");
+  }
+
+  if (password.length < 6) {
+    return withError("La contrasena debe tener al menos 6 caracteres.");
+  }
+
+  const exists = getAllUsers().some((user) => normalizeEmail(user.email) === cleanEmail);
+  if (exists) {
+    return withError("Ese correo ya esta registrado.");
+  }
+
+  const customUsers = safeReadList(USERS_STORAGE_KEY);
+  const newUser = {
+    id: `usr-custom-${Date.now()}`,
+    name: cleanName,
+    email: cleanEmail,
+    password,
+    role: "tenant",
+  };
+
+  customUsers.push(newUser);
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+  localStorage.setItem(SESSION_STORAGE_KEY, newUser.id);
+
+  return withResponse(sanitizeUser(newUser));
+};
+
+export const logout = () => {
+  localStorage.removeItem(SESSION_STORAGE_KEY);
+};
+
+export const listLands = async (filters = {}) => {
+  const { type = "all", location = "", maxPrice = "", availableOn = "" } = filters;
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   const normalizedLocation = location.trim().toLowerCase();
   const maxPriceValue = maxPrice === "" ? null : Number(maxPrice);
 
@@ -282,7 +418,11 @@ const listLands = async (filters = {}) => {
   return withResponse(rows);
 };
 
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
 const getLandById = async (landId) => {
+=======
+export const getLandById = async (landId) => {
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   const land = seedLands.find((item) => item.id === landId);
   if (!land) {
     return withError("No encontramos ese terreno.");
@@ -291,6 +431,7 @@ const getLandById = async (landId) => {
   return withResponse(land);
 };
 
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
 const login = async ({ email, password }) => {
   const candidate = getAllUsers().find(
     (user) => normalizeEmail(user.email) === normalizeEmail(email)
@@ -355,6 +496,9 @@ const createRentalRequest = async ({
   intendedUse,
   message
 }) => {
+=======
+export const createRentalRequest = async ({ tenantId, landId, startDate, endDate, intendedUse, message }) => {
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   const tenant = getAllUsers().find((user) => user.id === tenantId);
   if (!tenant) {
     return withError("Sesion invalida. Inicia sesion nuevamente.");
@@ -400,7 +544,11 @@ const createRentalRequest = async ({
     message: message.trim(),
     status: RENTAL_REQUEST_STATUS.pendingOwner,
     createdAt: now,
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
     updatedAt: now
+=======
+    updatedAt: now,
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   };
 
   const requests = getRequests();
@@ -410,7 +558,11 @@ const createRentalRequest = async ({
   return withResponse(enrichRequest(request));
 };
 
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
 const listTenantRequests = async (tenantId) => {
+=======
+export const listTenantRequests = async (tenantId) => {
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   const requests = getRequests()
     .filter((request) => request.tenantId === tenantId)
     .sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt))
@@ -419,7 +571,11 @@ const listTenantRequests = async (tenantId) => {
   return withResponse(requests);
 };
 
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
 const listOwnerRequests = async (ownerId) => {
+=======
+export const listOwnerRequests = async (ownerId) => {
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
   const ownedLandIds = seedLands
     .filter((land) => land.ownerId === ownerId)
     .map((land) => land.id);
@@ -432,11 +588,16 @@ const listOwnerRequests = async (ownerId) => {
   return withResponse(requests);
 };
 
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
 const updateRentalRequestStatus = async ({ ownerId, requestId, status }) => {
   const nextStatusAllowed = [
     RENTAL_REQUEST_STATUS.approved,
     RENTAL_REQUEST_STATUS.rejected
   ];
+=======
+export const updateRentalRequestStatus = async ({ ownerId, requestId, status }) => {
+  const nextStatusAllowed = [RENTAL_REQUEST_STATUS.approved, RENTAL_REQUEST_STATUS.rejected];
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
 
   if (!nextStatusAllowed.includes(status)) {
     return withError("Estado no permitido para esta accion.");
@@ -471,6 +632,7 @@ const updateRentalRequestStatus = async ({ ownerId, requestId, status }) => {
         return false;
       }
 
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
       return hasOverlap(
         request.startDate,
         request.endDate,
@@ -483,6 +645,13 @@ const updateRentalRequestStatus = async ({ ownerId, requestId, status }) => {
       return withError(
         "No se puede aprobar porque existe un alquiler aprobado que se solapa en fechas."
       );
+=======
+      return hasOverlap(request.startDate, request.endDate, currentRequest.startDate, currentRequest.endDate);
+    });
+
+    if (overlap) {
+      return withError("No se puede aprobar porque existe un alquiler aprobado que se solapa en fechas.");
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
     }
   }
 
@@ -503,5 +672,9 @@ export const api = {
   createRentalRequest,
   listTenantRequests,
   listOwnerRequests,
+<<<<<<< Updated upstream:apps/app-web/src/services/mockApi.js
   updateRentalRequestStatus
+=======
+  updateRentalRequestStatus,
+>>>>>>> Stashed changes:apps/web/src/services/mockApi.js
 };

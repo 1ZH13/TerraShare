@@ -3,6 +3,22 @@ import { describe, expect, it } from "bun:test";
 import { requestJson } from "../lib/http-test-utils";
 
 describe("payments routes", () => {
+  it("rejects checkout session creation without auth", async () => {
+    const { response, payload } = await requestJson("/api/v1/payments/checkout-session", {
+      method: "POST",
+      body: {
+        rentalRequestId: "rr_seed_01",
+        currency: "USD",
+        successUrl: "http://localhost:5174/payments/success",
+        cancelUrl: "http://localhost:5174/payments/cancel",
+      },
+    });
+
+    expect(response.status).toBe(401);
+    expect(payload.ok).toBe(false);
+    expect(payload.error.code).toBe("UNAUTHORIZED");
+  });
+
   it("creates checkout session in fallback mode", async () => {
     await requestJson("/api/v1/rental-requests/rr_seed_01/status", {
       method: "PATCH",
