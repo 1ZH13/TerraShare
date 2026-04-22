@@ -230,6 +230,14 @@ textarea {
   background: rgba(255, 255, 255, 0.92);
 }
 
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-grid label.full-width {
+  grid-column: 1 / -1;
+}
+
 textarea {
   resize: vertical;
 }

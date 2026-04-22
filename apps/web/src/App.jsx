@@ -4,6 +4,7 @@ import { useClerk, useUser } from "@clerk/clerk-react";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
+import ReservePage from "./pages/ReservePage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 
@@ -190,7 +191,12 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/catalog" element={<CatalogPage />} />
-      <Route path="/lands/:id" element={<LandDetailPage />} />
+<Route path="/lands/:id" element={<LandDetailPage />} />
+      <Route path="/reserve/:landId" element={
+        <ProtectedRoute>
+          <ReservePage />
+        </ProtectedRoute>
+      } />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={
