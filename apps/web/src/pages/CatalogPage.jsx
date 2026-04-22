@@ -1,176 +1,119 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useClerk } from "@clerk/clerk-react";
-import { listLands, adaptLand } from "../services/api";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
-const TIPOS_USO = [
-  { value: "all", label: "Todos los tipos" },
-  { value: "agricultura", label: "Agricultura" },
-  { value: "ganaderia", label: "Ganaderia" },
-  { value: "forestal", label: "Forestal" },
-  { value: "acuicultura", label: "Acuicultura" },
-  { value: "mixto", label: "Mixto" },
-  { value: "otro", label: "Otro" },
+const mockLands = [
+  {
+    id: "1",
+    name: "Finca El Tamarindo",
+    location: "Los Santos",
+    use: "Agricultura",
+    price: 420,
+    area: "2.5 has",
+    water: "Pozo y rio cercano",
+    description: "Terreno fertil ideal para cultivos de ciclo corto. Cuenta con sistema de riego instalado y acceso por carretera principal.",
+  },
+  {
+    id: "2",
+    name: "Lote Vista Caisan",
+    location: "Chiriqui",
+    use: "Ganaderia",
+    price: 560,
+    area: "5 has",
+    water: "Toma de quebrada",
+    description: "Pasto establecido perfecto para ganado. cercas en buen estado y galpon de almacenamiento.",
+  },
+  {
+    id: "3",
+    name: "Parcela Rio Indio",
+    location: "Cocle",
+    use: "Mixto",
+    price: 390,
+    area: "3 has",
+    water: "Sistema de riego",
+    description: "Terreno adaptable para agricultura y ganaderia. Suelo profundo y bien drenado.",
+  },
+  {
+    id: "4",
+    name: "Hacienda Las Lomas",
+    location: "Veraguas",
+    use: "Agricultura",
+    price: 480,
+    area: "4 has",
+    water: "Pozo profundo",
+    description: "Terreno con buena topografia y acceso a servicios basicos. Ideal para proyectos de exportacion.",
+  },
+  {
+    id: "5",
+    name: "Solar El Roble",
+    location: "Herrera",
+    use: "Mixto",
+    price: 350,
+    area: "2 has",
+    water: "Rio cercano",
+    description: "Terreno pequeno pero productivo. Perfecto para pequenos productores.",
+  },
 ];
 
-const PROVINCIAS = [
-  { value: "", label: "Todas las provincias" },
-  { value: "Bocas del Toro", label: "Bocas del Toro" },
-  { value: "Cocle", label: "Cocle" },
-  { value: "Colon", label: "Colon" },
-  { value: "Chiriqui", label: "Chiriqui" },
-  { value: "Darien", label: "Darien" },
-  { value: " Herrera", label: "Herrera" },
-  { value: "Los Santos", label: "Los Santos" },
-  { value: "Panama", label: "Panama" },
-  { value: "Veraguas", label: "Veraguas" },
-];
+const useFilters = ["Todos", "Agricultura", "Ganaderia", "Mixto"];
 
 export default function CatalogPage() {
-  const { openSignUp } = useClerk();
-  const [filters, setFilters] = useState({
-    type: "all",
-    location: "",
-    maxPrice: "",
-    availableOn: "",
-  });
-  const [lands, setLands] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [filter, setFilter] = useState("Todos");
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError("");
-
-    const load = async () => {
-      try {
-        const raw = await listLands(filters);
-        if (active) setLands(raw.map(adaptLand));
-      } catch (e) {
-        if (active) setError(e.message);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    load();
-    return () => { active = false; };
-  }, [filters]);
-
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
-  };
+  const filteredLands = filter === "Todos"
+    ? mockLands
+    : mockLands.filter((l) => l.use === filter);
 
   return (
     <div className="page-shell">
-      <div className="ambient ambient-left" aria-hidden="true" />
-      <div className="ambient ambient-right" aria-hidden="true" />
-
-      <header className="top-nav">
+      <div className="glass-nav">
         <Link to="/" className="brand">TerraShare</Link>
         <nav className="menu">
-          <Link to="/catalog" className="active">Explorar</Link>
+          <Link to="/catalog" className="active">Terrenos</Link>
           <Link to="/login">Iniciar sesion</Link>
         </nav>
-        <button className="btn btn-primary" onClick={() => openSignUp({})}>
-          Crear cuenta
-        </button>
-      </header>
+        <div className="auth-actions">
+          <Link to="/register" className="btn btn-primary">Crear cuenta</Link>
+        </div>
+      </div>
 
       <main>
-        <div className="section-header" style={{ marginBottom: "1.25rem" }}>
-          <h1>Catalogo de terrenos</h1>
-          <p>
-            Explora terrenos disponibles en Panama. Sin registro puedes
-            navegar y filtrar; activa tu cuenta para solicitar.
-          </p>
+        <div className="section-header">
+          <h1>Catalogo de Terrenos</h1>
+          <p>Explora opciones sin login. Cuando estes listo, crea tu cuenta para solicitar.</p>
         </div>
 
-        {/* ── Filtros ─────────────────────────────── */}
-        <div className="panel filters-panel">
-          <div className="filters-grid">
-            <label>
-              Tipo de uso
-              <select
-                value={filters.type}
-                onChange={(e) => handleFilterChange("type", e.target.value)}
-              >
-                {TIPOS_USO.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </label>
+        <div className="filter-bar">
+          {useFilters.map((f) => (
+            <button
+              key={f}
+              className={`filter-chip ${filter === f ? "active" : ""}`}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
 
-            <label>
-              Provincia
-              <select
-                value={filters.location}
-                onChange={(e) => handleFilterChange("location", e.target.value)}
-              >
-                {PROVINCIAS.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-            </label>
+        <div className="cards-grid">
+          {filteredLands.map((land) => (
+            <Link key={land.id} to={`/lands/${land.id}`} className="land-card">
+              <span className="card-badge">{land.use}</span>
+              <h2>{land.name}</h2>
+              <p>{land.location}</p>
+              <p style={{ marginTop: "0.5rem", opacity: 0.6, fontSize: "0.85rem" }}>
+                {land.area}
+              </p>
+              <p className="card-price">Desde ${land.price}/mes</p>
+            </Link>
+          ))}
+        </div>
 
-            <label>
-              Precio max/mes (USD)
-              <input
-                type="number"
-                placeholder="Ej: 800"
-                value={filters.maxPrice}
-                onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
-                min="0"
-              />
-            </label>
-
-            <label>
-              Disponible desde
-              <input
-                type="date"
-                value={filters.availableOn}
-                onChange={(e) => handleFilterChange("availableOn", e.target.value)}
-              />
-            </label>
+        {filteredLands.length === 0 && (
+          <div className="glass-panel" style={{ textAlign: "center", padding: "3rem" }}>
+            <p style={{ opacity: 0.6 }}>No hay terrenos disponibles para este filtro.</p>
           </div>
-        </div>
-
-        {/* ── Resultados ──────────────────────────── */}
-        <div className="panel results-panel">
-          {loading ? (
-            <p style={{ textAlign: "center", padding: "2rem" }}>Cargando terrenos...</p>
-          ) : error ? (
-            <div className="toast toast-error">
-              <strong>Error</strong>
-              <p>{error}</p>
-            </div>
-          ) : lands.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "2rem" }}>
-              <h3>No hay terrenos con esos filtros</h3>
-              <p>Intenta ampliar los criterios de busqueda.</p>
-            </div>
-          ) : (
-            <div className="cards-grid">
-              {lands.map((land) => (
-                <article key={land.id} className="land-card">
-                  <p className="card-badge">{land.type}</p>
-                  <h3>{land.title}</h3>
-                  <p>{land.province}{land.district ? `, ${land.district}` : ""}</p>
-                  <p>
-                    {land.areaHectares} ha &middot;{" "}
-                    {land.monthlyPrice > 0 ? `$${land.monthlyPrice}/mes` : "Precio variable"}
-                  </p>
-                  <div className="card-actions">
-                    <Link to={`/lands/${land.id}`} className="btn btn-primary">
-                      Ver detalle
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
       </main>
     </div>
   );

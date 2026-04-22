@@ -2,206 +2,114 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useClerk } from "@clerk/clerk-react";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-const terrenos = [
-  { id: 1, nombre: "Finca El Tamarindo", ubicacion: "Los Santos", uso: "Agricultura", precio: 420 },
-  { id: 2, nombre: "Lote Vista Caisan", ubicacion: "Chiriqui", uso: "Ganaderia", precio: 560 },
-  { id: 3, nombre: "Parcela Rio Indio", ubicacion: "Cocle", uso: "Mixto", precio: 390 },
+const featuredLands = [
+  { id: "1", name: "Finca El Tamarindo", location: "Los Santos", use: "Agricultura", price: 420 },
+  { id: "2", name: "Lote Vista Caisan", location: "Chiriqui", use: "Ganaderia", price: 560 },
+  { id: "3", name: "Parcela Rio Indio", location: "Cocle", use: "Mixto", price: 390 },
 ];
 
-const pasos = [
-  { numero: "1", titulo: "Publica tu terreno", descripcion: "Registra tus terrenos con fotos y condiciones." },
-  { numero: "2", titulo: "Arrendatarios exploran", descripcion: "Sin login pueden ver catalogo y filtros." },
-  { numero: "3", titulo: "Solicitan y negocian", descripcion: "Envian solicitud. Tu revisas y decides." },
-  { numero: "4", titulo: "Cierran el trato", descripcion: "Pago seguro y chat interno." },
-];
-
-const beneficios = [
-  {
-    icono: "🌱",
-    titulo: "Explora sin registro",
-    descripcion: "Navega el catalogo completo sin crear cuenta. Filtra por tipo, ubicacion y precio.",
-  },
-  {
-    icono: "📋",
-    titulo: "Gestion centralizada",
-    descripcion: "Propietarios y arrendatarios gestionan todo desde su dashboard: solicitudes, contratos, pagos.",
-  },
-  {
-    icono: "🔒",
-    titulo: "Pagos seguros",
-    descripcion: "Procesamos transacciones con Stripe. Tu dinero esta protegido hasta que ambos lados cumplan.",
-  },
-];
-
-const estadisticas = [
-  { valor: "120+", label: "Terrenos listados" },
-  { valor: "85", label: "Propietarios activos" },
-  { valor: "98%", label: "Satisfaccion" },
+const steps = [
+  { icon: "01", title: "Publica tu terreno", desc: "Registra tus terrenos con fotos, ubicacion y condiciones de uso." },
+  { icon: "02", title: "Arrendatarios exploran", desc: "Sin login pueden explorar el catalogo, filtrar por uso y ver detalles." },
+  { icon: "03", title: "Reciben solicitudes", desc: "Revisan cada solicitud, piden info adicional si es necesario y deciden." },
+  { icon: "04", title: "Cierran el trato", desc: "Firman acuerdo, procesan pago seguro y coordinan por chat interno." },
 ];
 
 export default function LandingPage() {
-  const { openSignUp } = useClerk();
-  const [correo, setCorreo] = useState("");
-  const [mensaje, setMensaje] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { openSignIn, openSignUp } = useClerk();
 
-  const manejarLead = async (e) => {
-    e.preventDefault();
-    if (!correo.includes("@")) {
-      setMensaje("Ingresa un correo valido.");
-      return;
-    }
-    setLoading(true);
-    try {
-      await fetch(`${apiBaseUrl}/api/v1/leads`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: correo, source: "landing" }),
-      });
-      setMensaje("Te contactaremos pronto.");
-      setCorreo("");
-    } catch {
-      setMensaje("Error de conexion.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleSignIn = () => openSignIn({ redirectUrl: "/dashboard" });
+  const handleSignUp = () => openSignUp({ redirectUrl: "/dashboard" });
 
   return (
     <div className="page-shell">
       <div className="ambient ambient-left" aria-hidden="true" />
       <div className="ambient ambient-right" aria-hidden="true" />
 
-      <header className="top-nav">
+      <nav className="glass-nav">
         <Link to="/" className="brand">TerraShare</Link>
         <nav className="menu">
-          <Link to="/catalog">Explorar</Link>
-          <Link to="/login">Iniciar sesion</Link>
+          <Link to="/catalog">Terrenos</Link>
+          <button className="text-btn" onClick={handleSignIn}>Iniciar sesion</button>
         </nav>
-        <button className="btn btn-primary" onClick={() => openSignUp({})}>
-          Crear cuenta
-        </button>
-      </header>
+        <div className="auth-actions">
+          <button className="btn btn-primary" onClick={handleSignUp}>Crear cuenta</button>
+        </div>
+      </nav>
 
       <main>
-        {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="hero">
-          <div className="hero-bg" aria-hidden="true" />
+        <section className="hero-section">
           <div className="hero-content">
-            <span className="hero-badge">Plataforma de alquiler en Panama</span>
-            <h1 className="hero-title">
-              Terrenos productivos,<br />
-              alquiler sin complicaciones.
-            </h1>
+            <span className="hero-tag">Panama</span>
+            <h1 className="hero-title">Terrenos productivos<br />a tu alcance</h1>
             <p className="hero-subtitle">
-              Conectamos propietarios y arrendatarios de forma directa.
-              Explora el catalogo, filtra por lo que necesitas y gestiona todo
-              desde una sola plataforma.
+              Conectamos propietarios con arrendatarios de forma clara y segura.
+              Explora el catalogo sin login, solicita cuando estes listo.
             </p>
             <div className="hero-actions">
-              <button className="btn btn-primary btn-lg" onClick={() => openSignUp({})}>
-                Empezar ahora
+              <button className="btn btn-primary btn-lg" onClick={handleSignUp}>
+                Publicar mi terreno
               </button>
-              <Link to="/catalog" className="btn btn-outline btn-lg">
+              <Link to="/catalog" className="btn btn-ghost btn-lg">
                 Ver catalogo
               </Link>
             </div>
-            <p className="hero-hint">Sin registro obligatorio para explorar.</p>
           </div>
         </section>
 
-        {/* ── Estadisticas ─────────────────────────────────────── */}
-        <section className="stats-bar">
-          {estadisticas.map((s) => (
-            <div key={s.label} className="stat-item">
-              <span className="stat-value">{s.valor}</span>
-              <span className="stat-label">{s.label}</span>
-            </div>
-          ))}
-        </section>
-
-        {/* ── Beneficios ───────────────────────────────────────── */}
-        <section className="panel">
-          <h2 className="section-title">Por que TerraShare?</h2>
-          <div className="benefits-grid">
-            {beneficios.map((b) => (
-              <div key={b.titulo} className="benefit-card">
-                <span className="benefit-icon" aria-hidden="true">{b.icono}</span>
-                <h3>{b.titulo}</h3>
-                <p>{b.descripcion}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Catalogo rapido ──────────────────────────────────── */}
-        <section className="panel">
-          <div className="section-header-row">
-            <h2>Catalogo rapido</h2>
-            <Link to="/catalog" className="btn btn-ghost">Ver todo</Link>
+        <section className="catalog-preview">
+          <div className="section-header">
+            <h2>Terrenos destacados</h2>
+            <p>Explora opciones disponibles ahora mismo</p>
           </div>
           <div className="cards-grid">
-            {terrenos.map((t) => (
-              <article key={t.id} className="land-card">
-                <p className="card-badge">{t.uso}</p>
-                <h3>{t.nombre}</h3>
-                <p>{t.ubicacion}</p>
-                <p>Desde ${t.precio}/mes</p>
-                <Link to="/catalog" className="btn btn-ghost" style={{ marginTop: "0.5rem" }}>
-                  Ver detalle
-                </Link>
-              </article>
+            {featuredLands.map((land) => (
+              <Link key={land.id} to={`/lands/${land.id}`} className="land-card">
+                <span className="card-badge">{land.use}</span>
+                <h3>{land.name}</h3>
+                <p>{land.location}</p>
+                <div className="card-footer">
+                  <span className="card-price">${land.price}/mes</span>
+                </div>
+              </Link>
             ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: "2rem" }}>
+            <Link to="/catalog" className="btn btn-ghost">
+              Ver todos los terrenos
+            </Link>
           </div>
         </section>
 
-        {/* ── Como funciona ───────────────────────────────────── */}
-        <section className="panel">
-          <h2 className="section-title">Como funciona</h2>
+        <section className="how-it-works">
+          <div className="section-header">
+            <h2>Como funciona</h2>
+            <p>Cuatro pasos simples para Arrendar o publicar</p>
+          </div>
           <div className="steps-grid">
-            {pasos.map((p) => (
-              <div key={p.numero} className="step-item">
-                <span className="step-number">{p.numero}</span>
-                <div>
-                  <strong>{p.titulo}</strong>
-                  <p>{p.descripcion}</p>
-                </div>
+            {steps.map((step, index) => (
+              <div key={step.icon} className="step-card" style={{ animationDelay: `${index * 100}ms` }}>
+                <span className="step-number">{step.icon}</span>
+                <h3>{step.title}</h3>
+                <p>{step.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── CTA email capture ───────────────────────────────── */}
-        <section className="panel panel-accent">
-          <div className="cta-block">
-            <h2>Listo para arrendar o publicar?</h2>
-            <p>Recibe acceso anticipado y noticias de nuevos terrenos.</p>
-            <form className="cta-form" onSubmit={manejarLead}>
-              <input
-                type="email"
-                value={correo}
-                onChange={(e) => setCorreo(e.target.value)}
-                placeholder="tu@email.com"
-                required
-                disabled={loading}
-              />
-              <button className="btn btn-primary" type="submit" disabled={loading}>
-                {loading ? "Enviando..." : "Recibir acceso"}
-              </button>
-            </form>
-            {mensaje && <p className="cta-message">{mensaje}</p>}
-            <p className="cta-hint">
-              Ya tienes cuenta? <Link to="/login">Inicia sesion</Link>
-            </p>
+        <footer className="landing-footer">
+          <div className="footer-brand">
+            <span className="brand">TerraShare</span>
+            <p>Alquiler de terrenos productivos en Panama</p>
           </div>
-        </section>
+          <div className="footer-links">
+            <Link to="/catalog">Terrenos</Link>
+            <button className="text-btn" onClick={handleSignIn}>Iniciar sesion</button>
+            <button className="text-btn" onClick={handleSignUp}>Crear cuenta</button>
+          </div>
+          <p className="footer-copy">&copy; {new Date().getFullYear()} TerraShare</p>
+        </footer>
       </main>
-
-      <footer className="site-footer">
-        <p>&copy; {new Date().getFullYear()} TerraShare. Panama.</p>
-      </footer>
     </div>
   );
 }
