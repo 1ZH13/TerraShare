@@ -11,16 +11,18 @@ import {
   useSearchParams
 } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
-import { api, RENTAL_REQUEST_STATUS } from "./services/mockApi";
+import { api as apiReal, setTokenFn } from "./services/api";
 import Login from "./components/Login";
 import Register from "./components/Register";
 
 const statusLabels = {
-  [RENTAL_REQUEST_STATUS.draft]: "Borrador",
-  [RENTAL_REQUEST_STATUS.pendingOwner]: "Pendiente del propietario",
-  [RENTAL_REQUEST_STATUS.approved]: "Aprobada",
-  [RENTAL_REQUEST_STATUS.rejected]: "Rechazada",
-  [RENTAL_REQUEST_STATUS.cancelled]: "Cancelada"
+  draft: "Borrador",
+  pending_owner: "Pendiente del propietario",
+  approved: "Aprobada",
+  rejected: "Rechazada",
+  cancelled: "Cancelada",
+  pending_payment: "Pendiente de pago",
+  paid: "Pagada"
 };
 
 const formatDate = (value) =>
@@ -105,9 +107,9 @@ function CatalogPage({ user }) {
       setLoading(true);
       setError("");
       try {
-        const data = await api.listLands(filters);
+        const rawLands = await apiReal.listLands(filters);
         if (active) {
-          setLands(data);
+          setLands(rawLands.map(adaptLand));
         }
       } catch (loadError) {
         if (active) {
@@ -256,9 +258,9 @@ function LandDetailPage({ user }) {
       setLoading(true);
       setError("");
       try {
-        const payload = await api.getLandById(landId);
+        const rawLand = await apiReal.getLandById(landId);
         if (active) {
-          setLand(payload);
+          setLand(adaptLand(rawLand));
         }
       } catch (loadError) {
         if (active) {
@@ -517,9 +519,9 @@ function ReservePage({ user, setToast }) {
     const load = async () => {
       setLoading(true);
       try {
-        const payload = await api.getLandById(landId);
+        const rawLand = await apiReal.getLandById(landId);
         if (active) {
-          setLand(payload);
+          setLand(adaptLand(rawLand));
         }
       } catch (error) {
         if (active) {
@@ -544,17 +546,22 @@ function ReservePage({ user, setToast }) {
     setSubmitting(true);
 
     try {
-      const request = await api.createRentalRequest({
-        tenantId: user.id,
+      const rawRequest = await apiReal.createRentalRequest({
         landId,
-        ...form
+        period: {
+          startDate: form.startDate,
+          endDate: form.endDate
+        },
+        intendedUse: form.intendedUse,
+        notes: form.message
       });
+      const request = rawRequest ? adaptRentalRequest(rawRequest, { landName: land?.name }) : null;
 
       setToast({
         type: "success",
-        message: `Solicitud enviada (${request.id}). Espera la decision del propietario.`
+        message: `Solicitud enviada (${rawRequest?.id ?? "OK"}). Espera la decision del propietario.`
       });
-      navigate(`/my-requests?created=${request.id}`, { replace: true });
+      navigate(`/my-requests?created=${rawRequest?.id ?? ""}`, { replace: true });
     } catch (error) {
       setToast({ type: "error", message: error.message });
     } finally {
@@ -659,9 +666,9 @@ function MyRequestsPage({ user }) {
       setError("");
 
       try {
-        const payload = await api.listTenantRequests(user.id);
+        const rawRequests = await apiReal.listRentalRequests({ tenantId: user.id });
         if (active) {
-          setRequests(payload);
+          setRequests(rawRequests.map((r) => adaptRentalRequest(r)));
         }
       } catch (loadError) {
         if (active) {
@@ -730,8 +737,22 @@ function OwnerRequestsPage({ user, setToast }) {
     setError("");
 
     try {
-      const payload = await api.listOwnerRequests(user.id);
-      setRequests(payload);
+      const rawRequests = await apiReal.listRentalRequests({ ownerId: user.id });
+      const enrichedRequests = await Promise.all(
+        rawRequests.map(async (r) => {
+          try {
+            const land = await apiReal.getLandById(r.landId);
+            return adaptRentalRequest(r, {
+              landName: land?.name,
+              monthlyPrice: land?.priceRule?.pricePerMonth,
+              landType: land?.allowedUses?.[0]
+            });
+          } catch {
+            return adaptRentalRequest(r);
+          }
+        })
+      );
+      setRequests(enrichedRequests);
     } catch (loadError) {
       setError(loadError.message);
     } finally {
@@ -747,11 +768,7 @@ function OwnerRequestsPage({ user, setToast }) {
     setBusyRequestId(requestId);
 
     try {
-      const updated = await api.updateRentalRequestStatus({
-        ownerId: user.id,
-        requestId,
-        status
-      });
+      const updated = await apiReal.updateRentalRequestStatus(requestId, status);
 
       setRequests((prev) =>
         prev.map((item) => (item.id === updated.id ? updated : item))
@@ -787,7 +804,7 @@ function OwnerRequestsPage({ user, setToast }) {
 
       <div className="request-list">
         {requests.map((item) => {
-          const isPending = item.status === RENTAL_REQUEST_STATUS.pendingOwner;
+          const isPending = item.status === "pending_owner";
           const isBusy = busyRequestId === item.id;
 
           return (
@@ -813,7 +830,7 @@ function OwnerRequestsPage({ user, setToast }) {
                     className="button success-button"
                     disabled={isBusy}
                     onClick={() =>
-                      handleDecision(item.id, RENTAL_REQUEST_STATUS.approved)
+                      handleDecision(item.id, "approved")
                     }
                   >
                     Aprobar
@@ -823,7 +840,7 @@ function OwnerRequestsPage({ user, setToast }) {
                     className="button danger-button"
                     disabled={isBusy}
                     onClick={() =>
-                      handleDecision(item.id, RENTAL_REQUEST_STATUS.rejected)
+                      handleDecision(item.id, "rejected")
                     }
                   >
                     Rechazar
@@ -842,6 +859,15 @@ function App() {
   const { user, isLoaded, openSignIn, openSignUp, signOut } = useClerk();
   const { isSignedIn } = useUser();
   const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    // Inyectar Clerk token en el cliente de API
+    if (isSignedIn && user) {
+      user.getToken().then((token) => setTokenFn(() => token)).catch(() => setTokenFn(() => null));
+    } else {
+      setTokenFn(() => null);
+    }
+  }, [isSignedIn, user]);
 
   useEffect(() => {
     if (isSignedIn) {
