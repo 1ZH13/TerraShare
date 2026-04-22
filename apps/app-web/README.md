@@ -2,46 +2,64 @@
 
 Aplicacion principal para propietarios y arrendatarios.
 
-## Estado actual (issue #2)
+## Estado actual
+
 - Catalogo funcional con filtros por tipo, ubicacion, precio y fecha.
 - Flujo completo de solicitud de alquiler (arrendatario).
 - Bandeja de propietario con acciones de aprobar/rechazar.
 - Seguimiento de estado de solicitudes por arrendatario.
 - Implementacion en modo mock para avanzar frontend sin bloquear backend.
+- Adopcion de tipos compartidos desde `@terrashare/shared` (issue #5).
 
-## Alcance incluido
-- Registro e inicio de sesion mockeado.
-- Vista publica del catalogo (sin login).
-- Login obligatorio para reservar y ver solicitudes propias.
-- Reglas de negocio de aprobacion/rechazo con validacion de solapamiento.
-- Mapa pospuesto para siguiente issue.
+## Estructura de contratos (issue #5)
+
+Los DTOs y enums canonicos vienen de `packages/shared`:
+
+```
+LandDto         → campos compartidos para terrenos
+RentalRequestDto → campos compartidos para solicitudes
+```
+
+Traduccion de campos internos (mock → shared):
+
+| Campo UI | Campo shared |
+|---|---|
+| `name` | `title` |
+| `type` | `allowedUses[0]` |
+| `monthlyPrice` | `priceRule.pricePerMonth` |
+| `areaHectares` | `area` |
+| `startDate/endDate` | `period.startDate/endDate` |
+
+Archivo de adapters: `src/services/fieldAdapters.js`
 
 ## Rutas actuales
-- `/` catalogo de terrenos.
-- `/lands/:landId` detalle de terreno.
-- `/login` inicio de sesion.
-- `/register` registro de cuenta (tenant).
-- `/reserve/:landId` crear solicitud de alquiler.
-- `/my-requests` seguimiento de solicitudes de arrendatario.
-- `/owner/requests` bandeja de propietario para aprobar/rechazar.
+
+| Ruta | Descripcion |
+|---|---|
+| `/` | Catalogo de terrenos |
+| `/lands/:landId` | Detalle de terreno |
+| `/login` | Inicio de sesion |
+| `/register` | Registro de cuenta (tenant) |
+| `/reserve/:landId` | Crear solicitud de alquiler |
+| `/my-requests` | Seguimiento de solicitudes |
+| `/owner/requests` | Bandeja de propietario |
 
 ## Cuentas semilla (modo mock)
+
 - Arrendatario: `tenant@terrashare.test` / `123456`
 - Propietario: `owner@terrashare.test` / `123456`
 
 ## Variables de entorno
+
 Copiar `.env.example` a `.env`.
 
 ```bash
 VITE_API_BASE_URL=http://localhost:3000
 ```
 
-Nota:
-- En esta fase el frontend usa `src/services/mockApi.js`.
-- `VITE_API_BASE_URL` queda preparado para migracion a API real.
+Nota: `VITE_API_BASE_URL` queda preparado para migracion a API real.
 
 ## Comandos
-Desde esta carpeta:
 
 ```bash
 bun install
@@ -59,12 +77,15 @@ bunx playwright install chromium
 ```
 
 ## Testing y CI
+
 - E2E smoke: `tests/e2e/appweb.smoke.spec.js`
 - Config Playwright: `playwright.config.js`
 - Workflow CI: `.github/workflows/app-web-e2e.yml`
+- CI corre typecheck de `packages/shared` antes del build (issue #5).
 
 ## Integracion con otros modulos
-- Landing redirige a esta app por `VITE_APP_WEB_URL`.
-- Contrato de integracion y DTOs esperados:
-	`docs/MODULE_INTEGRATION_CONTRACTS.md`
 
+- Landing redirige a esta app via `VITE_APP_WEB_URL`.
+- Contrato cross-module: `docs/MODULE_INTEGRATION_CONTRACTS.md`
+- Tipos compartidos: `packages/shared/`
+- Endpoints backend: `apps/backend-api/docs/API_ENDPOINTS.md`
