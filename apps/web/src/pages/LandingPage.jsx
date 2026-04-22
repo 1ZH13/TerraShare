@@ -16,7 +16,10 @@ const steps = [
 ];
 
 export default function LandingPage() {
-  const { openSignUp } = useClerk();
+  const { openSignIn, openSignUp } = useClerk();
+
+  const handleSignIn = () => openSignIn({ redirectUrl: "/dashboard" });
+  const handleSignUp = () => openSignUp({ redirectUrl: "/dashboard" });
 
   return (
     <div className="page-shell">
@@ -27,10 +30,10 @@ export default function LandingPage() {
         <Link to="/" className="brand">TerraShare</Link>
         <nav className="menu">
           <Link to="/catalog">Terrenos</Link>
-          <Link to="/login">Iniciar sesion</Link>
+          <button className="text-btn" onClick={handleSignIn}>Iniciar sesion</button>
         </nav>
         <div className="auth-actions">
-          <Link to="/register" className="btn btn-primary">Crear cuenta</Link>
+          <button className="btn btn-primary" onClick={handleSignUp}>Crear cuenta</button>
         </div>
       </nav>
 
@@ -44,7 +47,7 @@ export default function LandingPage() {
               Explora el catalogo sin login, solicita cuando estes listo.
             </p>
             <div className="hero-actions">
-              <button className="btn btn-primary btn-lg" onClick={() => openSignUp({})}>
+              <button className="btn btn-primary btn-lg" onClick={handleSignUp}>
                 Publicar mi terreno
               </button>
               <Link to="/catalog" className="btn btn-ghost btn-lg">
@@ -101,8 +104,8 @@ export default function LandingPage() {
           </div>
           <div className="footer-links">
             <Link to="/catalog">Terrenos</Link>
-            <Link to="/login">Iniciar sesion</Link>
-            <Link to="/register">Crear cuenta</Link>
+            <button className="text-btn" onClick={handleSignIn}>Iniciar sesion</button>
+            <button className="text-btn" onClick={handleSignUp}>Crear cuenta</button>
           </div>
           <p className="footer-copy">&copy; {new Date().getFullYear()} TerraShare</p>
         </footer>
