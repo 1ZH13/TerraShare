@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
+import Users from "./components/Users";
 
 function ProtectedAdminRoute({ children }) {
   const { isLoaded } = useClerk();
@@ -42,13 +43,16 @@ function ProtectedAdminRoute({ children }) {
 }
 
 function AdminLayout({ children, onSignOut }) {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  
   return (
     <div className="admin-layout">
       <aside className="sidebar">
         <Link to="/admin" className="brand">TerraShare Admin</Link>
         <nav>
-          <Link to="/admin">Dashboard</Link>
-          <Link to="/admin/users">Usuarios</Link>
+          <Link to="/admin" className={currentPath === "/admin" ? "active" : ""}>Dashboard</Link>
+          <Link to="/admin/users" className={currentPath === "/admin/users" ? "active" : ""}>Usuarios</Link>
           <Link to="/admin/lands">Terrenos</Link>
           <Link to="/admin/requests">Solicitudes</Link>
           <Link to="/admin/audit">Auditoría</Link>
@@ -81,6 +85,13 @@ export default function App() {
         <ProtectedAdminRoute>
           <AdminLayout onSignOut={handleSignOut}>
             <Dashboard />
+          </AdminLayout>
+        </ProtectedAdminRoute>
+      } />
+      <Route path="/admin/users" element={
+        <ProtectedAdminRoute>
+          <AdminLayout onSignOut={handleSignOut}>
+            <Users />
           </AdminLayout>
         </ProtectedAdminRoute>
       } />
