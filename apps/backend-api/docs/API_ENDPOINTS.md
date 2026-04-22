@@ -225,6 +225,35 @@ Para mantener front/back sincronizados (issue #29), los DTOs deben exponerse en 
 - `PaymentDto`, `CreateCheckoutSessionDto`
 - `ChatDto`, `ChatMessageDto`
 
+## Admin (Moderación)
+
+| Metodo | Ruta | Auth | Roles | Estado | Issue |
+| --- | --- | --- | --- | --- | --- |
+| GET | `/admin/users` | Si | admin | implemented | #8 |
+| GET | `/admin/users/:userId` | Si | admin | implemented | #8 |
+| PATCH | `/admin/users/:userId/status` | Si | admin | implemented | #8 |
+| GET | `/admin/lands` | Si | admin | implemented | #8 |
+| PATCH | `/admin/lands/:landId/status` | Si | admin | implemented | #8 |
+
+`GET /admin/users` query params:
+- `role` (`user`, `admin`)
+- `status` (`active`, `blocked`)
+- `search` (filtra por email o nombre)
+
+`PATCH /admin/users/:userId/status` body:
+```json
+{ "status": "active" | "blocked" }
+```
+
+`GET /admin/lands` query params:
+- `status` (`draft`, `active`, `inactive`)
+- `search` (filtra por título o provincia)
+
+`PATCH /admin/lands/:landId/status` body:
+```json
+{ "status": "active" | "inactive" | "rejected" }
+```
+
 ## Notas para frontend
 
 - Tratar este archivo como contrato de integracion hasta que cada endpoint pase a `implemented`.

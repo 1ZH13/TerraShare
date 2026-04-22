@@ -4,6 +4,7 @@ import { failure } from "./lib/api-response";
 import { requestIdMiddleware } from "./middleware/request-id";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
+import { adminRoutes } from "./routes/admin";
 import { landRoutes } from "./routes/lands";
 import { leadRoutes } from "./routes/leads";
 import { rentalRequestRoutes } from "./routes/rental-requests";
@@ -27,6 +28,7 @@ export function createApp() {
 
   app.route("/api/v1", healthRoutes);
   app.route("/api/v1", authRoutes);
+  app.route("/api/v1", adminRoutes);
   app.route("/api/v1", landRoutes);
   app.route("/api/v1", leadRoutes);
   app.route("/api/v1", rentalRequestRoutes);
