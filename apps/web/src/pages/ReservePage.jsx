@@ -58,6 +58,11 @@ export default function ReservePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!isSignedIn) {
+      navigate("/login", { state: { from: location.pathname } });
+      return;
+    }
+
     if (!form.startDate || !form.endDate || !form.intendedUse) {
       setError("Completa todos los campos obligatorios.");
       return;
