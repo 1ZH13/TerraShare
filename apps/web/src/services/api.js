@@ -90,4 +90,20 @@ export const adaptLand = (land) => {
   };
 };
 
-export const api = { setTokenFn, listLands, getLandById, createRentalRequest, adaptLand };
+/** POST /api/v1/payments/checkout-session */
+export const createCheckoutSession = async ({ rentalRequestId, currency, successUrl, cancelUrl }) => {
+  const res = await request("POST", "/api/v1/payments/checkout-session", {
+    rentalRequestId,
+    currency,
+    successUrl,
+    cancelUrl,
+  });
+  return res?.data ?? null;
+};
+
+/** GET /api/v1/payments/:paymentId */
+export const getPayment = async (paymentId) => {
+  const res = await request("GET", `/api/v1/payments/${paymentId}`);
+  return res?.data ?? null;
+};
+export const api = { setTokenFn, listLands, getLandById, createRentalRequest, createCheckoutSession, getPayment, adaptLand };

@@ -5,6 +5,9 @@ import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
 import ReservePage from "./pages/ReservePage";
+import PaymentCheckoutPage from "./pages/PaymentCheckoutPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import PaymentCancelPage from "./pages/PaymentCancelPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 
@@ -197,6 +200,13 @@ export default function App() {
           <ReservePage />
         </ProtectedRoute>
       } />
+      <Route path="/payments/checkout" element={
+        <ProtectedRoute>
+          <PaymentCheckoutPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/payments/success" element={<PaymentSuccessPage />} />
+      <Route path="/payments/cancel" element={<PaymentCancelPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={
