@@ -29,6 +29,17 @@ bun run test         # tests unitarios
 bun run test:e2e     # tests e2e (playwright)
 ```
 
+## 3.1 Playwright (tests E2E)
+Carpeta tests/e2e:
+- Convencion: `<pagina-o-feature>.<test-type>.spec.js`
+- Browsers: chromium, firefox, webkit
+
+Scripts:
+- `bun run test:e2e` - headless
+- `bun run test:e2e:headed` - con UI
+
+(webapp) playwright.config.js incluye webServer automatico para levantarla.
+
 ## 4. Scripts por modulo
 - web:
   - `bun run dev` (puerto 5173)
