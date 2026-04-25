@@ -188,15 +188,32 @@ paymentRoutes.get("/payments/:paymentId", requireAuth, (c) => {
 });
 
 paymentRoutes.post("/webhooks/stripe", async (c) => {
-  if (env.stripeWebhookSecret) {
-    const signature = c.req.header("stripe-signature");
-    if (!signature) {
-      return failure(c, 401, "UNAUTHORIZED", "Missing stripe-signature header");
+  const signature = c.req.header("stripe-signature");
+  const webhookSecret = env.stripeWebhookSecret;
+
+  const rawBody = await c.req.text();
+  const store = getStore();
+
+  if (webhookSecret && signature) {
+    const stripe = getStripeClient();
+    if (stripe) {
+      try {
+        stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      } catch (err) {
+        console.error("Stripe webhook signature verification failed:", err);
+        return failure(c, 401, "UNAUTHORIZED", "Invalid webhook signature");
+      }
     }
+  } else if (!signature) {
+    return failure(c, 401, "UNAUTHORIZED", "Missing stripe-signature header");
   }
 
-  const payload = await c.req.json().catch(() => null);
-  const store = getStore();
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");
+  }
 
   if (!payload || typeof payload !== "object") {
     return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");

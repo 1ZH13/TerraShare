@@ -141,6 +141,8 @@ Estados de solicitud (v1):
 | GET | `/contracts` | Si | user, owner, admin | implemented | #26 |
 | GET | `/contracts/:contractId` | Si | user, owner, admin | implemented | #26 |
 | PATCH | `/contracts/:contractId/status` | Si | owner, admin | implemented | #26 |
+| POST | `/contracts/:contractId/sign` | Si | user, owner, admin | implemented | #81 |
+| POST | `/contracts/:contractId/complete` | Si | owner, admin | implemented | #81 |
 
 ## Audit events
 
@@ -213,6 +215,103 @@ Estados de solicitud (v1):
   }
 }
 ```
+
+## Analytics
+
+| Metodo | Ruta | Auth | Roles | Estado | Issue |
+| --- | --- | --- | --- | --- | --- |
+| GET | `/analytics/overview` | Si | admin | implemented | #82 |
+| GET | `/analytics/lands` | Si | admin | implemented | #82 |
+| GET | `/analytics/requests` | Si | admin | implemented | #82 |
+
+`GET /analytics/overview` response example:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "overview": {
+      "totalLands": 45,
+      "totalUsers": 120,
+      "activeUsers": 115,
+      "totalRequests": 89,
+      "approvedRequests": 67,
+      "rejectedRequests": 12,
+      "pendingRequests": 10,
+      "requestsLast7Days": 8,
+      "totalRevenue": 45600,
+      "pendingRevenue": 850,
+      "avgTimeToDecisionHours": 48.5,
+      "requestApprovalRate": 75.3,
+      "visitToRequestConversion": 12.5,
+      "activeChats": 23
+    },
+    "landsByCategory": {
+      "agricultura": 20,
+      "ganaderia": 15,
+      "mixto": 10
+    },
+    "leadsBySource": {
+      "landing": 45,
+      "app-web": 30
+    }
+  }
+}
+```
+
+`GET /analytics/lands` response example:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "total": 45,
+    "byProvince": {
+      "Chiriqui": 12,
+      "Cocle": 10
+    },
+    "byCategory": {
+      "agricultura": 20,
+      "ganaderia": 15
+    },
+    "avgPricePerMonth": 750.50,
+    "avgAreaHectares": 25.3,
+    "totalArea": 1138.5
+  }
+}
+```
+
+`GET /analytics/requests` response example:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "total": 89,
+    "last30Days": 34,
+    "last7Days": 8,
+    "byStatus": {
+      "pending_owner": 10,
+      "approved": 45,
+      "rejected": 12,
+      "paid": 22
+    },
+    "byIntendedUse": {
+      "agricultura": 40,
+      "ganaderia": 30,
+      "mixto": 19
+    },
+    "avgTimeToApprovalHours": 36.2,
+    "approvalRate": 75.3
+  }
+}
+```
+
+## Rate Limiting
+
+Todas las rutas API tienen rate limiting por IP:
+- 100 requests por minuto por IP
+- Headers retornados: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
 ## Shared contracts (packages/shared)
 
