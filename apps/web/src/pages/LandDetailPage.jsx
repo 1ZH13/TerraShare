@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { getLandPrimaryUse, formatLandUse, getChatSeedMessages } from "../data/lands";
-import { getLandById, getChats, createChat, getMessages, sendMessage, setTokenFn } from "../services/api";
+import { getLandById, getChats, createChat, getMessages, sendMessage, getExternalContact, setTokenFn } from "../services/api";
 
 function useChat(landId, isSignedIn, user) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [chatId, setChatId] = useState(null);
   const [error, setError] = useState(null);
+  const [externalContact, setExternalContact] = useState(null);
 
   useEffect(() => {
     if (!isSignedIn || !user) {
@@ -44,6 +45,15 @@ function useChat(landId, isSignedIn, user) {
             text: m.text,
             createdAt: m.createdAt,
           })));
+
+          try {
+            const contact = await getExternalContact(chat.id);
+            if (contact?.whatsappEnabled && contact?.contact?.phone) {
+              setExternalContact(contact.contact);
+            }
+          } catch (contactErr) {
+            console.error("Could not fetch WhatsApp contact:", contactErr);
+          }
         }
       } catch (err) {
         console.error("Error initializing chat:", err);
@@ -103,7 +113,7 @@ function useChat(landId, isSignedIn, user) {
     }
   };
 
-  return { messages, loading, addMessage, clearMessages };
+  return { messages, loading, addMessage, clearMessages, externalContact };
 }
 
 export default function LandDetailPage() {
@@ -116,7 +126,7 @@ export default function LandDetailPage() {
   const [landLoading, setLandLoading] = useState(true);
   const [landError, setLandError] = useState(null);
 
-  const { messages, loading: chatLoading, addMessage, clearMessages } = useChat(id, isSignedIn, user);
+  const { messages, loading: chatLoading, addMessage, clearMessages, externalContact } = useChat(id, isSignedIn, user);
 
   useEffect(() => {
     const fetchLand = async () => {
@@ -229,7 +239,20 @@ export default function LandDetailPage() {
                 <h2>Chat interno</h2>
                 <p>{isSignedIn ? "Mensajes guardados en el servidor" : "Inicia sesión para chatear con el propietario"}</p>
               </div>
-              <button className="btn btn-ghost" onClick={clearMessages}>Limpiar</button>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                {externalContact && (
+                  <a
+                    href={`https://wa.me/${externalContact.phone.replace(/[^0-9]/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-ghost"
+                    style={{ background: "#25D366", color: "white", borderColor: "#25D366" }}
+                  >
+                    WhatsApp
+                  </a>
+                )}
+                <button className="btn btn-ghost" onClick={clearMessages}>Limpiar</button>
+              </div>
             </div>
 
             <div className="chat-thread">

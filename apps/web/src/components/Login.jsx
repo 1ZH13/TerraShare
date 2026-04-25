@@ -1,9 +1,18 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useClerk } from "@clerk/clerk-react";
 
 export default function Login() {
   const { openSignIn } = useClerk();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const utmSource = searchParams.get("utm_source");
+    if (utmSource) {
+      sessionStorage.setItem("terrashare_utm_source", utmSource);
+    }
+  }, [searchParams]);
 
   const handleSignIn = (strategy) => {
     openSignIn({

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useClerk } from "@clerk/clerk-react";
+import { listLands } from "../services/api";
 
 const metrics = [
   { value: "+120", label: "Terrenos verificados" },
@@ -31,39 +32,6 @@ const benefits = [
   },
 ];
 
-const featuredLands = [
-  {
-    id: "1",
-    name: "Finca El Tamarindo",
-    location: "Los Santos",
-    use: "Agricultura",
-    price: 420,
-    size: "5.2 Ha",
-    water: "Pozo y río cercano",
-    access: "Carroable todo el año",
-  },
-  {
-    id: "2",
-    name: "Lote Vista Caisan",
-    location: "Chiriquí",
-    use: "Ganadería",
-    price: 560,
-    size: "12 Ha",
-    water: "Toma de quebrada",
-    access: "Entrada principal paved",
-  },
-  {
-    id: "3",
-    name: "Parcela Río Indio",
-    location: "Coclé",
-    use: "Mixto",
-    price: 390,
-    size: "3.8 Ha",
-    water: "Sistema de riego",
-    access: "Camino rural",
-  },
-];
-
 const steps = [
   { number: "1", title: "Publica tu terreno", desc: "Crea tu perfil y registra tus terrenos con fotos, ubicación y condiciones." },
   { number: "2", title: "Exploran sin login", desc: "Los arrendatarios revisan el catálogo, filtros y detalles. Sin compromiso." },
@@ -76,6 +44,22 @@ export default function LandingPage() {
   const [email, setEmail] = useState("");
   const [ctaMessage, setCtaMessage] = useState("");
   const [ctaLoading, setCtaLoading] = useState(false);
+  const [featuredLands, setFeaturedLands] = useState([]);
+  const [landsLoading, setLandsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedLands = async () => {
+      try {
+        const lands = await listLands({ sort: "createdAt", order: "desc", pageSize: 3 });
+        setFeaturedLands(lands.slice(0, 3));
+      } catch (err) {
+        console.error("Error fetching featured lands:", err);
+      } finally {
+        setLandsLoading(false);
+      }
+    };
+    fetchFeaturedLands();
+  }, []);
 
   const handleSignIn = () => openSignIn({ redirectUrl: "/dashboard" });
   const handleSignUp = () => openSignUp({ redirectUrl: "/dashboard" });
@@ -213,23 +197,29 @@ const handleCtaSubmit = async (e) => {
             <p>Explora opciones verificadas en las principales provinciasproductivas de Panamá.</p>
           </div>
           <div className="cards-grid lands-grid">
-            {featuredLands.map((land) => (
-              <Link key={land.id} to={`/lands/${land.id}`} className="land-card-full">
-                <div className="land-card-header">
-                  <span className="card-badge">{land.use}</span>
-                  <span className="card-size">{land.size}</span>
-                </div>
-                <h3>{land.name}</h3>
-                <p className="land-location">{land.location}</p>
-                <div className="land-features">
-                  <span>💧 {land.water}</span>
-                  <span>🚜 {land.access}</span>
-                </div>
-                <div className="card-footer">
-                  <span className="card-price">${land.price}<span>/mes</span></span>
-                </div>
-              </Link>
-            ))}
+            {landsLoading ? (
+              <p style={{ gridColumn: "1/-1", textAlign: "center", opacity: 0.6 }}>Cargando terrenos...</p>
+            ) : featuredLands.length === 0 ? (
+              <p style={{ gridColumn: "1/-1", textAlign: "center", opacity: 0.6 }}>No hay terrenos disponibles aún.</p>
+            ) : (
+              featuredLands.map((land) => (
+                <Link key={land.id} to={`/lands/${land.id}`} className="land-card-full">
+                  <div className="land-card-header">
+                    <span className="card-badge">{land.allowedUses?.[0] || land.type}</span>
+                    <span className="card-size">{land.areaHectares || land.area} ha</span>
+                  </div>
+                  <h3>{land.title}</h3>
+                  <p className="land-location">{land.location?.province}</p>
+                  <div className="land-features">
+                    <span>💧 {land.water}</span>
+                    <span>🚜 {land.access}</span>
+                  </div>
+                  <div className="card-footer">
+                    <span className="card-price">${land.priceRule?.pricePerMonth || land.monthlyPrice}<span>/mes</span></span>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
           <div className="preview-cta">
             <Link to="/catalog" className="btn btn-ghost">
