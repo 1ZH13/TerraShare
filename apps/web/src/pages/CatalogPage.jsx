@@ -1,9 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { filterLands, formatLandUse, getDistinctValues, getLands, getLandPrimaryUse } from "../data/lands";
-
-const USE_FILTERS = ["Todos", ...getDistinctValues((land) => getLandPrimaryUse(land))];
-const PROVINCE_FILTERS = ["Todas", ...getDistinctValues((land) => land.location?.province)];
+import { filterLands, formatLandUse, getLandPrimaryUse } from "../data/lands";
+import { listLands } from "../services/api";
 
 function MapPin({ land, active, onClick }) {
   return (
@@ -27,12 +25,30 @@ export default function CatalogPage() {
   const [maxPrice, setMaxPrice] = useState(700);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const [lands, setLands] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const lands = getLands();
+  useEffect(() => {
+    const fetchLands = async () => {
+      try {
+        const data = await listLands();
+        setLands(data);
+      } catch (err) {
+        console.error("Error fetching lands:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLands();
+  }, []);
+
   const filteredLands = useMemo(
     () => filterLands(lands, { type, province, maxPrice, query }),
     [lands, type, province, maxPrice, query],
   );
+
+  const USE_FILTERS = useMemo(() => ["Todos", ...new Set(lands.map((land) => getLandPrimaryUse(land)).filter(Boolean))], [lands]);
+  const PROVINCE_FILTERS = useMemo(() => ["Todas", ...new Set(lands.map((land) => land.location?.province).filter(Boolean))], [lands]);
 
   const selectedLand = filteredLands.find((land) => land.id === selectedId) ?? filteredLands[0] ?? null;
 
@@ -175,11 +191,15 @@ export default function CatalogPage() {
               })}
             </div>
 
-            {filteredLands.length === 0 && (
+            {loading ? (
+              <div className="glass-panel empty-state">
+                <p>Cargando terrenos...</p>
+              </div>
+            ) : filteredLands.length === 0 ? (
               <div className="glass-panel empty-state">
                 <p>No hay terrenos para esos filtros.</p>
               </div>
-            )}
+            ) : null}
           </section>
         </section>
       </main>

@@ -9,6 +9,7 @@ import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentCancelPage from "./pages/PaymentCancelPage";
 import PaymentButton from "./components/PaymentButton";
 import AdminLandsPage from "./pages/AdminLandsPage";
+import MyLandsPage from "./pages/MyLandsPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import { getPaymentsByRequest } from "./services/api";
@@ -345,6 +346,13 @@ export default function App() {
         <ProtectedRoute>
           <DashboardLayout onSignOut={handleSignOut}>
             <DashboardPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/dashboard/lands" element={
+        <ProtectedRoute>
+          <DashboardLayout onSignOut={handleSignOut}>
+            <MyLandsPage />
           </DashboardLayout>
         </ProtectedRoute>
       } />
