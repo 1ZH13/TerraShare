@@ -54,7 +54,8 @@ export const listLands = async (filters = {}) => {
 
   const qs = params.toString();
   const res = await request("GET", `/api/v1/lands${qs ? `?${qs}` : ""}`);
-  return res?.data?.items ?? [];
+  const items = res?.data?.items ?? [];
+  return items.map(adaptLandForCatalog);
 };
 
 /** POST /api/v1/rental-requests */
@@ -88,13 +89,28 @@ export const getPaymentsByRequest = async (rentalRequestId) => {
   return res?.data ?? [];
 };
 
-// ─── Field adapters ───────────────────────────────────────────────────────────────
+const adaptLandForCatalog = (land) => {
+  if (!land) return null;
+  return {
+    ...land,
+    priceRule: {
+      ...land.priceRule,
+      pricePerMonth: land.priceRule?.pricePerMonth ?? land.monthlyPrice ?? 0,
+    },
+    location: {
+      ...land.location,
+      province: land.location?.province ?? "",
+      district: land.location?.district ?? "",
+    },
+    areaHectares: land.area ?? 0,
+    type: land.allowedUses?.[0] ?? "",
+    features: land.features ?? [],
+    water: land.water ?? "No especificado",
+    access: land.access ?? "No especificado",
+    mapPosition: land.mapPosition ?? { x: 50, y: 50 },
+  };
+};
 
-/**
- * Traduce LandRecord del backend al formato que espera el UI.
- * Backend: priceRule.pricePerMonth, location.{province,district}, area, allowedUses, availability
- * UI:     monthlyPrice, province, district, areaHectares, type, availableFrom, availableTo
- */
 export const adaptLand = (land) => {
   if (!land) return null;
   return {
@@ -109,4 +125,36 @@ export const adaptLand = (land) => {
   };
 };
 
-export const api = { setTokenFn, listLands, getLandById, createRentalRequest, createCheckoutSession, getPaymentsByRequest, adaptLand };
+export const getChats = async () => {
+  const res = await request("GET", "/api/v1/chats");
+  return res?.data ?? [];
+};
+
+export const createChat = async ({ landId, rentalRequestId, participants }) => {
+  const res = await request("POST", "/api/v1/chats", { landId, rentalRequestId, participants });
+  return res?.data ?? null;
+};
+
+export const getMessages = async (chatId) => {
+  const res = await request("GET", `/api/v1/chats/${chatId}/messages`);
+  return res?.data ?? [];
+};
+
+export const sendMessage = async (chatId, text) => {
+  const res = await request("POST", `/api/v1/chats/${chatId}/messages`, { text });
+  return res?.data ?? null;
+};
+
+export const api = {
+  setTokenFn,
+  listLands,
+  getLandById,
+  createRentalRequest,
+  createCheckoutSession,
+  getPaymentsByRequest,
+  adaptLand,
+  getChats,
+  createChat,
+  getMessages,
+  sendMessage,
+};
