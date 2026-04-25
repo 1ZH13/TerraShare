@@ -8,6 +8,7 @@ import ReservePage from "./pages/ReservePage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentCancelPage from "./pages/PaymentCancelPage";
 import PaymentButton from "./components/PaymentButton";
+import AdminLandsPage from "./pages/AdminLandsPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import { getPaymentsByRequest } from "./services/api";
@@ -225,10 +226,44 @@ function DashboardPage() {
 }
 
 function AdminDashboardPage() {
-  const [users, setUsers] = useState([
-    { id: 1, name: "Juan Perez", email: "juan@example.com", status: "active" },
-    { id: 2, name: "Maria Garcia", email: "maria@example.com", status: "blocked" },
-  ]);
+  const { user } = useUser();
+  const [users, setUsers] = useState([]);
+  const [landsCount, setLandsCount] = useState("--");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    user.getToken().then((token) => setTokenFn(() => token));
+  }, [user]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+        const token = await user?.getToken();
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const [usersRes, landsRes] = await Promise.all([
+          fetch(`${BASE_URL}/api/v1/admin/users`, { headers }),
+          fetch(`${BASE_URL}/api/v1/admin/lands`, { headers }),
+        ]);
+
+        const usersData = await usersRes.json();
+        const landsData = await landsRes.json();
+
+        setUsers(usersData?.data?.items ?? []);
+        setLandsCount(landsData?.data?.total ?? 0);
+      } catch (err) {
+        console.error("Error fetching admin data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+  const activeUsers = users.filter(u => u.status === "active").length;
+  const blockedUsers = users.filter(u => u.status === "blocked").length;
 
   return (
     <div>
@@ -237,32 +272,38 @@ function AdminDashboardPage() {
         <p>Gestion de usuarios y plataforma</p>
       </div>
       <div className="stats-grid" style={{ marginTop: "1.5rem" }}>
-        <div className="stat-card"><h3>Usuarios</h3><p>{users.length}</p></div>
-        <div className="stat-card"><h3>Activos</h3><p>{users.filter(u => u.status === "active").length}</p></div>
-        <div className="stat-card"><h3>Bloqueados</h3><p>{users.filter(u => u.status === "blocked").length}</p></div>
-        <div className="stat-card"><h3>Terrenos</h3><p>--</p></div>
+        <div className="stat-card"><h3>Usuarios</h3><p>{loading ? "..." : users.length}</p></div>
+        <div className="stat-card"><h3>Activos</h3><p>{loading ? "..." : activeUsers}</p></div>
+        <div className="stat-card"><h3>Bloqueados</h3><p>{loading ? "..." : blockedUsers}</p></div>
+        <div className="stat-card"><h3>Terrenos</h3><p>{landsCount}</p></div>
       </div>
       <div className="panel" style={{ marginTop: "1.5rem" }}>
         <h2>Usuarios recientes</h2>
-        <table className="table" style={{ marginTop: "1rem" }}>
-          <thead>
-            <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>{u.name}</td>
-                <td>{u.email}</td>
-                <td><span className={`status-badge ${u.status === "active" ? "status-active" : "status-blocked"}`}>{u.status}</span></td>
-                <td>
-                  <button className="btn btn-ghost" style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
-                    {u.status === "active" ? "Bloquear" : "Activar"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {loading ? (
+          <p style={{ marginTop: "1rem" }}>Cargando...</p>
+        ) : users.length === 0 ? (
+          <p style={{ marginTop: "1rem", opacity: 0.5 }}>No hay usuarios</p>
+        ) : (
+          <table className="table" style={{ marginTop: "1rem" }}>
+            <thead>
+              <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+              {users.slice(0, 10).map((u) => (
+                <tr key={u.id}>
+                  <td>{u.profile?.fullName ?? u.id}</td>
+                  <td>{u.email}</td>
+                  <td><span className={`status-badge ${u.status === "active" ? "status-active" : "status-blocked"}`}>{u.status}</span></td>
+                  <td>
+                    <button className="btn btn-ghost" style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
+                      {u.status === "active" ? "Bloquear" : "Activar"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
@@ -311,6 +352,13 @@ export default function App() {
         <AdminRoute>
           <AdminLayout onSignOut={handleSignOut}>
             <AdminDashboardPage />
+          </AdminLayout>
+        </AdminRoute>
+      } />
+      <Route path="/dashboard/admin/lands" element={
+        <AdminRoute>
+          <AdminLayout onSignOut={handleSignOut}>
+            <AdminLandsPage />
           </AdminLayout>
         </AdminRoute>
       } />
