@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
 import ReservePage from "./pages/ReservePage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import PaymentCancelPage from "./pages/PaymentCancelPage";
+import PaymentButton from "./components/PaymentButton";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import { getPaymentsByRequest } from "./services/api";
 
 function ProtectedRoute({ children }) {
   const { isLoaded } = useClerk();
@@ -112,15 +116,110 @@ function AdminLayout({ children, onSignOut }) {
 }
 
 function DashboardPage() {
+  const { user } = useUser();
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+        const token = await user.getToken();
+        const res = await fetch(`${BASE_URL}/api/v1/rental-requests/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data?.data) {
+          setRequests(data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching requests:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user) fetchRequests();
+  }, [user]);
+
+  const statusLabels = {
+    draft: "Borrador",
+    pending_owner: "Pendiente dueño",
+    approved: "Aprobada",
+    rejected: "Rechazada",
+    pending_payment: "Pago pendiente",
+    paid: "Pagada",
+  };
+
+  const statusColors = {
+    draft: "status-draft",
+    pending_owner: "status-pending",
+    approved: "status-active",
+    rejected: "status-blocked",
+    pending_payment: "status-pending",
+    paid: "status-active",
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <div className="section-header">
+          <h1>Mi Dashboard</h1>
+          <p>Gestiona tus solicitudes y terrenos</p>
+        </div>
+        <div className="panel" style={{ marginTop: "1.5rem", textAlign: "center", padding: "3rem" }}>
+          <p>Cargando solicitudes...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="section-header">
         <h1>Mi Dashboard</h1>
         <p>Gestiona tus solicitudes y terrenos</p>
       </div>
-      <div className="panel" style={{ marginTop: "1.5rem" }}>
-        <p>Contenido del dashboard (en desarrollo)</p>
-      </div>
+
+      {requests.length === 0 ? (
+        <div className="panel" style={{ marginTop: "1.5rem" }}>
+          <p>No tienes solicitudes de alquiler.</p>
+          <Link to="/catalog" className="btn btn-primary" style={{ marginTop: "1rem" }}>
+            Explorar terrenos
+          </Link>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginTop: "1.5rem" }}>
+          {requests.map((req) => (
+            <div key={req.id} className="panel">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                <div>
+                  <h3>Solicitud #{req.id.slice(0, 8)}</h3>
+                  <p style={{ opacity: 0.7 }}>
+                    Terreno: {req.landId} · Uso: {req.intendedUse}
+                  </p>
+                  <p style={{ opacity: 0.7 }}>
+                    Período: {req.period?.startDate} → {req.period?.endDate}
+                  </p>
+                </div>
+                <span className={`status-badge ${statusColors[req.status] || ""}`}>
+                  {statusLabels[req.status] || req.status}
+                </span>
+              </div>
+
+              {req.status === "pending_payment" && (
+                <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                  <PaymentButton rentalRequest={req} />
+                </div>
+              )}
+              {req.status === "paid" && (
+                <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)", color: "#48bb78" }}>
+                  ✓ Pago confirmado
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -199,6 +298,8 @@ export default function App() {
       } />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/checkout/success" element={<PaymentSuccessPage />} />
+      <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <DashboardLayout onSignOut={handleSignOut}>
