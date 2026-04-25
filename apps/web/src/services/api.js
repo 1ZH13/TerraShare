@@ -69,6 +69,25 @@ export const getLandById = async (landId) => {
   return res?.data ?? null;
 };
 
+// ─── Payments ─────────────────────────────────────────────────────────────────
+
+/** POST /api/v1/payments/checkout-session */
+export const createCheckoutSession = async ({ rentalRequestId, currency = "USD", successUrl, cancelUrl }) => {
+  const res = await request("POST", "/api/v1/payments/checkout-session", {
+    rentalRequestId,
+    currency,
+    successUrl,
+    cancelUrl,
+  });
+  return res?.data ?? null;
+};
+
+/** GET /api/v1/payments?rentalRequestId=x */
+export const getPaymentsByRequest = async (rentalRequestId) => {
+  const res = await request("GET", `/api/v1/payments?rentalRequestId=${rentalRequestId}`);
+  return res?.data ?? [];
+};
+
 // ─── Field adapters ───────────────────────────────────────────────────────────────
 
 /**
@@ -90,4 +109,4 @@ export const adaptLand = (land) => {
   };
 };
 
-export const api = { setTokenFn, listLands, getLandById, createRentalRequest, adaptLand };
+export const api = { setTokenFn, listLands, getLandById, createRentalRequest, createCheckoutSession, getPaymentsByRequest, adaptLand };
