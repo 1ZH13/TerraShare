@@ -144,6 +144,90 @@ contractRoutes.patch("/contracts/:contractId/status", requireAuth, async (c) => 
   return success(c, updated);
 });
 
+contractRoutes.post("/contracts/:contractId/sign", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  const store = getStore();
+  const contractId = c.req.param("contractId");
+  const current = store.contracts.get(contractId);
+
+  if (!current) {
+    return failure(c, 404, "NOT_FOUND", "Contract not found");
+  }
+
+  if (
+    authUser.role !== "admin" &&
+    current.ownerId !== authUser.id &&
+    current.tenantId !== authUser.id
+  ) {
+    return failure(c, 403, "FORBIDDEN", "Not allowed to sign this contract");
+  }
+
+  if (current.status !== "draft") {
+    return failure(c, 400, "INVALID_TRANSITION", `Cannot sign contract in '${current.status}' status`);
+  }
+
+  const now = new Date().toISOString();
+  const updated: ContractRecord = {
+    ...current,
+    status: "active",
+    terms: {
+      ...current.terms,
+      signedAt: now,
+    },
+    updatedAt: now,
+  };
+
+  store.contracts.set(contractId, updated);
+
+  createAuditEvent({
+    actor: authUser,
+    entity: "contract",
+    action: "signed",
+    entityId: contractId,
+    metadata: { from: current.status, to: "active" },
+  });
+
+  return success(c, updated);
+});
+
+contractRoutes.post("/contracts/:contractId/complete", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  const store = getStore();
+  const contractId = c.req.param("contractId");
+  const current = store.contracts.get(contractId);
+
+  if (!current) {
+    return failure(c, 404, "NOT_FOUND", "Contract not found");
+  }
+
+  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+    return failure(c, 403, "FORBIDDEN", "Only owner or admin can complete this contract");
+  }
+
+  if (current.status !== "active") {
+    return failure(c, 400, "INVALID_TRANSITION", `Cannot complete contract in '${current.status}' status`);
+  }
+
+  const now = new Date().toISOString();
+  const updated: ContractRecord = {
+    ...current,
+    status: "completed",
+    updatedAt: now,
+  };
+
+  store.contracts.set(contractId, updated);
+
+  createAuditEvent({
+    actor: authUser,
+    entity: "contract",
+    action: "completed",
+    entityId: contractId,
+    metadata: { from: current.status, to: "completed" },
+  });
+
+  return success(c, updated);
+});
+
 contractRoutes.get("/audit-events", requireAuth, requireAdmin, (c) => {
   const store = getStore();
   const actorId = c.req.query("actorId");
