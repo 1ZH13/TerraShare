@@ -14,12 +14,11 @@ export default function Register() {
     }
   }, [searchParams]);
 
-  const fromPath = location.state?.from?.pathname || location.state?.from;
-  const hasValidFrom = typeof fromPath === "string" && fromPath.startsWith("/");
-  const isAuthRoute = hasValidFrom && (fromPath.startsWith("/login") || fromPath.startsWith("/register"));
-  const redirectTarget = hasValidFrom && !isAuthRoute ? fromPath : "/dashboard";
-
-  const handleSignUp = (strategy) => {
+  const handleSignUp = () => {
+    const fromPath = location.state?.from?.pathname || location.state?.from;
+    const hasValidFrom = typeof fromPath === "string" && fromPath.startsWith("/");
+    const isAuthRoute = hasValidFrom && (fromPath.startsWith("/login") || fromPath.startsWith("/register"));
+    const redirectTarget = hasValidFrom && !isAuthRoute ? fromPath : "/dashboard";
     const utmSource = sessionStorage.getItem("terrashare_utm_source");
     openSignUp({
       redirectUrl: redirectTarget,
@@ -36,13 +35,13 @@ export default function Register() {
         </div>
 
         <div className="btn-stack">
-          <button className="btn btn-primary btn-full" onClick={() => handleSignUp("oauth_google")}>
+          <button className="btn btn-primary btn-full" onClick={handleSignUp}>
             Continuar con Google
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => handleSignUp("oauth_microsoft")}>
+          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" })}>
             Continuar con Microsoft
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => handleSignUp("email")}>
+          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "email", redirectUrl: "/dashboard" })}>
             Continuar con email
           </button>
         </div>
