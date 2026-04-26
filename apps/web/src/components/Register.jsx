@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useClerk } from "@clerk/clerk-react";
 
 export default function Register() {
   const { openSignUp } = useClerk();
-  const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -14,13 +14,15 @@ export default function Register() {
     }
   }, [searchParams]);
 
+  const fromPath = location.state?.from?.pathname || location.state?.from;
+  const hasValidFrom = typeof fromPath === "string" && fromPath.startsWith("/");
+  const isAuthRoute = hasValidFrom && (fromPath.startsWith("/login") || fromPath.startsWith("/register"));
+  const redirectTarget = hasValidFrom && !isAuthRoute ? fromPath : "/dashboard";
+
   const handleSignUp = (strategy) => {
     const utmSource = sessionStorage.getItem("terrashare_utm_source");
     openSignUp({
-      redirectUrl: "/dashboard",
-      afterInstantiation: () => {
-        navigate("/dashboard");
-      },
+      redirectUrl: redirectTarget,
       ...(utmSource && { unsafeMetadata: { utm_source: utmSource } }),
     });
   };
@@ -48,7 +50,7 @@ export default function Register() {
         <div className="auth-link">
           <p>
             ¿Ya tienes cuenta?{" "}
-            <Link to="/login" className="auth-link-text">Inicia sesion</Link>
+            <Link to="/login" state={{ from: location.state?.from }} className="auth-link-text">Inicia sesion</Link>
           </p>
         </div>
 

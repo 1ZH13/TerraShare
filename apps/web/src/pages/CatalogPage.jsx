@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { filterLands, formatLandUse, getLandPrimaryUse } from "../data/lands";
 import { listLands } from "../services/api";
+import PublicHeader from "../components/PublicHeader";
 
 function MapPin({ land, active, onClick }) {
   return (
@@ -60,16 +61,7 @@ export default function CatalogPage() {
 
   return (
     <div className="page-shell">
-      <div className="glass-nav">
-        <Link to="/" className="brand">TerraShare</Link>
-        <nav className="menu">
-          <Link to="/catalog" className="active">Terrenos</Link>
-          <Link to="/dashboard">Dashboard</Link>
-        </nav>
-        <div className="auth-actions">
-          <Link to="/register" className="btn btn-primary">Crear cuenta</Link>
-        </div>
-      </div>
+      <PublicHeader />
 
       <main>
         <div className="section-header">

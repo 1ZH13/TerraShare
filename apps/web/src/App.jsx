@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import LandingPage from "./pages/LandingPage";
@@ -10,9 +10,12 @@ import PaymentCancelPage from "./pages/PaymentCancelPage";
 import PaymentButton from "./components/PaymentButton";
 import AdminLandsPage from "./pages/AdminLandsPage";
 import MyLandsPage from "./pages/MyLandsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
-import { getPaymentsByRequest } from "./services/api";
+import { getAdminSummary, listAdminRentalRequests, setTokenFn as setAdminTokenFn } from "./services/adminApi";
+import { useClerkToken } from "./hooks/useClerkToken";
+import { isAdminUser } from "./components/authDisplay";
 
 function ProtectedRoute({ children }) {
   const { isLoaded } = useClerk();
@@ -51,11 +54,17 @@ function AdminRoute({ children }) {
   }
 
   if (!isSignedIn) {
+    if (import.meta.env.DEV) {
+      return children;
+    }
     return <Navigate to="/login" replace />;
   }
 
-  const userRole = user?.publicMetadata?.role;
-  if (userRole !== "admin") {
+  if (import.meta.env.DEV) {
+    return children;
+  }
+
+  if (!isAdminUser(user)) {
     return (
       <div className="page-shell">
         <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
@@ -84,11 +93,11 @@ function DashboardLayout({ children, onSignOut }) {
         <Link to="/dashboard" className="brand">TerraShare Dashboard</Link>
         <nav className="menu">
           <Link to="/dashboard" className={currentPath === "/dashboard" ? "active" : ""}>Mis solicitudes</Link>
-          <Link to="/dashboard/lands">Mis terrenos</Link>
+          <Link to="/dashboard/lands" className={currentPath === "/dashboard/lands" ? "active" : ""}>Mis terrenos</Link>
         </nav>
         <div className="auth-actions">
           <span className="user-chip">{userName}</span>
-          <button className="btn btn-ghost" onClick={onSignOut}>Cerrar sesion</button>
+          <button className="btn btn-ghost" onClick={onSignOut}>Cerrar sesión</button>
         </div>
       </nav>
       <main>{children}</main>
@@ -108,7 +117,7 @@ function AdminLayout({ children, onSignOut }) {
         </nav>
         <div style={{ marginTop: "auto", paddingTop: "2rem" }}>
           <button className="btn btn-ghost" onClick={onSignOut} style={{ width: "100%", color: "white", borderColor: "rgba(255,255,255,0.3)" }}>
-            Cerrar sesion
+            Cerrar sesión
           </button>
         </div>
       </aside>
@@ -228,83 +237,92 @@ function DashboardPage() {
 
 function AdminDashboardPage() {
   const { user } = useUser();
-  const [users, setUsers] = useState([]);
-  const [landsCount, setLandsCount] = useState("--");
+  const [summary, setSummary] = useState(null);
+  const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [requestFilter, setRequestFilter] = useState("all");
+  const tokenReady = useClerkToken(setAdminTokenFn);
 
   useEffect(() => {
-    if (!user) return;
-    user.getToken().then((token) => setTokenFn(() => token));
-  }, [user]);
+    if (!tokenReady) return;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const token = await user?.getToken();
-        const headers = { Authorization: `Bearer ${token}` };
+    let active = true;
+    setLoading(true);
+    setError("");
 
-        const [usersRes, landsRes] = await Promise.all([
-          fetch(`${BASE_URL}/api/v1/admin/users`, { headers }),
-          fetch(`${BASE_URL}/api/v1/admin/lands`, { headers }),
-        ]);
+    Promise.all([
+      getAdminSummary(),
+      listAdminRentalRequests(requestFilter === "all" ? {} : { status: requestFilter }),
+    ])
+      .then(([summaryRes, requestsRes]) => {
+        if (!active) return;
+        setSummary(summaryRes.data ?? null);
+        setRequests(requestsRes.data?.items ?? []);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-        const usersData = await usersRes.json();
-        const landsData = await landsRes.json();
-
-        setUsers(usersData?.data?.items ?? []);
-        setLandsCount(landsData?.data?.total ?? 0);
-      } catch (err) {
-        console.error("Error fetching admin data:", err);
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      active = false;
     };
-    fetchData();
-  }, [user]);
+  }, [tokenReady, requestFilter]);
 
-  const activeUsers = users.filter(u => u.status === "active").length;
-  const blockedUsers = users.filter(u => u.status === "blocked").length;
+  const adminName = user?.firstName || user?.fullName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Admin";
 
   return (
     <div>
       <div className="section-header">
-        <h1>Panel de Administracion</h1>
-        <p>Gestion de usuarios y plataforma</p>
+        <h1>Panel de Administración</h1>
+        <p>Bienvenido, {adminName}. Revisa métricas y solicitudes pendientes.</p>
       </div>
+      {loading && <p className="muted" style={{ marginTop: "1rem" }}>Cargando resumen admin...</p>}
+      {error && <p className="error-text" style={{ marginTop: "1rem" }}>{error}</p>}
+
       <div className="stats-grid" style={{ marginTop: "1.5rem" }}>
-        <div className="stat-card"><h3>Usuarios</h3><p>{loading ? "..." : users.length}</p></div>
-        <div className="stat-card"><h3>Activos</h3><p>{loading ? "..." : activeUsers}</p></div>
-        <div className="stat-card"><h3>Bloqueados</h3><p>{loading ? "..." : blockedUsers}</p></div>
-        <div className="stat-card"><h3>Terrenos</h3><p>{landsCount}</p></div>
+        <div className="stat-card"><h3>Usuarios</h3><p>{summary?.users.total ?? "—"}</p></div>
+        <div className="stat-card"><h3>Terrenos</h3><p>{summary?.lands.total ?? "—"}</p></div>
+        <div className="stat-card"><h3>Solicitudes</h3><p>{summary?.requests.total ?? "—"}</p></div>
+        <div className="stat-card"><h3>Pendientes</h3><p>{summary?.requests.pendingOwner ?? "—"}</p></div>
       </div>
+
       <div className="panel" style={{ marginTop: "1.5rem" }}>
-        <h2>Usuarios recientes</h2>
-        {loading ? (
-          <p style={{ marginTop: "1rem" }}>Cargando...</p>
-        ) : users.length === 0 ? (
-          <p style={{ marginTop: "1rem", opacity: 0.5 }}>No hay usuarios</p>
-        ) : (
-          <table className="table" style={{ marginTop: "1rem" }}>
-            <thead>
-              <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              {users.slice(0, 10).map((u) => (
-                <tr key={u.id}>
-                  <td>{u.profile?.fullName ?? u.id}</td>
-                  <td>{u.email}</td>
-                  <td><span className={`status-badge ${u.status === "active" ? "status-active" : "status-blocked"}`}>{u.status}</span></td>
-                  <td>
-                    <button className="btn btn-ghost" style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
-                      {u.status === "active" ? "Bloquear" : "Activar"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+          <h2>Solicitudes recientes</h2>
+          <select value={requestFilter} onChange={(e) => setRequestFilter(e.target.value)}>
+            <option value="all">Todas</option>
+            <option value="pending_owner">Pendientes</option>
+            <option value="approved">Aprobadas</option>
+            <option value="rejected">Rechazadas</option>
+            <option value="paid">Pagadas</option>
+          </select>
+        </div>
+        <table className="table" style={{ marginTop: "1rem" }}>
+          <thead>
+            <tr><th>Terreno</th><th>Arrendatario</th><th>Estado</th><th>Uso</th></tr>
+          </thead>
+          <tbody>
+            {requests.map((request) => (
+              <tr key={request.id}>
+                <td>{request.landTitle}</td>
+                <td>{request.tenantEmail}</td>
+                <td>{request.status}</td>
+                <td>{request.intendedUse}</td>
+              </tr>
+            ))}
+            {!loading && requests.length === 0 && (
+              <tr>
+                <td colSpan={4} style={{ textAlign: "center", opacity: 0.55, padding: "2rem" }}>
+                  No hay solicitudes para mostrar
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -312,7 +330,7 @@ function AdminDashboardPage() {
 
 export default function App() {
   const { signOut } = useClerk();
-  const { isSignedIn, isLoaded } = useUser();
+  const { isLoaded } = useUser();
 
   const handleSignOut = async () => {
     await signOut();
@@ -332,7 +350,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/catalog" element={<CatalogPage />} />
-<Route path="/lands/:id" element={<LandDetailPage />} />
+      <Route path="/lands/:id" element={<LandDetailPage />} />
       <Route path="/reserve/:landId" element={
         <ProtectedRoute>
           <ReservePage />
@@ -360,6 +378,13 @@ export default function App() {
         <AdminRoute>
           <AdminLayout onSignOut={handleSignOut}>
             <AdminDashboardPage />
+          </AdminLayout>
+        </AdminRoute>
+      } />
+      <Route path="/dashboard/admin/users" element={
+        <AdminRoute>
+          <AdminLayout onSignOut={handleSignOut}>
+            <AdminUsersPage />
           </AdminLayout>
         </AdminRoute>
       } />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { listAdminLands, updateLandStatus, setTokenFn } from "../services/adminApi";
-import { useUser } from "@clerk/clerk-react";
+import { useClerkToken } from "../hooks/useClerkToken";
 
 const statusLabels = {
   draft: "Borrador",
@@ -17,7 +17,6 @@ const statusColors = {
 };
 
 export default function AdminLandsPage() {
-  const { user } = useUser();
   const [lands, setLands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,11 +24,7 @@ export default function AdminLandsPage() {
   const [search, setSearch] = useState("");
   const [actionMsg, setActionMsg] = useState("");
 
-  useEffect(() => {
-    if (user) {
-      user.getToken().then((token) => setTokenFn(() => token));
-    }
-  }, [user]);
+  const tokenReady = useClerkToken(setTokenFn);
 
   const loadLands = () => {
     setLoading(true);
@@ -44,7 +39,11 @@ export default function AdminLandsPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadLands(); }, [filter, search]);
+  useEffect(() => {
+    if (tokenReady) {
+      loadLands();
+    }
+  }, [tokenReady, filter, search]);
 
   const handleUpdateStatus = async (landId, currentStatus, nextStatus) => {
     try {

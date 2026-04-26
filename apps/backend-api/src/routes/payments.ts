@@ -17,7 +17,7 @@ function getStripeClient() {
   }
 
   if (!stripeClient) {
-    stripeClient = new Stripe(env.stripeSecretKey, { apiVersion: "2026-03-25.dahlia" });
+    stripeClient = new Stripe(env.stripeSecretKey, { apiVersion: "2025-02-24.acacia" });
   }
 
   return stripeClient;

@@ -28,6 +28,7 @@ export interface Env {
   CLERK_JWKS_URL?: string;
   CLERK_ISSUER?: string;
   ALLOW_DEV_AUTH_BYPASS?: string;
+  ADMIN_SEED_EMAIL?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   WHATSAPP_CONTACT_ENABLED?: string;

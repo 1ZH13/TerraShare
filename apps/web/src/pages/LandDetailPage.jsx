@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { getLandPrimaryUse, formatLandUse, getChatSeedMessages } from "../data/lands";
 import { getLandById, getChats, createChat, getMessages, sendMessage, getExternalContact, setTokenFn } from "../services/api";
+import PublicHeader from "../components/PublicHeader";
 
 function useChat(landId, isSignedIn, user) {
   const [messages, setMessages] = useState([]);
@@ -148,7 +149,7 @@ export default function LandDetailPage() {
       openSignIn({ redirectUrl: `/reserve/${id}` });
       return;
     }
-    navigate(`/reserve/${id}`);
+    navigate(`/reserve/${id}`, { state: { land } });
   };
 
   const handleSend = async (e) => {
@@ -185,16 +186,7 @@ export default function LandDetailPage() {
 
   return (
     <div className="page-shell">
-      <div className="glass-nav">
-        <Link to="/" className="brand">TerraShare</Link>
-        <nav className="menu">
-          <Link to="/catalog">Terrenos</Link>
-          <Link to="/dashboard">Dashboard</Link>
-        </nav>
-        <div className="auth-actions">
-          <Link to="/register" className="btn btn-primary">Crear cuenta</Link>
-        </div>
-      </div>
+      <PublicHeader />
 
       <main>
         <Link to="/catalog" className="back-link-text">← Volver al catálogo</Link>

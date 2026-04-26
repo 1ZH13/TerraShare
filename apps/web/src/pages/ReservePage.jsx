@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
-import { useClerk } from "@clerk/clerk-react";
+import { useUser } from "@clerk/clerk-react";
 import { getLandById, createRentalRequest, adaptLand } from "../services/api";
+import PublicHeader from "../components/PublicHeader";
+import { normalizeReserveLand } from "../data/lands";
+import { useClerkToken } from "../hooks/useClerkToken";
+import { setTokenFn } from "../services/api";
 
 const USO_OPCIONES = [
   { value: "", label: "Selecciona un uso" },
@@ -17,9 +21,10 @@ export default function ReservePage() {
   const { landId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isSignedIn } = useClerk();
+  const { isSignedIn } = useUser();
+  const tokenReady = useClerkToken(setTokenFn);
 
-  const [land, setLand] = useState(location.state?.land ?? null);
+  const [land, setLand] = useState(normalizeReserveLand(location.state?.land) ?? null);
   const [loading, setLoading] = useState(!land);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -33,12 +38,16 @@ export default function ReservePage() {
   });
 
   useEffect(() => {
-    if (!land && landId) {
+    if (land) {
+      return;
+    }
+
+    if (landId) {
       let active = true;
       setLoading(true);
       getLandById(landId)
         .then((raw) => {
-          if (active) setLand(adaptLand(raw));
+          if (active) setLand(normalizeReserveLand(adaptLand(raw)));
         })
         .catch(() => {
           if (active) setError("No se pudo cargar el terreno.");
@@ -48,7 +57,7 @@ export default function ReservePage() {
         });
       return () => { active = false; };
     }
-  }, [landId]);
+  }, [land, landId]);
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -58,8 +67,13 @@ export default function ReservePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isSignedIn) {
-      navigate("/login", { state: { from: location.pathname } });
+    if (!isSignedIn && !import.meta.env.DEV) {
+      navigate("/login", { state: { from: { pathname: location.pathname } }, replace: true });
+      return;
+    }
+
+    if (!tokenReady) {
+      setError("Cargando tu sesión, intenta de nuevo en un momento.");
       return;
     }
 
@@ -88,7 +102,7 @@ export default function ReservePage() {
 
       setSuccess(`Solicitud enviada. ID: ${result?.id ?? "—"}. Espera la respuesta del propietario.`);
       setTimeout(() => {
-        navigate("/dashboard", { replace: true });
+        navigate("/dashboard/admin", { replace: true });
       }, 2500);
     } catch (err) {
       setError(err.message || "Error al enviar la solicitud.");
@@ -125,13 +139,7 @@ export default function ReservePage() {
       <div className="ambient ambient-left" aria-hidden="true" />
       <div className="ambient ambient-right" aria-hidden="true" />
 
-      <header className="top-nav">
-        <Link to="/" className="brand">TerraShare</Link>
-        <nav className="menu">
-          <Link to="/catalog">Explorar</Link>
-          <Link to="/login">Iniciar sesion</Link>
-        </nav>
-      </header>
+      <PublicHeader showDashboardLink={false} />
 
       <main>
         <Link to={`/lands/${landId}`} className="btn btn-ghost" style={{ marginBottom: "1rem" }}>
@@ -231,10 +239,10 @@ export default function ReservePage() {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={submitting}
+                    disabled={submitting || !tokenReady}
                     style={{ width: "100%" }}
                   >
-                    {submitting ? "Enviando..." : "Enviar solicitud"}
+                    {!tokenReady ? "Cargando sesión..." : submitting ? "Enviando..." : "Enviar solicitud"}
                   </button>
                 </div>
               </form>
