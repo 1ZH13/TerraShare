@@ -18,6 +18,7 @@ import PaymentsPage from "./pages/PaymentsPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import UserDashboardLayout from "./components/UserDashboardLayout";
+import PublicHeader from "./components/PublicHeader";
 import { getAdminSummary, listAdminRentalRequests, setTokenFn as setAdminTokenFn } from "./services/adminApi";
 import { useClerkToken } from "./hooks/useClerkToken";
 import { isAdminUser } from "./components/authDisplay";
@@ -358,7 +359,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/catalog" element={<CatalogPage />} />
+      <Route path="/catalog" element={<UserDashboardLayout><CatalogPage /></UserDashboardLayout>} />
       <Route path="/lands/:id" element={<LandDetailPage />} />
       <Route path="/reserve/:landId" element={<ReservePage />} />
       <Route path="/login" element={<Login />} />
