@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listLands } from "../services/api";
-import PublicHeader from "../components/PublicHeader";
 
 function MapPin({ land, active, onClick }) {
   return (
@@ -66,7 +65,6 @@ export default function CatalogPage() {
 
   return (
     <div className="page-shell">
-      <PublicHeader />
       <main>
         <div className="section-header">
           <p className="kicker">Catálogo</p>
