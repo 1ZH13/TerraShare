@@ -1,5 +1,6 @@
 import type { JWTPayload } from "jose";
 
+import { env } from "../config/env";
 import type { AppRole, AuthContextUser, UserStatus } from "../types";
 
 type ClaimRecord = Record<string, unknown>;
@@ -17,7 +18,8 @@ function readPublicMetadata(claims: ClaimRecord, key: string): unknown {
 }
 
 function mapRole(value: unknown): AppRole {
-  return value === "admin" ? "admin" : "user";
+  if (value === "admin") return "admin";
+  return "user";
 }
 
 function mapStatus(value: unknown): UserStatus {
@@ -80,13 +82,15 @@ function mapPhone(claims: ClaimRecord): string | undefined {
 export function mapClerkClaimsToAuthUser(payload: JWTPayload): AuthContextUser {
   const claims = payload as ClaimRecord;
   const clerkUserId = typeof claims.sub === "string" ? claims.sub : "unknown_sub";
-  const role = mapRole(readClaim(claims, "role") ?? readPublicMetadata(claims, "role"));
+  const email = mapEmail(claims).toLowerCase();
+  const explicitRole = readClaim(claims, "role") ?? readPublicMetadata(claims, "role");
+  const role = email === env.adminSeedEmail ? "admin" : mapRole(explicitRole);
   const status = mapStatus(readPublicMetadata(claims, "status"));
 
   return {
     id: clerkUserId,
     clerkUserId,
-    email: mapEmail(claims),
+    email,
     role,
     status,
     profile: {

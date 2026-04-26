@@ -222,3 +222,25 @@ export function filterLands(lands, filters = {}) {
 export function getChatSeedMessages(landId) {
   return DEFAULT_CHAT_MESSAGES[landId] ?? [];
 }
+
+export function normalizeReserveLand(land) {
+  if (!land) return null;
+
+  const province = land.province ?? land.location?.province ?? "";
+  const district = land.district ?? land.location?.district ?? "";
+  const type = land.type ? land.type : formatLandUse(getLandPrimaryUse(land));
+  const areaHectares = land.areaHectares ?? land.area ?? 0;
+  const monthlyPrice = land.monthlyPrice ?? land.priceRule?.pricePerMonth ?? 0;
+  const availableFrom = land.availableFrom ?? land.availability?.availableFrom ?? "";
+
+  return {
+    id: land.id,
+    type,
+    title: land.title,
+    province,
+    district,
+    areaHectares,
+    monthlyPrice,
+    availableFrom,
+  };
+}

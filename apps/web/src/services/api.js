@@ -64,6 +64,12 @@ export const createRentalRequest = async (payload) => {
   return res?.data ?? null;
 };
 
+/** GET /api/v1/rental-requests */
+export const listRentalRequests = async () => {
+  const res = await request("GET", "/api/v1/rental-requests");
+  return res?.data ?? [];
+};
+
 /** GET /api/v1/lands/:landId */
 export const getLandById = async (landId) => {
   const res = await request("GET", `/api/v1/lands/${landId}`);
@@ -155,6 +161,7 @@ export const api = {
   listLands,
   getLandById,
   createRentalRequest,
+  listRentalRequests,
   createCheckoutSession,
   getPaymentsByRequest,
   adaptLand,

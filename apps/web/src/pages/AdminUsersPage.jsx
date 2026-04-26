@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { listAdminUsers, updateUserStatus, setTokenFn } from "../services/adminApi";
-import { useUser } from "@clerk/clerk-react";
+import { useClerkToken } from "../hooks/useClerkToken";
 
 const roleLabel = { user: "Usuario", admin: "Admin" };
 const statusLabel = { active: "Activo", blocked: "Bloqueado" };
 
 export default function AdminUsersPage() {
-  const { user } = useUser();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,12 +13,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [actionMsg, setActionMsg] = useState("");
 
-  // Inject Clerk token into API client
-  useEffect(() => {
-    if (user) {
-      user.getToken().then((token) => setTokenFn(() => token));
-    }
-  }, [user]);
+  const tokenReady = useClerkToken(setTokenFn);
 
   const loadUsers = () => {
     setLoading(true);
@@ -34,7 +28,11 @@ export default function AdminUsersPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadUsers(); }, [filter, search]);
+  useEffect(() => {
+    if (tokenReady) {
+      loadUsers();
+    }
+  }, [tokenReady, filter, search]);
 
   const handleToggleStatus = async (userId, currentStatus) => {
     const nextStatus = currentStatus === "active" ? "blocked" : "active";

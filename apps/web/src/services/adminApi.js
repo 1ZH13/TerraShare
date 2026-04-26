@@ -12,6 +12,10 @@ const buildHeaders = () => {
   const headers = { "Content-Type": "application/json" };
   const token = authTokenFn();
   if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (!token && import.meta.env.DEV) {
+    headers["x-dev-role"] = "admin";
+    headers["x-dev-user-id"] = "web_dev_admin";
+  }
   return headers;
 };
 
@@ -65,3 +69,15 @@ export const listAdminLands = (filters = {}) => {
 /** PATCH /api/v1/admin/lands/:landId/status — { status: "active"|"inactive"|"rejected" } */
 export const updateLandStatus = (landId, status) =>
   request("PATCH", `/api/v1/admin/lands/${landId}/status`, { status });
+
+/** GET /api/v1/admin/rental-requests */
+export const listAdminRentalRequests = (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.search) params.set("search", filters.search);
+  const qs = params.toString();
+  return request("GET", `/api/v1/admin/rental-requests${qs ? `?${qs}` : ""}`);
+};
+
+/** GET /api/v1/admin/summary */
+export const getAdminSummary = () => request("GET", "/api/v1/admin/summary");

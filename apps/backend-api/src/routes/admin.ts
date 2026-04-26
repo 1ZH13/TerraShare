@@ -170,3 +170,73 @@ adminRoutes.patch("/admin/lands/:landId/status", requireAuth, requireAdmin, asyn
 
   return success(c, updated);
 });
+
+// ─── Dashboard summary ──────────────────────────────────────────────────────
+
+adminRoutes.get("/admin/summary", requireAuth, requireAdmin, (c) => {
+  const store = getStore();
+
+  const users = Array.from(store.users.values());
+  const lands = Array.from(store.lands.values());
+  const requests = Array.from(store.rentalRequests.values());
+
+  return success(c, {
+    users: {
+      total: users.length,
+      active: users.filter((u) => u.status === "active").length,
+      blocked: users.filter((u) => u.status === "blocked").length,
+    },
+    lands: {
+      total: lands.length,
+      active: lands.filter((l) => l.status === "active").length,
+      draft: lands.filter((l) => l.status === "draft").length,
+    },
+    requests: {
+      total: requests.length,
+      pendingOwner: requests.filter((r) => r.status === "pending_owner").length,
+      approved: requests.filter((r) => r.status === "approved").length,
+      paid: requests.filter((r) => r.status === "paid").length,
+    },
+  });
+});
+
+adminRoutes.get("/admin/rental-requests", requireAuth, requireAdmin, (c) => {
+  const store = getStore();
+  const status = c.req.query("status");
+  const search = c.req.query("search")?.toLowerCase();
+
+  let requests = Array.from(store.rentalRequests.values());
+
+  if (status && status !== "all") {
+    requests = requests.filter((request) => request.status === status);
+  }
+
+  if (search) {
+    requests = requests.filter((request) => {
+      const land = store.lands.get(request.landId);
+      const tenant = store.users.get(request.tenantId);
+      return Boolean(
+        request.id.toLowerCase().includes(search) ||
+        land?.title.toLowerCase().includes(search) ||
+        tenant?.email.toLowerCase().includes(search),
+      );
+    });
+  }
+
+  const items = requests.map((request) => {
+    const land = store.lands.get(request.landId);
+    const tenant = store.users.get(request.tenantId);
+    return {
+      id: request.id,
+      landId: request.landId,
+      landTitle: land?.title ?? request.landId,
+      tenantEmail: tenant?.email ?? request.tenantId,
+      status: request.status,
+      intendedUse: request.intendedUse,
+      createdAt: request.createdAt,
+      period: request.period,
+    };
+  });
+
+  return success(c, { items, total: items.length });
+});

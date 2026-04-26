@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useClerk } from "@clerk/clerk-react";
 
 export default function Login() {
   const { openSignIn } = useClerk();
-  const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -14,12 +14,14 @@ export default function Login() {
     }
   }, [searchParams]);
 
+  const fromPath = location.state?.from?.pathname || location.state?.from;
+  const hasValidFrom = typeof fromPath === "string" && fromPath.startsWith("/");
+  const isAuthRoute = hasValidFrom && (fromPath.startsWith("/login") || fromPath.startsWith("/register"));
+  const redirectTarget = hasValidFrom && !isAuthRoute ? fromPath : "/dashboard";
+
   const handleSignIn = (strategy) => {
     openSignIn({
-      redirectUrl: "/dashboard",
-      afterInstantiation: () => {
-        navigate("/dashboard");
-      },
+      redirectUrl: redirectTarget,
     });
   };
 
@@ -46,7 +48,7 @@ export default function Login() {
         <div className="auth-link">
           <p>
             ¿No tienes cuenta?{" "}
-            <Link to="/register" className="auth-link-text">Registrate</Link>
+            <Link to="/register" state={{ from: location.state?.from }} className="auth-link-text">Registrate</Link>
           </p>
         </div>
 

@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useClerk } from "@clerk/clerk-react";
+import { useUser } from "@clerk/clerk-react";
+import PublicHeader from "../components/PublicHeader";
 import { listLands } from "../services/api";
+import { isAdminUser } from "../components/authDisplay";
 
 const metrics = [
   { value: "+120", label: "Terrenos verificados" },
@@ -40,10 +42,8 @@ const steps = [
 ];
 
 export default function LandingPage() {
-  const { openSignIn, openSignUp } = useClerk();
-  const [email, setEmail] = useState("");
-  const [ctaMessage, setCtaMessage] = useState("");
-  const [ctaLoading, setCtaLoading] = useState(false);
+  const { isSignedIn, user } = useUser();
+  const admin = isAdminUser(user);
   const [featuredLands, setFeaturedLands] = useState([]);
   const [landsLoading, setLandsLoading] = useState(true);
 
@@ -61,45 +61,13 @@ export default function LandingPage() {
     fetchFeaturedLands();
   }, []);
 
-  const handleSignIn = () => openSignIn({ redirectUrl: "/dashboard" });
-  const handleSignUp = () => openSignUp({ redirectUrl: "/dashboard" });
+  const primaryAction = isSignedIn
+    ? { to: admin ? "/dashboard/admin" : "/catalog", label: admin ? "Ir al dashboard admin" : "Explorar catálogo" }
+    : { to: "/register", label: "Publicar mi terreno" };
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-const handleCtaSubmit = async (e) => {
-    e.preventDefault();
-    if (!email.includes("@") || !email.includes(".")) {
-      setCtaMessage("Ingresa un correo válido para continuar.");
-      return;
-    }
-
-    setCtaLoading(true);
-    setCtaMessage("");
-
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/v1/leads`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "landing" }),
-      });
-
-      if (res.ok) {
-        setCtaMessage("Listo. Te contactaremos pronto.");
-        setEmail("");
-      } else {
-        const data = await res.json();
-        if (data.error?.code === "CONFLICT") {
-          setCtaMessage("Este correo ya está registrado. Intenta iniciar sesión.");
-        } else {
-          setCtaMessage("Algo salió mal. Intenta de nuevo.");
-        }
-      }
-    } catch {
-      setCtaMessage("Error de conexión. Verifica tu red e intenta de nuevo.");
-    } finally {
-      setCtaLoading(false);
-    }
-  };
+  const secondaryAction = isSignedIn
+    ? { to: "/catalog", label: "Ver catálogo" }
+    : { to: "/login", label: "Iniciar sesión" };
 
   return (
     <div className="page-shell">
@@ -107,16 +75,7 @@ const handleCtaSubmit = async (e) => {
       <div className="ambient ambient-right" aria-hidden="true" />
       <div className="ambient ambient-bottom" aria-hidden="true" />
 
-      <nav className="glass-nav">
-        <Link to="/" className="brand">TerraShare</Link>
-        <nav className="menu">
-          <Link to="/catalog">Terrenos</Link>
-          <button className="text-btn" onClick={handleSignIn}>Iniciar sesión</button>
-        </nav>
-        <div className="auth-actions">
-          <button className="btn btn-primary" onClick={handleSignUp}>Crear cuenta</button>
-        </div>
-      </nav>
+      <PublicHeader />
 
       <main>
         <section className="hero-section">
@@ -124,7 +83,8 @@ const handleCtaSubmit = async (e) => {
             <div className="landing-hero-copy">
               <span className="landing-hero-tag">Plataforma para Panamá</span>
               <h1 className="landing-hero-title">
-                Terrenos productivos<br />
+                Terrenos productivos
+                <br />
                 <span className="landing-hero-title-accent">a tu alcance</span>
               </h1>
               <p className="landing-hero-subtitle">
@@ -132,11 +92,11 @@ const handleCtaSubmit = async (e) => {
                 Explora el catálogo sin login, solicita cuando estés listo.
               </p>
               <div className="landing-hero-actions">
-                <button className="btn btn-primary btn-lg" onClick={handleSignUp}>
-                  Publicar mi terreno
-                </button>
-                <Link to="/catalog" className="btn btn-ghost btn-lg">
-                  Ver catálogo
+                <Link to={primaryAction.to} className="btn btn-primary btn-lg">
+                  {primaryAction.label}
+                </Link>
+                <Link to={secondaryAction.to} className="btn btn-ghost btn-lg">
+                  {secondaryAction.label}
                 </Link>
               </div>
               <div className="landing-hero-metrics">
@@ -247,34 +207,18 @@ const handleCtaSubmit = async (e) => {
         <section className="cta-section">
           <div className="cta-box">
             <div className="cta-content">
-              <h2>¿Listo para empezar?</h2>
-              <p>Deja tu correo y te enviamos el enlace para activar tu cuenta en TerraShare.</p>
-              <form className="cta-form" onSubmit={handleCtaSubmit}>
-                <div className="cta-input-group">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@empresa.com"
-                    required
-                    disabled={ctaLoading}
-                  />
-                  <button type="submit" className="btn btn-primary" disabled={ctaLoading}>
-                    {ctaLoading ? "Enviando..." : "Recibir acceso"}
-                  </button>
-                </div>
-                {ctaMessage && (
-                  <p className={`cta-message ${ctaMessage.includes("Error") || ctaMessage.includes("mal") || ctaMessage.includes("Intenta") ? "error" : ""}`}>
-                    {ctaMessage}
-                  </p>
+              <h2>Listo para explorar o publicar</h2>
+              <p>{isSignedIn ? "Tu sesión está activa. Sigue explorando o entra al panel admin." : "Si ya tienes cuenta, entra al dashboard admin. Si no, crea una y empieza a publicar."}</p>
+              <div className="cta-actions">
+                <Link to="/catalog" className="btn btn-ghost btn-lg">Ver catálogo</Link>
+                {isSignedIn ? (
+                  <Link to={admin ? "/dashboard/admin" : "/catalog"} className="btn btn-primary btn-lg">
+                    {admin ? "Ir al dashboard admin" : "Seguir explorando"}
+                  </Link>
+                ) : (
+                  <Link to="/login" className="btn btn-primary btn-lg">Iniciar sesión</Link>
                 )}
-              </form>
-              <p className="cta-alt">
-                ¿Ya tienes cuenta?{" "}
-                <button type="button" className="text-btn" onClick={handleSignIn}>
-                  Iniciar sesión
-                </button>
-              </p>
+              </div>
             </div>
           </div>
         </section>
@@ -287,8 +231,16 @@ const handleCtaSubmit = async (e) => {
             </div>
             <div className="footer-links">
               <Link to="/catalog">Terrenos</Link>
-              <button className="text-btn" onClick={handleSignIn}>Iniciar sesión</button>
-              <button className="text-btn" onClick={handleSignUp}>Crear cuenta</button>
+              {isSignedIn ? (
+                <Link to={admin ? "/dashboard/admin" : "/catalog"} className="text-btn">
+                  {admin ? "Dashboard admin" : "Seguir explorando"}
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="text-btn">Iniciar sesión</Link>
+                  <Link to="/register" className="text-btn">Crear cuenta</Link>
+                </>
+              )}
             </div>
           </div>
           <div className="footer-legal">

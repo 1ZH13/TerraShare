@@ -21,7 +21,11 @@ export const env = {
     return requireEnv("CLERK_ISSUER");
   },
   get allowDevAuthBypass() {
-    return (getEnv("ALLOW_DEV_AUTH_BYPASS") ?? "false") === "true";
+    const fallback = process.env.NODE_ENV !== "production" ? "true" : "false";
+    return (getEnv("ALLOW_DEV_AUTH_BYPASS") ?? fallback) === "true";
+  },
+  get adminSeedEmail() {
+    return (getEnv("ADMIN_SEED_EMAIL") ?? "terradmin@gmail.com").toLowerCase();
   },
   get stripeSecretKey() {
     return getEnv("STRIPE_SECRET_KEY");
