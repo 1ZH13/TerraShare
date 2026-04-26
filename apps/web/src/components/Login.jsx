@@ -14,15 +14,12 @@ export default function Login() {
     }
   }, [searchParams]);
 
-  const fromPath = location.state?.from?.pathname || location.state?.from;
-  const hasValidFrom = typeof fromPath === "string" && fromPath.startsWith("/");
-  const isAuthRoute = hasValidFrom && (fromPath.startsWith("/login") || fromPath.startsWith("/register"));
-  const redirectTarget = hasValidFrom && !isAuthRoute ? fromPath : "/dashboard";
-
-  const handleSignIn = (strategy) => {
-    openSignIn({
-      redirectUrl: redirectTarget,
-    });
+  const handleSignIn = () => {
+    const fromPath = location.state?.from?.pathname || location.state?.from;
+    const hasValidFrom = typeof fromPath === "string" && fromPath.startsWith("/");
+    const isAuthRoute = hasValidFrom && (fromPath.startsWith("/login") || fromPath.startsWith("/register"));
+    const redirectTarget = hasValidFrom && !isAuthRoute ? fromPath : "/dashboard";
+    openSignIn({ redirectUrl: redirectTarget });
   };
 
   return (
@@ -34,13 +31,13 @@ export default function Login() {
         </div>
 
         <div className="btn-stack">
-          <button className="btn btn-primary btn-full" onClick={() => handleSignIn("oauth_google")}>
+          <button className="btn btn-primary btn-full" onClick={handleSignIn}>
             Continuar con Google
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => handleSignIn("oauth_microsoft")}>
+          <button className="btn btn-ghost btn-full" onClick={() => openSignIn({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" })}>
             Continuar con Microsoft
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => handleSignIn("email")}>
+          <button className="btn btn-ghost btn-full" onClick={() => openSignIn({ strategy: "email", redirectUrl: "/dashboard" })}>
             Continuar con email
           </button>
         </div>

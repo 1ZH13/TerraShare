@@ -13,7 +13,7 @@ function useChat(landId, isSignedIn, user) {
   const [externalContact, setExternalContact] = useState(null);
 
   useEffect(() => {
-    if (!isSignedIn || !user) {
+    if (!isSignedIn || !user || !user.getToken) {
       const stored = sessionStorage.getItem(`terrashare-chat:${landId}`);
       const seed = getChatSeedMessages(landId);
       setMessages(stored ? JSON.parse(stored) : seed);
@@ -23,7 +23,6 @@ function useChat(landId, isSignedIn, user) {
 
     const initChat = async () => {
       try {
-        setTokenFn(() => user.getToken());
         const token = await user.getToken();
         if (!token) throw new Error("No token");
 

@@ -6,44 +6,45 @@ import { listLands } from "../services/api";
 import { isAdminUser } from "../components/authDisplay";
 
 const metrics = [
-  { value: "+120", label: "Terrenos verificados" },
-  { value: "<48h", label: "Tiempo promedio de respuesta" },
-  { value: "6", label: "Provincias cubiertas" },
+  { value: "+120", label: "Terrenos disponibles" },
+  { value: "2 días", label: "Tiempo promedio de respuesta" },
+  { value: "6", label: "Provincias en Panamá" },
 ];
 
 const benefits = [
   {
     icon: "📊",
-    title: "Información estandarizada",
-    desc: "Cada terreno tiene datos completos: agua, acceso, uso permitido y disponibilidad. Sin sorpresas.",
+    title: "Información completa",
+    desc: "Tamaño exacto, fuentes de agua, acceso y precio mensual.",
   },
   {
     icon: "🔍",
-    title: "Búsqueda transparente",
-    desc: "Filtros por tipo de suelo, provincia y precio. Explora sin login, activa tu cuenta para solicitar.",
+    title: "Explora sin registro",
+    desc: "Navega el catálogo completo antes de registrarte.",
   },
   {
     icon: "⚡",
-    title: "Decisión en menos de 48h",
-    desc: "Flujo rápido de solicitud a aprobación. Notificaciones en cada cambio de estado.",
+    title: "Respuesta rápida",
+    desc: "Te notificamos por email cuando el propietario responda.",
   },
   {
-    icon: "🔒",
-    title: "Trazabilidad completa",
-    desc: "Registro de todas las acciones. Contratos claros, pagos seguros y historial para ambas partes.",
+    icon: "📋",
+    title: "Historial guardado",
+    desc: "Solicitudes, mensajes y acuerdos en un solo lugar.",
   },
 ];
 
 const steps = [
-  { number: "1", title: "Publica tu terreno", desc: "Crea tu perfil y registra tus terrenos con fotos, ubicación y condiciones." },
-  { number: "2", title: "Exploran sin login", desc: "Los arrendatarios revisan el catálogo, filtros y detalles. Sin compromiso." },
-  { number: "3", title: "Reciben solicitudes", desc: "Revisa cada solicitud, pide info adicional si es necesario y decide." },
-  { number: "4", title: "Cierran el trato", desc: "Firman acuerdo, procesan pago seguro y coordinan por chat interno." },
+  { number: "1", title: "Regístrate", desc: "Con tu email en menos de 1 minuto." },
+  { number: "2", title: "Publica o busca", desc: "Sube fotos de tu terreno o explora el catálogo." },
+  { number: "3", title: "Recibe ofertas", desc: "Los interesados te contactan." },
+  { number: "4", title: "Cierran el trato", desc: "Acuerdan fechas y formalizan." },
 ];
 
 export default function LandingPage() {
   const { isSignedIn, user } = useUser();
   const admin = isAdminUser(user);
+  const [activeTab, setActiveTab] = useState("benefits");
   const [featuredLands, setFeaturedLands] = useState([]);
   const [landsLoading, setLandsLoading] = useState(true);
 
@@ -81,15 +82,15 @@ export default function LandingPage() {
         <section className="hero-section">
           <div className="hero-wrapper">
             <div className="landing-hero-copy">
-              <span className="landing-hero-tag">Plataforma para Panamá</span>
+              <span className="landing-hero-tag">Plataforma #1 en Panamá</span>
               <h1 className="landing-hero-title">
-                Terrenos productivos
+                Encuentra el terreno perfecto
                 <br />
-                <span className="landing-hero-title-accent">a tu alcance</span>
+                <span className="landing-hero-title-accent">para producir</span>
               </h1>
               <p className="landing-hero-subtitle">
-                Conectamos propietarios con arrendatarios de forma clara y segura.
-                Explora el catálogo sin login, solicita cuando estés listo.
+                Conectamos propietarios y productores de forma clara y segura. 
+                Explora el catálogo sin registrarte. Solicita cuando estés seguro.
               </p>
               <div className="landing-hero-actions">
                 <Link to={primaryAction.to} className="btn btn-primary btn-lg">
@@ -134,27 +135,53 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="why-section">
-          <div className="section-header center">
-            <span className="kicker">¿Por qué TerraShare?</span>
-            <h2>El alquiler de tierras productivas, simplificado</h2>
-            <p>Construimos esta plataforma para resolver los problemas que hacen difícil el alquiler de tierras en Panamá.</p>
+<section className="features-section">
+          <div className="section-header">
+            <span className="kicker">Todo lo que necesitas</span>
+            <h2>Explora, publica y conecta</h2>
+            <p>Una plataforma diseñada para que alquilar tierras sea simple y seguro.</p>
           </div>
-          <div className="benefits-grid">
-            {benefits.map((b, i) => (
-              <div key={b.title} className="benefit-card" style={{ animationDelay: `${i * 80}ms` }}>
-                <span className="benefit-icon">{b.icon}</span>
-                <h3>{b.title}</h3>
-                <p>{b.desc}</p>
-              </div>
-            ))}
+          
+          <div className="features-tabs">
+            <button 
+              className={`tab-btn ${activeTab === 'benefits' ? 'active' : ''}`}
+              onClick={() => setActiveTab('benefits')}
+            >
+              Beneficios
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'how' ? 'active' : ''}`}
+              onClick={() => setActiveTab('how')}
+            >
+              Cómo funciona
+            </button>
+          </div>
+
+          <div className="features-grid">
+            {activeTab === 'benefits' ? (
+              benefits.map((b, i) => (
+                <div key={b.title} className="feature-card" style={{ animationDelay: `${i * 80}ms` }}>
+                  <span className="feature-icon">{b.icon}</span>
+                  <h3>{b.title}</h3>
+                  <p>{b.desc}</p>
+                </div>
+              ))
+            ) : (
+              steps.map((step, i) => (
+                <div key={step.number} className="feature-card" style={{ animationDelay: `${i * 80}ms` }}>
+                  <span className="step-badge">{step.number}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.desc}</p>
+                </div>
+              ))
+            )}
           </div>
         </section>
 
         <section className="preview-section">
-          <div className="section-header center">
+          <div className="section-header">
             <h2>Terrenos disponibles ahora</h2>
-            <p>Explora opciones verificadas en las principales provinciasproductivas de Panamá.</p>
+            <p>Explora las mejores opciones en las zonas agrícolas de Panamá.</p>
           </div>
           <div className="cards-grid lands-grid">
             {landsLoading ? (
@@ -183,40 +210,28 @@ export default function LandingPage() {
           </div>
           <div className="preview-cta">
             <Link to="/catalog" className="btn btn-ghost">
-              Ver todos los terrenos
+              Ver todos los terrenos →
             </Link>
-          </div>
-        </section>
-
-        <section className="how-section">
-          <div className="section-header center">
-            <h2>Cómo funciona</h2>
-            <p>Cuatro pasos simples para arrendatar o publicar</p>
-          </div>
-          <div className="steps-grid">
-            {steps.map((step, i) => (
-              <div key={step.number} className="step-card" style={{ animationDelay: `${i * 100}ms` }}>
-                <span className="step-number">{step.number}</span>
-                <h3>{step.title}</h3>
-                <p>{step.desc}</p>
-              </div>
-            ))}
           </div>
         </section>
 
         <section className="cta-section">
           <div className="cta-box">
             <div className="cta-content">
-              <h2>Listo para explorar o publicar</h2>
-              <p>{isSignedIn ? "Tu sesión está activa. Sigue explorando o entra al panel admin." : "Si ya tienes cuenta, entra al dashboard admin. Si no, crea una y empieza a publicar."}</p>
+              <h2>¿Listo para empezar?</h2>
+              <p>
+                {isSignedIn 
+                  ? "Explora más terrenos disponibles o gestiona los tuyos desde el dashboard." 
+                  : "Únete a propietarios y productores de todo Panamá. Es gratis."}
+              </p>
               <div className="cta-actions">
-                <Link to="/catalog" className="btn btn-ghost btn-lg">Ver catálogo</Link>
+                <Link to="/catalog" className="btn btn-ghost btn-lg">Ver terrenos</Link>
                 {isSignedIn ? (
-                  <Link to={admin ? "/dashboard/admin" : "/catalog"} className="btn btn-primary btn-lg">
-                    {admin ? "Ir al dashboard admin" : "Seguir explorando"}
+                  <Link to={admin ? "/dashboard/admin" : "/dashboard"} className="btn btn-primary btn-lg">
+                    {admin ? "Panel de Admin" : "Mi Dashboard"}
                   </Link>
                 ) : (
-                  <Link to="/login" className="btn btn-primary btn-lg">Iniciar sesión</Link>
+                  <Link to="/register" className="btn btn-primary btn-lg">Crear cuenta gratis</Link>
                 )}
               </div>
             </div>
@@ -227,18 +242,18 @@ export default function LandingPage() {
           <div className="footer-grid">
             <div className="footer-brand">
               <span className="brand">TerraShare</span>
-              <p>Plataforma de alquiler de terrenos productivos en Panamá.</p>
+              <p>La plataforma #1 para alquilar tierras productivas en Panamá.</p>
             </div>
             <div className="footer-links">
-              <Link to="/catalog">Terrenos</Link>
+              <Link to="/catalog">Catálogo</Link>
               {isSignedIn ? (
-                <Link to={admin ? "/dashboard/admin" : "/catalog"} className="text-btn">
-                  {admin ? "Dashboard admin" : "Seguir explorando"}
+                <Link to={admin ? "/dashboard/admin" : "/dashboard"} className="text-btn">
+                  {admin ? "Admin" : "Mi cuenta"}
                 </Link>
               ) : (
                 <>
-                  <Link to="/login" className="text-btn">Iniciar sesión</Link>
-                  <Link to="/register" className="text-btn">Crear cuenta</Link>
+                  <Link to="/login" className="text-btn">Entrar</Link>
+                  <Link to="/register" className="text-btn">Registrarse</Link>
                 </>
               )}
             </div>

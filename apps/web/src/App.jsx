@@ -11,29 +11,40 @@ import PaymentButton from "./components/PaymentButton";
 import AdminLandsPage from "./pages/AdminLandsPage";
 import MyLandsPage from "./pages/MyLandsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import ProfilePage from "./pages/ProfilePage";
+import ChatsPage from "./pages/ChatsPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import PaymentsPage from "./pages/PaymentsPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import UserDashboardLayout from "./components/UserDashboardLayout";
 import { getAdminSummary, listAdminRentalRequests, setTokenFn as setAdminTokenFn } from "./services/adminApi";
 import { useClerkToken } from "./hooks/useClerkToken";
 import { isAdminUser } from "./components/authDisplay";
 
 function ProtectedRoute({ children }) {
-  const { isLoaded } = useClerk();
-  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
+  const { isSignedIn, user } = useUser();
   const location = useLocation();
 
-  if (!isLoaded) {
+  if (!isSignedIn) {
     return (
       <div className="page-shell">
-        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
-          <p>Cargando...</p>
+        <nav className="glass-nav">
+          <a href="/" className="brand">TerraShare</a>
+          <nav className="menu">
+            <a href="/catalog">Terrenos</a>
+          </nav>
+        </nav>
+        <div className="glass-panel" style={{ textAlign: "center", padding: "3rem", marginTop: "2rem" }}>
+          <h1>Requiere inicio de sesion</h1>
+          <p>Para acceder a esta seccion necesitas estar logueado.</p>
+          <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={() => openSignIn({ redirectUrl: location.pathname })}>
+            Iniciar sesion
+          </button>
         </div>
       </div>
     );
-  }
-
-  if (!isSignedIn) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return children;
@@ -133,6 +144,10 @@ function DashboardPage() {
 
   useEffect(() => {
     const fetchRequests = async () => {
+      if (!user || !user.getToken) {
+        setLoading(false);
+        return;
+      }
       try {
         const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
         const token = await user.getToken();
@@ -150,6 +165,7 @@ function DashboardPage() {
       }
     };
     if (user) fetchRequests();
+    else setLoading(false);
   }, [user]);
 
   const statusLabels = {
@@ -284,24 +300,28 @@ function AdminDashboardPage() {
       {error && <p className="error-text" style={{ marginTop: "1rem" }}>{error}</p>}
 
       <div className="stats-grid" style={{ marginTop: "1.5rem" }}>
-        <div className="stat-card"><h3>Usuarios</h3><p>{summary?.users.total ?? "—"}</p></div>
-        <div className="stat-card"><h3>Terrenos</h3><p>{summary?.lands.total ?? "—"}</p></div>
-        <div className="stat-card"><h3>Solicitudes</h3><p>{summary?.requests.total ?? "—"}</p></div>
-        <div className="stat-card"><h3>Pendientes</h3><p>{summary?.requests.pendingOwner ?? "—"}</p></div>
+        <div className="glass-card" style={{ textAlign: "center" }}><h3>Usuarios</h3><p>{summary?.users.total ?? "—"}</p></div>
+        <div className="glass-card" style={{ textAlign: "center" }}><h3>Terrenos</h3><p>{summary?.lands.total ?? "—"}</p></div>
+        <div className="glass-card" style={{ textAlign: "center" }}><h3>Solicitudes</h3><p>{summary?.requests.total ?? "—"}</p></div>
+        <div className="glass-card" style={{ textAlign: "center" }}><h3>Pendientes</h3><p>{summary?.requests.pendingOwner ?? "—"}</p></div>
       </div>
 
-      <div className="panel" style={{ marginTop: "1.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
-          <h2>Solicitudes recientes</h2>
-          <select value={requestFilter} onChange={(e) => setRequestFilter(e.target.value)}>
-            <option value="all">Todas</option>
-            <option value="pending_owner">Pendientes</option>
-            <option value="approved">Aprobadas</option>
-            <option value="rejected">Rechazadas</option>
-            <option value="paid">Pagadas</option>
-          </select>
+      <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center", flexWrap: "wrap", marginBottom: "1rem" }}>
+          <h2 style={{ margin: 0 }}>Solicitudes recientes</h2>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {["all", "pending_owner", "approved", "rejected", "paid"].map((f) => (
+              <button
+                key={f}
+                className={`filter-chip ${requestFilter === f ? "active" : ""}`}
+                onClick={() => setRequestFilter(f)}
+              >
+                {f === "all" ? "Todas" : f === "pending_owner" ? "Pendientes" : f === "approved" ? "Aprobadas" : f === "rejected" ? "Rechazadas" : "Pagadas"}
+              </button>
+            ))}
+          </div>
         </div>
-        <table className="table" style={{ marginTop: "1rem" }}>
+        <table className="table">
           <thead>
             <tr><th>Terreno</th><th>Arrendatario</th><th>Estado</th><th>Uso</th></tr>
           </thead>
@@ -330,71 +350,30 @@ function AdminDashboardPage() {
 
 export default function App() {
   const { signOut } = useClerk();
-  const { isLoaded } = useUser();
 
   const handleSignOut = async () => {
     await signOut();
   };
-
-  if (!isLoaded) {
-    return (
-      <div className="page-shell">
-        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
-          <p>Cargando TerraShare...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/catalog" element={<CatalogPage />} />
       <Route path="/lands/:id" element={<LandDetailPage />} />
-      <Route path="/reserve/:landId" element={
-        <ProtectedRoute>
-          <ReservePage />
-        </ProtectedRoute>
-      } />
+      <Route path="/reserve/:landId" element={<ReservePage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/checkout/success" element={<PaymentSuccessPage />} />
       <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <DashboardLayout onSignOut={handleSignOut}>
-            <DashboardPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/dashboard/lands" element={
-        <ProtectedRoute>
-          <DashboardLayout onSignOut={handleSignOut}>
-            <MyLandsPage />
-          </DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/dashboard/admin" element={
-        <AdminRoute>
-          <AdminLayout onSignOut={handleSignOut}>
-            <AdminDashboardPage />
-          </AdminLayout>
-        </AdminRoute>
-      } />
-      <Route path="/dashboard/admin/users" element={
-        <AdminRoute>
-          <AdminLayout onSignOut={handleSignOut}>
-            <AdminUsersPage />
-          </AdminLayout>
-        </AdminRoute>
-      } />
-      <Route path="/dashboard/admin/lands" element={
-        <AdminRoute>
-          <AdminLayout onSignOut={handleSignOut}>
-            <AdminLandsPage />
-          </AdminLayout>
-        </AdminRoute>
-      } />
+      <Route path="/dashboard" element={<UserDashboardLayout><DashboardPage /></UserDashboardLayout>} />
+      <Route path="/dashboard/lands" element={<UserDashboardLayout><MyLandsPage /></UserDashboardLayout>} />
+      <Route path="/dashboard/chats" element={<UserDashboardLayout><ChatsPage /></UserDashboardLayout>} />
+      <Route path="/dashboard/notifications" element={<UserDashboardLayout><NotificationsPage /></UserDashboardLayout>} />
+      <Route path="/dashboard/payments" element={<UserDashboardLayout><PaymentsPage /></UserDashboardLayout>} />
+      <Route path="/dashboard/profile" element={<UserDashboardLayout><ProfilePage /></UserDashboardLayout>} />
+      <Route path="/dashboard/admin" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
+      <Route path="/dashboard/admin/users" element={<AdminLayout><AdminUsersPage /></AdminLayout>} />
+      <Route path="/dashboard/admin/lands" element={<AdminLayout><AdminLandsPage /></AdminLayout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
