@@ -1,21 +1,20 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
-import { getDisplayName, isAdminUser } from "./authDisplay";
+import { getDisplayName } from "./authDisplay";
 
-export default function PublicHeader({ showDashboardLink = true }) {
+export default function PublicHeader() {
   const { openSignIn, openSignUp, signOut } = useClerk();
   const { isSignedIn, user } = useUser();
   const location = useLocation();
+  const navigate = useNavigate();
   const userName = getDisplayName(user);
-  const admin = isAdminUser(user);
-  const canShowDashboard = showDashboardLink && (import.meta.env.DEV || admin || isSignedIn);
 
   const handleSignIn = () => {
-    openSignIn({ redirectUrl: location.pathname || "/dashboard/admin" });
+    openSignIn({ redirectUrl: "/dashboard" });
   };
 
   const handleSignUp = () => {
-    openSignUp({ redirectUrl: location.pathname || "/dashboard/admin" });
+    openSignUp({ redirectUrl: "/dashboard" });
   };
 
   const handleSignOut = async () => {
@@ -24,21 +23,20 @@ export default function PublicHeader({ showDashboardLink = true }) {
 
   return (
     <header className="glass-nav">
-      <Link to="/" className="brand">TerraShare</Link>
-      <nav className="menu">
-        <Link to="/catalog">Terrenos</Link>
-        {canShowDashboard && <Link to="/dashboard/admin">Dashboard</Link>}
-      </nav>
+      <Link to="/" className="brand-logo">
+        <img src="/terrashare.svg" alt="TerraShare" className="logo-img" />
+        <span className="brand-text">TerraShare</span>
+      </Link>
       <div className="auth-actions">
         {isSignedIn ? (
           <>
-            <span className="user-chip">{userName}</span>
-            {canShowDashboard && <Link to="/dashboard/admin" className="btn btn-ghost">Ir al dashboard</Link>}
+            <button className="user-chip" onClick={() => navigate("/dashboard/profile")}>
+              {userName}
+            </button>
             <button className="btn btn-ghost" onClick={handleSignOut}>Cerrar sesión</button>
           </>
         ) : (
           <>
-            {canShowDashboard && <Link to="/dashboard/admin" className="btn btn-ghost">Panel admin</Link>}
             <button className="btn btn-ghost" onClick={handleSignIn}>Iniciar sesión</button>
             <button className="btn btn-primary" onClick={handleSignUp}>Crear cuenta</button>
           </>
