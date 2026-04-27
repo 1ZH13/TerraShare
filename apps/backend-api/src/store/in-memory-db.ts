@@ -34,7 +34,7 @@ const seedUsers: UserRecord[] = [
     email: "owner@terrashare.test",
     role: "user",
     status: "active",
-    profile: { fullName: "Propietario Demo" },
+    profile: { fullName: "Propietario Demo", phone: "+50761000001" },
     createdAt: now,
     updatedAt: now,
   },
@@ -44,7 +44,7 @@ const seedUsers: UserRecord[] = [
     email: "owner2@terrashare.test",
     role: "user",
     status: "active",
-    profile: { fullName: "Propietario Dos" },
+    profile: { fullName: "Propietario Dos", phone: "+50762000002" },
     createdAt: now,
     updatedAt: now,
   },
@@ -95,6 +95,8 @@ const seedLandA: LandRecord = {
     province: "Chiriqui",
     district: "David",
     corregimiento: "San Pablo Nuevo",
+    lat: 8.4081,
+    lng: -82.4308,
   },
   availability: {
     availableFrom: now,
@@ -118,6 +120,8 @@ const seedLandB: LandRecord = {
   location: {
     province: "Cocle",
     district: "Penonome",
+    lat: 8.5126,
+    lng: -80.1539,
   },
   availability: {
     availableFrom: now,

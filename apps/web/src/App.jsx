@@ -11,6 +11,7 @@ import PaymentButton from "./components/PaymentButton";
 import AdminLandsPage from "./pages/AdminLandsPage";
 import MyLandsPage from "./pages/MyLandsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminLeadsPage from "./pages/AdminLeadsPage";
 import ProfilePage from "./pages/ProfilePage";
 import ChatsPage from "./pages/ChatsPage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -126,6 +127,7 @@ function AdminLayout({ children, onSignOut }) {
           <Link to="/dashboard/admin">Dashboard</Link>
           <Link to="/dashboard/admin/users">Usuarios</Link>
           <Link to="/dashboard/admin/lands">Terrenos</Link>
+          <Link to="/dashboard/admin/leads">Leads</Link>
         </nav>
         <div style={{ marginTop: "auto", paddingTop: "2rem" }}>
           <button className="btn btn-ghost" onClick={onSignOut} style={{ width: "100%", color: "white", borderColor: "rgba(255,255,255,0.3)" }}>
@@ -375,6 +377,7 @@ export default function App() {
       <Route path="/dashboard/admin" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
       <Route path="/dashboard/admin/users" element={<AdminLayout><AdminUsersPage /></AdminLayout>} />
       <Route path="/dashboard/admin/lands" element={<AdminLayout><AdminLandsPage /></AdminLayout>} />
+      <Route path="/dashboard/admin/leads" element={<AdminLayout><AdminLeadsPage /></AdminLayout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

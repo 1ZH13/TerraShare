@@ -81,3 +81,12 @@ export const listAdminRentalRequests = (filters = {}) => {
 
 /** GET /api/v1/admin/summary */
 export const getAdminSummary = () => request("GET", "/api/v1/admin/summary");
+
+/** GET /api/v1/admin/leads */
+export const listAdminLeads = (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.source) params.set("source", filters.source);
+  if (filters.search) params.set("search", filters.search);
+  const qs = params.toString();
+  return request("GET", `/api/v1/admin/leads${qs ? `?${qs}` : ""}`);
+};

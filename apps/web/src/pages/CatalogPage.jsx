@@ -1,21 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
 import { listLands } from "../services/api";
 
-function MapPin({ land, active, onClick }) {
-  return (
-    <button
-      type="button"
-      className={`map-pin ${active ? "active" : ""}`}
-      style={{ left: `${land.mapPosition?.x || 50}%`, top: `${land.mapPosition?.y || 50}%` }}
-      onClick={onClick}
-      aria-label={`Ver ${land.title}`}
-    >
-      <span className="map-pin-dot" />
-      <span className="map-pin-label">{land.location?.province}</span>
-    </button>
-  );
+function createCustomIcon(isActive) {
+  return L.divIcon({
+    className: "",
+    html: `<div class="leaflet-map-pin ${isActive ? "active" : ""}">
+      <div class="leaflet-map-pin-dot"></div>
+      <div class="leaflet-map-pin-pulse"></div>
+    </div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
 }
+
+function MapUpdater({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center, map.getZoom());
+    }
+  }, [center, map]);
+  return null;
+}
+
+const PANAMA_CENTER = [8.538, -80.782];
+const DEFAULT_ZOOM = 8;
 
 export default function CatalogPage() {
   const navigate = useNavigate();
@@ -60,6 +72,9 @@ export default function CatalogPage() {
   const PROVINCE_FILTERS = useMemo(() => ["Todas", ...new Set(lands.map((l) => l.location?.province).filter(Boolean))], [lands]);
 
   const selectedLand = filteredLands.find((l) => l.id === selectedId) || filteredLands[0];
+  const mapCenter = selectedLand?.location?.lat && selectedLand?.location?.lng
+    ? [selectedLand.location.lat, selectedLand.location.lng]
+    : PANAMA_CENTER;
 
   const handlePinClick = (land) => setSelectedId(land.id);
 
@@ -79,17 +94,50 @@ export default function CatalogPage() {
               <p>Vista geográfica</p>
             </div>
             <div className="map-stage" role="img" aria-label="Mapa de terrenos">
-              <div className="map-grid" />
-              <div className="map-glow map-glow-one" />
-              <div className="map-glow map-glow-two" />
-              {filteredLands.map((land) => (
-                <MapPin
-                  key={land.id}
-                  land={land}
-                  active={selectedLand?.id === land.id}
-                  onClick={() => handlePinClick(land)}
+              <MapContainer
+                center={PANAMA_CENTER}
+                zoom={DEFAULT_ZOOM}
+                className="leaflet-map-container"
+                zoomControl={true}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-              ))}
+                {filteredLands.map((land) => {
+                  if (!land.location?.lat || !land.location?.lng) return null;
+                  const isActive = selectedLand?.id === land.id;
+                  return (
+                    <Marker
+                      key={land.id}
+                      position={[land.location.lat, land.location.lng]}
+                      icon={createCustomIcon(isActive)}
+                      eventHandlers={{ click: () => handlePinClick(land) }}
+                    >
+                      <Popup>
+                        <div style={{ minWidth: "160px" }}>
+                          <span className="card-badge">{land.allowedUses?.[0]}</span>
+                          <h3 style={{ margin: "0.5rem 0 0.25rem", fontSize: "1rem" }}>{land.title}</h3>
+                          <p style={{ margin: 0, opacity: 0.7, fontSize: "0.875rem" }}>
+                            {land.location?.province} · {land.location?.district}
+                          </p>
+                          <strong style={{ display: "block", marginTop: "0.25rem" }}>
+                            ${land.priceRule?.pricePerMonth}/mes
+                          </strong>
+                          <button
+                            className="btn btn-primary"
+                            style={{ marginTop: "0.5rem", width: "100%", fontSize: "0.875rem" }}
+                            onClick={() => navigate(`/lands/${land.id}`)}
+                          >
+                            Ver detalle
+                          </button>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+                <MapUpdater center={mapCenter} />
+              </MapContainer>
               {selectedLand && (
                 <div className="map-callout">
                   <span className="card-badge">{selectedLand.allowedUses?.[0]}</span>

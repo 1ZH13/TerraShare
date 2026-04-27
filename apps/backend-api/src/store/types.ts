@@ -36,6 +36,7 @@ export interface LandRecord {
     currency: "USD" | "PAB";
     pricePerMonth: number;
   };
+  photos?: string[];
   status: LandStatus;
   createdAt: string;
   updatedAt: string;

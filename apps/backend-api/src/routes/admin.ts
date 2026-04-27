@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import { failure, success } from "../lib/api-response";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
+import { getNumericQuery } from "../lib/request-utils";
 import { createAuditEvent } from "../store/audit";
 import { getStore } from "../store/in-memory-db";
 import type { AdminLandSummary, AdminUserSummary, UserStatus } from "../store/types";
@@ -15,9 +16,12 @@ export const adminRoutes = new Hono<AppEnv>();
  * GET /api/v1/admin/users
  * Lista todos los usuarios del sistema con filtros opcionales.
  * Auth: required (admin)
+ * Pagination: page, pageSize
  */
 adminRoutes.get("/admin/users", requireAuth, requireAdmin, (c) => {
   const store = getStore();
+  const page = getNumericQuery(c, "page", 1, { min: 1 });
+  const pageSize = getNumericQuery(c, "pageSize", 20, { min: 1, max: 100 });
   const role = c.req.query("role") as "user" | "admin" | undefined;
   const status = c.req.query("status") as UserStatus | undefined;
   const search = c.req.query("search")?.toLowerCase();
@@ -38,7 +42,15 @@ adminRoutes.get("/admin/users", requireAuth, requireAdmin, (c) => {
     );
   }
 
-  return success(c, { items: users, total: users.length });
+  const totalItems = users.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const start = (page - 1) * pageSize;
+  const items = users.slice(start, start + pageSize);
+
+  return success(c, {
+    items,
+    pagination: { page, pageSize, totalItems, totalPages },
+  });
 });
 
 /**
@@ -102,9 +114,12 @@ adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, asyn
  * GET /api/v1/admin/lands
  * Lista terrenos con filtros — centrado en moderation (draft/inactive).
  * Auth: required (admin)
+ * Pagination: page, pageSize
  */
 adminRoutes.get("/admin/lands", requireAuth, requireAdmin, (c) => {
   const store = getStore();
+  const page = getNumericQuery(c, "page", 1, { min: 1 });
+  const pageSize = getNumericQuery(c, "pageSize", 20, { min: 1, max: 100 });
   const status = c.req.query("status");
   const search = c.req.query("search")?.toLowerCase();
 
@@ -133,7 +148,15 @@ adminRoutes.get("/admin/lands", requireAuth, requireAdmin, (c) => {
     };
   });
 
-  return success(c, { items, total: items.length });
+  const totalItems = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const start = (page - 1) * pageSize;
+  const paginatedItems = items.slice(start, start + pageSize);
+
+  return success(c, {
+    items: paginatedItems,
+    pagination: { page, pageSize, totalItems, totalPages },
+  });
 });
 
 /**
@@ -239,4 +262,29 @@ adminRoutes.get("/admin/rental-requests", requireAuth, requireAdmin, (c) => {
   });
 
   return success(c, { items, total: items.length });
+});
+
+// ─── Leads ───────────────────────────────────────────────────────────────────
+
+adminRoutes.get("/admin/leads", requireAuth, requireAdmin, (c) => {
+  const store = getStore();
+  const source = c.req.query("source");
+  const search = c.req.query("search")?.toLowerCase();
+
+  let leads = Array.from(store.leads.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  if (source && ["landing", "app-web", "admin-dashboard"].includes(source)) {
+    leads = leads.filter((l) => l.source === source);
+  }
+
+  if (search) {
+    leads = leads.filter((l) => l.email.toLowerCase().includes(search));
+  }
+
+  return success(c, {
+    leads,
+    total: leads.length,
+  });
 });

@@ -5,7 +5,7 @@ import { isOwnerOrAdmin } from "../lib/auth-helpers";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { getStore } from "../store/in-memory-db";
-import type { RentalRequestRecord, RentalRequestStatus } from "../store/types";
+import type { LandUse, RentalRequestRecord, RentalRequestStatus } from "../store/types";
 import type { AppEnv } from "../types";
 
 const allowedTransitions: Record<RentalRequestStatus, RentalRequestStatus[]> = {
@@ -48,6 +48,17 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
   const land = store.lands.get(body.landId);
   if (!land) {
     return failure(c, 404, "NOT_FOUND", "Land not found");
+  }
+
+  const intendedUse = body.intendedUse as LandUse;
+  if (!land.allowedUses.includes(intendedUse)) {
+    return failure(
+      c,
+      400,
+      "VALIDATION_ERROR",
+      "The intended use is not allowed for this land",
+      [{ field: "intendedUse", message: `Allowed uses: ${land.allowedUses.join(", ")}` }],
+    );
   }
 
   if (land.ownerId === authUser.id) {

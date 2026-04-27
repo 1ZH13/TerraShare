@@ -120,6 +120,7 @@ landRoutes.post("/lands", requireAuth, async (c) => {
     location: body.location,
     availability: body.availability ?? {},
     priceRule: body.priceRule,
+    photos: body.photos ?? [],
     status: "draft",
     createdAt: now,
     updatedAt: now,
@@ -234,4 +235,37 @@ landRoutes.delete("/lands/:landId", requireAuth, (c) => {
   });
 
   return success(c, { deleted: true });
+});
+
+landRoutes.post("/lands/:landId/photos", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  const store = getStore();
+  const landId = c.req.param("landId");
+  const current = store.lands.get(landId);
+
+  if (!current) {
+    return failure(c, 404, "NOT_FOUND", "Land not found");
+  }
+
+  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+    return failure(c, 403, "FORBIDDEN", "Only owner or admin can add photos");
+  }
+
+  const body = (await c.req.json().catch(() => null)) as { photoUrl?: string } | null;
+  if (!body?.photoUrl) {
+    return failure(c, 400, "VALIDATION_ERROR", "Missing photoUrl");
+  }
+
+  const currentPhotos = current.photos ?? [];
+  const updatedPhotos = [...currentPhotos, body.photoUrl];
+
+  const updated: LandRecord = {
+    ...current,
+    photos: updatedPhotos,
+    updatedAt: new Date().toISOString(),
+  };
+
+  store.lands.set(landId, updated);
+
+  return success(c, { photos: updatedPhotos });
 });

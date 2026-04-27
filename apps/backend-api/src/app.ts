@@ -11,6 +11,7 @@ import { rentalRequestRoutes } from "./routes/rental-requests";
 import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
+import { passwordRoutes } from "./routes/password";
 import type { AppEnv } from "./types";
 
 export function createApp() {

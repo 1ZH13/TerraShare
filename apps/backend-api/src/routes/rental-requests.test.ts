@@ -51,4 +51,45 @@ describe("rental requests routes", () => {
     expect(payload.ok).toBe(true);
     expect(payload.data.status).toBe("approved");
   });
+
+  it("rejects rental request with invalid intendedUse", async () => {
+    const { response, payload } = await requestJson("/api/v1/rental-requests", {
+      method: "POST",
+      headers: {
+        "x-dev-user-id": "user_tenant_99",
+      },
+      body: {
+        landId: "land_seed_01",
+        period: {
+          startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 300).toISOString(),
+          endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 360).toISOString(),
+        },
+        intendedUse: "ganaderia",
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("allows rental request with valid intendedUse", async () => {
+    const { response, payload } = await requestJson("/api/v1/rental-requests", {
+      method: "POST",
+      headers: {
+        "x-dev-user-id": "user_tenant_99",
+      },
+      body: {
+        landId: "land_seed_02",
+        period: {
+          startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 400).toISOString(),
+          endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 460).toISOString(),
+        },
+        intendedUse: "ganaderia",
+      },
+    });
+
+    expect(response.status).toBe(201);
+    expect(payload.ok).toBe(true);
+  });
 });
