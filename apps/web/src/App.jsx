@@ -19,8 +19,7 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import UserDashboardLayout from "./components/UserDashboardLayout";
 import PublicHeader from "./components/PublicHeader";
-import { getAdminSummary, listAdminRentalRequests, setTokenFn as setAdminTokenFn } from "./services/adminApi";
-import { useClerkToken } from "./hooks/useClerkToken";
+import { getAdminSummary, listAdminRentalRequests } from "./services/adminApi";
 import { isAdminUser } from "./components/authDisplay";
 
 function ProtectedRoute({ children }) {
@@ -259,11 +258,8 @@ function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [requestFilter, setRequestFilter] = useState("all");
-  const tokenReady = useClerkToken(setAdminTokenFn);
 
   useEffect(() => {
-    if (!tokenReady) return;
-
     let active = true;
     setLoading(true);
     setError("");
@@ -287,7 +283,7 @@ function AdminDashboardPage() {
     return () => {
       active = false;
     };
-  }, [tokenReady, requestFilter]);
+  }, [requestFilter]);
 
   const adminName = user?.firstName || user?.fullName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Admin";
 

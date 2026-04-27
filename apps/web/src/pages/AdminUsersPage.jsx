@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { listAdminUsers, updateUserStatus, setTokenFn } from "../services/adminApi";
-import { useClerkToken } from "../hooks/useClerkToken";
+import { listAdminUsers, updateUserStatus } from "../services/adminApi";
 
 const roleLabel = { user: "Usuario", admin: "Admin" };
 const statusLabel = { active: "Activo", blocked: "Bloqueado" };
@@ -12,8 +11,6 @@ export default function AdminUsersPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [actionMsg, setActionMsg] = useState("");
-
-  const tokenReady = useClerkToken(setTokenFn);
 
   const loadUsers = () => {
     setLoading(true);
@@ -29,10 +26,8 @@ export default function AdminUsersPage() {
   };
 
   useEffect(() => {
-    if (tokenReady) {
-      loadUsers();
-    }
-  }, [tokenReady, filter, search]);
+    loadUsers();
+  }, [filter, search]);
 
   const handleToggleStatus = async (userId, currentStatus) => {
     const nextStatus = currentStatus === "active" ? "blocked" : "active";

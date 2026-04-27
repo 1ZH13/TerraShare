@@ -1,21 +1,17 @@
 /**
  * API client para apps/web — conecta con backend-api.
- *
- * Base URL: VITE_API_BASE_URL (definida en .env)
- * Auth: Authorization: Bearer <clerk_token>
+ * Always uses dev bypass headers in development.
+ * No authentication tokens required.
  */
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-let authTokenFn = () => null;
-export const setTokenFn = (fn) => {
-  authTokenFn = fn;
-};
-
 const buildHeaders = () => {
   const headers = { "Content-Type": "application/json" };
-  const token = authTokenFn();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (import.meta.env.DEV) {
+    headers["x-dev-role"] = "user";
+    headers["x-dev-user-id"] = "web_dev_user";
+  }
   return headers;
 };
 
@@ -40,28 +36,25 @@ const request = async (method, path, body) => {
 
 /** GET /api/v1/lands — listado con filtros (use, province, district, priceMax, availableFrom, sort, order) */
 export const listLands = async (filters = {}) => {
-  try {
-    const params = new URLSearchParams();
-    if (filters.type && filters.type !== "all") params.set("use", filters.type);
-    if (filters.location) {
-      params.set("province", filters.location);
-    }
-    if (filters.maxPrice) params.set("priceMax", filters.maxPrice);
-    if (filters.availableOn) params.set("availableFrom", filters.availableOn);
-    params.set("sort", filters.sort || "createdAt");
-    params.set("order", filters.order || "desc");
-    if (filters.page) params.set("page", filters.page);
-    if (filters.pageSize) params.set("pageSize", filters.pageSize);
+  const params = new URLSearchParams();
+  if (filters.type) params.set("use", filters.type);
+  if (filters.province) params.set("province", filters.province);
+  if (filters.district) params.set("district", filters.district);
+  if (filters.priceMax) params.set("priceMax", String(filters.priceMax));
+  if (filters.availableFrom) params.set("availableFrom", filters.availableFrom);
+  if (filters.sort) params.set("sort", filters.sort);
+  if (filters.order) params.set("order", filters.order);
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
+  const qs = params.toString();
+  const res = await request("GET", `/api/v1/lands${qs ? `?${qs}` : ""}`);
+  return res?.data?.items ?? res?.data ?? [];
+};
 
-    const qs = params.toString();
-    const res = await request("GET", `/api/v1/lands${qs ? `?${qs}` : ""}`);
-    const items = res?.data?.items ?? [];
-    return items.map(adaptLandForCatalog);
-  } catch (err) {
-    console.warn("[listLands] API failed, using local data:", err.message);
-    const localLands = await import("../data/lands.js").then(m => m.LANDS || []);
-    return localLands.filter(l => l.status === "active").map(adaptLandForCatalog);
-  }
+/** GET /api/v1/lands/me - lista lands del usuario actual */
+export const getMyLands = async () => {
+  const res = await request("GET", "/api/v1/lands/me");
+  return res?.data ?? [];
 };
 
 /** POST /api/v1/rental-requests */
@@ -98,6 +91,12 @@ export const createCheckoutSession = async ({ rentalRequestId, currency = "USD",
 /** GET /api/v1/payments?rentalRequestId=x */
 export const getPaymentsByRequest = async (rentalRequestId) => {
   const res = await request("GET", `/api/v1/payments?rentalRequestId=${rentalRequestId}`);
+  return res?.data ?? [];
+};
+
+/** GET /api/v1/payments - lista todos los pagos del usuario */
+export const getMyPayments = async () => {
+  const res = await request("GET", "/api/v1/payments");
   return res?.data ?? [];
 };
 
@@ -163,13 +162,14 @@ export const getExternalContact = async (chatId) => {
 };
 
 export const api = {
-  setTokenFn,
   listLands,
+  getMyLands,
   getLandById,
   createRentalRequest,
   listRentalRequests,
   createCheckoutSession,
   getPaymentsByRequest,
+  getMyPayments,
   adaptLand,
   getChats,
   createChat,

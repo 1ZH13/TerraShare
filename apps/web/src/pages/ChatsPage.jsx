@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
+import { getChats } from "../services/api";
 
 export default function ChatsPage() {
   const { user } = useUser();
@@ -10,19 +11,13 @@ export default function ChatsPage() {
 
   useEffect(() => {
     const fetchChats = async () => {
-      if (!user || !user.getToken) {
+      if (!user) {
         setLoading(false);
         return;
       }
       try {
-        const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const token = await user.getToken();
-        const res = await fetch(`${BASE_URL}/api/v1/chats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        setChats(data?.data || []);
+        const data = await getChats();
+        setChats(data || []);
       } catch (err) {
         console.error("Error fetching chats:", err);
         setError(err.message);

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { getLandPrimaryUse, formatLandUse, getChatSeedMessages } from "../data/lands";
-import { getLandById, getChats, createChat, getMessages, sendMessage, getExternalContact, setTokenFn } from "../services/api";
+import { getLandById, getChats, createChat, getMessages, sendMessage, getExternalContact } from "../services/api";
 import PublicHeader from "../components/PublicHeader";
 
 function useChat(landId, isSignedIn, user) {
@@ -13,7 +13,7 @@ function useChat(landId, isSignedIn, user) {
   const [externalContact, setExternalContact] = useState(null);
 
   useEffect(() => {
-    if (!isSignedIn || !user || !user.getToken) {
+    if (!isSignedIn || !user) {
       const stored = sessionStorage.getItem(`terrashare-chat:${landId}`);
       const seed = getChatSeedMessages(landId);
       setMessages(stored ? JSON.parse(stored) : seed);
