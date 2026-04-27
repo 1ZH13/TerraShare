@@ -36,11 +36,3 @@ export function getOptionalNumericQuery(c: Context, key: string): number | undef
   const value = Number(raw);
   return Number.isNaN(value) ? undefined : value;
 }
-
-export function getBooleanQuery(c: Context, key: string, fallback = false) {
-  const raw = c.req.query(key);
-  if (!raw) {
-    return fallback;
-  }
-  return raw === "true";
-}

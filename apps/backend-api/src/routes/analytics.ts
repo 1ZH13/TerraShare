@@ -6,6 +6,19 @@ import { requireAuth } from "../middleware/require-auth";
 import { requireAdmin } from "../middleware/require-auth";
 import { getStore } from "../store/in-memory-db";
 import type { AppEnv } from "../types";
+import type { RentalRequestRecord } from "../store/types";
+
+function avgDecisionTimeMs(requests: RentalRequestRecord[]): number {
+  const decided = requests.filter(
+    (r) => r.status !== "draft" && r.status !== "pending_owner" && r.status !== "pending_payment",
+  );
+  if (decided.length === 0) return 0;
+  let total = 0;
+  for (const req of decided) {
+    total += new Date(req.updatedAt).getTime() - new Date(req.createdAt).getTime();
+  }
+  return total / decided.length;
+}
 
 export const analyticsRoutes = new Hono<AppEnv>();
 
@@ -50,19 +63,7 @@ analyticsRoutes.get("/analytics/overview", (c) => {
   const users = Array.from(store.users.values());
   const activeUsers = users.filter((u) => u.status === "active");
 
-  let avgTimeToDecisionMs = 0;
-  const decidedRequests = rentalRequests.filter(
-    (r) => r.status !== "draft" && r.status !== "pending_owner" && r.status !== "pending_payment",
-  );
-  if (decidedRequests.length > 0) {
-    let totalDecisionTime = 0;
-    for (const req of decidedRequests) {
-      const created = new Date(req.createdAt).getTime();
-      const updated = new Date(req.updatedAt).getTime();
-      totalDecisionTime += updated - created;
-    }
-    avgTimeToDecisionMs = totalDecisionTime / decidedRequests.length;
-  }
+  const avgTimeToDecisionMs = avgDecisionTimeMs(rentalRequests);
 
   const leads = Array.from(store.leads.values());
   const leadsLast30Days = leads.filter((l) => l.createdAt >= thirtyDaysAgo);
@@ -217,19 +218,7 @@ analyticsRoutes.get("/analytics/owner/:ownerId", requireAuth, (c) => {
     }
   }
 
-  let avgTimeToDecisionMs = 0;
-  const decidedRequests = ownerRequests.filter(
-    (r) => r.status !== "draft" && r.status !== "pending_owner" && r.status !== "pending_payment",
-  );
-  if (decidedRequests.length > 0) {
-    let totalDecisionTime = 0;
-    for (const req of decidedRequests) {
-      const created = new Date(req.createdAt).getTime();
-      const updated = new Date(req.updatedAt).getTime();
-      totalDecisionTime += updated - created;
-    }
-    avgTimeToDecisionMs = totalDecisionTime / decidedRequests.length;
-  }
+  const avgTimeToDecisionMs = avgDecisionTimeMs(ownerRequests);
 
   let totalRevenue = 0;
   const approvedRequestIds = new Set(approved > 0 ? ownerRequests.filter((r) => r.status === "paid" || r.status === "approved" || r.status === "pending_payment").map((r) => r.id) : []);
