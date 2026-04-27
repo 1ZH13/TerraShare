@@ -62,10 +62,13 @@ backend-api:
 - `CLERK_JWKS_URL=https://tu-proyecto.clerk.accounts.dev/.well-known/jwks.json`
 - `CLERK_ISSUER=https://tu-proyecto.clerk.accounts.dev`
 - `ALLOW_DEV_AUTH_BYPASS=true` (solo dev)
+- `STRIPE_SECRET_KEY=sk_test_...`
+- `STRIPE_WEBHOOK_SECRET=whsec_...`
 
 Nota:
 - El frontend consume `mockApi` local en modo dev (sin backend real).
 - El contrato para backend esta en `docs/MODULE_INTEGRATION_CONTRACTS.md`.
+- Setup detallado de Stripe en dev: `docs/STRIPE_DEV_SETUP.md`.
 
 ## 5. Arranque sugerido en equipo
 1. Clonar repo.
