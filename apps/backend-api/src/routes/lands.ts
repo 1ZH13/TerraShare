@@ -125,6 +125,21 @@ landRoutes.get("/lands/:landId", async (c) => {
   return success(c, land);
 });
 
+landRoutes.get("/lands/me", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  const mongoOk = useMongoDB();
+
+  let lands: LandRecord[] = [];
+  
+  if (mongoOk) {
+    lands = await listLands({ ownerId: authUser.id }) as LandRecord[];
+  } else {
+    lands = Array.from(getStore().lands.values()).filter((l) => l.ownerId === authUser.id);
+  }
+
+  return success(c, lands);
+});
+
 landRoutes.post("/lands", requireAuth, async (c) => {
   const authUser = c.get("authUser");
   const body = (await c.req.json().catch(() => null)) as Partial<LandRecord> | null;

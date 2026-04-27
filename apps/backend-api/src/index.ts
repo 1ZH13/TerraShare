@@ -1,5 +1,6 @@
 import { env } from "./config/env";
 import { connectDatabase, getDatabase } from "./config/database";
+import { connectMongoose } from "./db/mongoose";
 import { createApp } from "./app";
 import { seedDatabase } from "./db/seed";
 
@@ -7,6 +8,8 @@ const app = createApp();
 
 async function init() {
   try {
+    await connectMongoose();
+    
     const db = await connectDatabase();
     
     if (db) {

@@ -21,8 +21,8 @@ export function createApp() {
 
   app.use("*", cors({
     origin: "*",
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "x-dev-role", "x-dev-user-id", "stripe-signature"],
   }));
   app.use("*", requestIdMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));

@@ -1,18 +1,14 @@
 /**
  * Admin API client — connects to backend-api admin endpoints.
- * Auth: Bearer token from Clerk via setTokenFn.
+ * Always uses dev bypass headers in development.
+ * No authentication tokens required.
  */
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-let authTokenFn = () => null;
-export const setTokenFn = (fn) => { authTokenFn = fn; };
-
 const buildHeaders = () => {
   const headers = { "Content-Type": "application/json" };
-  const token = authTokenFn();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  if (!token && import.meta.env.DEV) {
+  if (import.meta.env.DEV) {
     headers["x-dev-role"] = "admin";
     headers["x-dev-user-id"] = "web_dev_admin";
   }

@@ -4,50 +4,45 @@ import { success } from "../lib/api-response";
 import { isOwnerOrAdmin } from "../lib/auth-helpers";
 import { requireAuth } from "../middleware/require-auth";
 import { requireAdmin } from "../middleware/require-auth";
-import { getStore } from "../store/in-memory-db";
+import { Land, RentalRequest, Payment, Lead, Chat, User } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 export const analyticsRoutes = new Hono<AppEnv>();
 
 analyticsRoutes.use("/*", requireAdmin);
 
-analyticsRoutes.get("/analytics/overview", (c) => {
-  const store = getStore();
-
+analyticsRoutes.get("/analytics/overview", async (c) => {
   const now = Date.now();
-  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-  const lands = Array.from(store.lands.values());
-  const activeLands = lands.filter((l) => l.status === "active");
+  const [lands, rentalRequests, payments, leads, chats, users] = await Promise.all([
+    Land.find({ status: "active" }).lean(),
+    RentalRequest.find().lean(),
+    Payment.find().lean(),
+    Lead.find().lean(),
+    Chat.find().lean(),
+    User.find().lean(),
+  ]);
 
-  const rentalRequests = Array.from(store.rentalRequests.values());
-  const recentRequests = rentalRequests.filter((r) => r.createdAt >= thirtyDaysAgo);
-
-  const totalRequests = rentalRequests.length;
+  const recentRequests = rentalRequests.filter((r) => new Date(r.createdAt) >= thirtyDaysAgo);
   const approvedRequests = rentalRequests.filter(
     (r) => r.status === "approved" || r.status === "pending_payment" || r.status === "paid",
   ).length;
   const rejectedRequests = rentalRequests.filter((r) => r.status === "rejected").length;
-
-  const requestsLast7Days = recentRequests.filter((r) => r.createdAt >= sevenDaysAgo).length;
+  const requestsLast7Days = rentalRequests.filter((r) => new Date(r.createdAt) >= sevenDaysAgo).length;
 
   const landsByCategory: Record<string, number> = {};
-  for (const land of activeLands) {
+  for (const land of lands) {
     for (const use of land.allowedUses) {
       landsByCategory[use] = (landsByCategory[use] || 0) + 1;
     }
   }
 
-  let totalRevenue = 0;
-  const paidPayments = Array.from(store.payments.values()).filter((p) => p.status === "paid");
-  for (const payment of paidPayments) {
-    totalRevenue += payment.amount;
-  }
+  const paidPayments = payments.filter((p) => p.status === "paid");
+  const totalRevenue = paidPayments.reduce((sum, p) => sum + p.amount, 0);
+  const pendingPayments = payments.filter((p) => p.status === "pending" || p.status === "processing");
 
-  const pendingPayments = Array.from(store.payments.values()).filter((p) => p.status === "pending" || p.status === "processing");
-
-  const users = Array.from(store.users.values());
   const activeUsers = users.filter((u) => u.status === "active");
 
   let avgTimeToDecisionMs = 0;
@@ -64,16 +59,14 @@ analyticsRoutes.get("/analytics/overview", (c) => {
     avgTimeToDecisionMs = totalDecisionTime / decidedRequests.length;
   }
 
-  const leads = Array.from(store.leads.values());
-  const leadsLast30Days = leads.filter((l) => l.createdAt >= thirtyDaysAgo);
-
+  const leadsLast30Days = leads.filter((l) => new Date(l.createdAt) >= thirtyDaysAgo);
   const leadsBySource: Record<string, number> = {};
   for (const lead of leadsLast30Days) {
     leadsBySource[lead.source] = (leadsBySource[lead.source] || 0) + 1;
   }
 
-  const chats = Array.from(store.chats.values());
-  const activeChats = chats.filter((c) => c.status === "active");
+  const activeChats = chats.filter((ch) => ch.status === "active");
+  const totalRequests = rentalRequests.length;
 
   const visitToRequestConversion = totalRequests > 0 && leads.length > 0
     ? (totalRequests / leads.length) * 100
@@ -81,7 +74,7 @@ analyticsRoutes.get("/analytics/overview", (c) => {
 
   return success(c, {
     overview: {
-      totalLands: activeLands.length,
+      totalLands: lands.length,
       totalUsers: users.length,
       activeUsers: activeUsers.length,
       totalRequests,
@@ -99,23 +92,21 @@ analyticsRoutes.get("/analytics/overview", (c) => {
     landsByCategory,
     leadsBySource,
     recentActivity: {
-      newLeadsLast7Days: leadsLast30Days.filter((l) => l.createdAt >= sevenDaysAgo).length,
+      newLeadsLast7Days: leadsLast30Days.filter((l) => new Date(l.createdAt) >= sevenDaysAgo).length,
       newRequestsLast7Days: requestsLast7Days,
     },
   });
 });
 
-analyticsRoutes.get("/analytics/lands", (c) => {
-  const store = getStore();
-  const lands = Array.from(store.lands.values());
-  const activeLands = lands.filter((l) => l.status === "active");
+analyticsRoutes.get("/analytics/lands", async (c) => {
+  const lands = await Land.find({ status: "active" }).lean();
 
   const landsByProvince: Record<string, number> = {};
   const landsByCategory: Record<string, number> = {};
   let totalArea = 0;
   let totalPrice = 0;
 
-  for (const land of activeLands) {
+  for (const land of lands) {
     landsByProvince[land.location.province] = (landsByProvince[land.location.province] || 0) + 1;
     for (const use of land.allowedUses) {
       landsByCategory[use] = (landsByCategory[use] || 0) + 1;
@@ -124,11 +115,11 @@ analyticsRoutes.get("/analytics/lands", (c) => {
     totalPrice += land.priceRule.pricePerMonth;
   }
 
-  const avgPrice = activeLands.length > 0 ? totalPrice / activeLands.length : 0;
-  const avgArea = activeLands.length > 0 ? totalArea / activeLands.length : 0;
+  const avgPrice = lands.length > 0 ? totalPrice / lands.length : 0;
+  const avgArea = lands.length > 0 ? totalArea / lands.length : 0;
 
   return success(c, {
-    total: activeLands.length,
+    total: lands.length,
     byProvince: landsByProvince,
     byCategory: landsByCategory,
     avgPricePerMonth: Math.round(avgPrice * 100) / 100,
@@ -137,15 +128,14 @@ analyticsRoutes.get("/analytics/lands", (c) => {
   });
 });
 
-analyticsRoutes.get("/analytics/requests", (c) => {
-  const store = getStore();
-  const requests = Array.from(store.rentalRequests.values());
+analyticsRoutes.get("/analytics/requests", async (c) => {
+  const requests = await RentalRequest.find().lean();
 
   const now = Date.now();
-  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-  const recentRequests = requests.filter((r) => r.createdAt >= thirtyDaysAgo);
+  const recentRequests = requests.filter((r) => new Date(r.createdAt) >= thirtyDaysAgo);
 
   const byStatus: Record<string, number> = {};
   for (const req of requests) {
@@ -158,7 +148,7 @@ analyticsRoutes.get("/analytics/requests", (c) => {
   }
 
   const approvedLast30Days = requests.filter(
-    (r) => (r.status === "approved" || r.status === "pending_payment" || r.status === "paid") && r.updatedAt >= thirtyDaysAgo,
+    (r) => (r.status === "approved" || r.status === "pending_payment" || r.status === "paid") && new Date(r.updatedAt) >= thirtyDaysAgo,
   );
 
   let avgDecisionTimeMs = 0;
@@ -173,7 +163,7 @@ analyticsRoutes.get("/analytics/requests", (c) => {
   return success(c, {
     total: requests.length,
     last30Days: recentRequests.length,
-    last7Days: requests.filter((r) => r.createdAt >= sevenDaysAgo).length,
+    last7Days: requests.filter((r) => new Date(r.createdAt) >= sevenDaysAgo).length,
     byStatus,
     byIntendedUse,
     avgTimeToApprovalHours: Math.round(avgDecisionTimeMs / (1000 * 60 * 60) * 10) / 10,
@@ -181,34 +171,34 @@ analyticsRoutes.get("/analytics/requests", (c) => {
   });
 });
 
-analyticsRoutes.get("/analytics/owner/:ownerId", requireAuth, (c) => {
+analyticsRoutes.get("/analytics/owner/:ownerId", requireAuth, async (c) => {
   const authUser = c.get("authUser");
   const ownerId = c.req.param("ownerId");
-  const store = getStore();
 
   if (!isOwnerOrAdmin(authUser, ownerId)) {
     return c.json({ ok: false, error: { code: "FORBIDDEN", message: "Not allowed to view this owner's analytics" } }, 403);
   }
 
   const now = Date.now();
-  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-  const ownerLands = Array.from(store.lands.values()).filter((l) => l.ownerId === ownerId);
+  const [ownerLands, ownerRequests, payments] = await Promise.all([
+    Land.find({ ownerId }).lean(),
+    RentalRequest.find().lean(),
+    Payment.find().lean(),
+  ]);
+
   const activeOwnerLands = ownerLands.filter((l) => l.status === "active");
-
   const ownerLandIds = new Set(activeOwnerLands.map((l) => l.id));
 
-  const ownerRequests = Array.from(store.rentalRequests.values()).filter((r) => {
-    return ownerLandIds.has(r.landId);
-  });
+  const filteredRequests = ownerRequests.filter((r) => ownerLandIds.has(r.landId));
+  const recentRequests = filteredRequests.filter((r) => new Date(r.createdAt) >= thirtyDaysAgo);
 
-  const recentRequests = ownerRequests.filter((r) => r.createdAt >= thirtyDaysAgo);
-
-  const pendingOwner = ownerRequests.filter((r) => r.status === "pending_owner").length;
-  const approved = ownerRequests.filter((r) => r.status === "approved" || r.status === "pending_payment" || r.status === "paid").length;
-  const rejected = ownerRequests.filter((r) => r.status === "rejected").length;
-  const totalRequests = ownerRequests.length;
+  const pendingOwner = filteredRequests.filter((r) => r.status === "pending_owner").length;
+  const approved = filteredRequests.filter((r) => r.status === "approved" || r.status === "pending_payment" || r.status === "paid").length;
+  const rejected = filteredRequests.filter((r) => r.status === "rejected").length;
+  const totalRequests = filteredRequests.length;
 
   const landsByCategory: Record<string, number> = {};
   for (const land of activeOwnerLands) {
@@ -218,7 +208,7 @@ analyticsRoutes.get("/analytics/owner/:ownerId", requireAuth, (c) => {
   }
 
   let avgTimeToDecisionMs = 0;
-  const decidedRequests = ownerRequests.filter(
+  const decidedRequests = filteredRequests.filter(
     (r) => r.status !== "draft" && r.status !== "pending_owner" && r.status !== "pending_payment",
   );
   if (decidedRequests.length > 0) {
@@ -231,13 +221,14 @@ analyticsRoutes.get("/analytics/owner/:ownerId", requireAuth, (c) => {
     avgTimeToDecisionMs = totalDecisionTime / decidedRequests.length;
   }
 
-  let totalRevenue = 0;
-  const approvedRequestIds = new Set(approved > 0 ? ownerRequests.filter((r) => r.status === "paid" || r.status === "approved" || r.status === "pending_payment").map((r) => r.id) : []);
-  for (const payment of Array.from(store.payments.values())) {
-    if (payment.status === "paid" && approvedRequestIds.has(payment.rentalRequestId)) {
-      totalRevenue += payment.amount;
-    }
-  }
+  const approvedRequestIds = new Set(
+    filteredRequests
+      .filter((r) => r.status === "paid" || r.status === "approved" || r.status === "pending_payment")
+      .map((r) => r.id),
+  );
+  const totalRevenue = payments
+    .filter((p) => p.status === "paid" && approvedRequestIds.has(p.rentalRequestId))
+    .reduce((sum, p) => sum + p.amount, 0);
 
   return success(c, {
     totalLands: activeOwnerLands.length,
@@ -246,7 +237,7 @@ analyticsRoutes.get("/analytics/owner/:ownerId", requireAuth, (c) => {
     approved,
     rejected,
     requestsLast30Days: recentRequests.length,
-    requestsLast7Days: recentRequests.filter((r) => r.createdAt >= sevenDaysAgo).length,
+    requestsLast7Days: recentRequests.filter((r) => new Date(r.createdAt) >= sevenDaysAgo).length,
     avgTimeToDecisionHours: avgTimeToDecisionMs > 0 ? Math.round(avgTimeToDecisionMs / (1000 * 60 * 60) * 10) / 10 : 0,
     requestApprovalRate: totalRequests > 0 ? Math.round((approved / totalRequests) * 100 * 10) / 10 : 0,
     totalRevenue,
