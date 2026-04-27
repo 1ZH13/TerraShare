@@ -154,12 +154,15 @@ chatRoutes.get("/chats/:chatId/external-contact", requireAuth, (c) => {
   }
 
   const ownerParticipant = chat.participants.find((participant) => participant.role === "owner");
+  const owner = ownerParticipant ? store.users.get(ownerParticipant.userId) : undefined;
+
+  const ownerPhone = owner?.profile.phone;
 
   return success(c, {
     whatsappEnabled: true,
     contact: {
-      phone: "+50760000000",
-      displayName: ownerParticipant?.userId ?? "Propietario",
+      phone: ownerPhone ?? null,
+      displayName: owner?.profile.fullName ?? ownerParticipant?.userId ?? "Propietario",
     },
   });
 });
