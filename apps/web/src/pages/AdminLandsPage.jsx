@@ -8,18 +8,11 @@ const statusLabels = {
   rejected: "Rechazado",
 };
 
-const statusColors = {
-  draft: { bg: "rgba(200, 170, 0, 0.15)", color: "var(--accent-600)" },
-  active: { bg: "rgba(11, 95, 55, 0.15)", color: "var(--leaf-700)" },
-  inactive: { bg: "rgba(100, 100, 100, 0.15)", color: "var(--stone-600)" },
-  rejected: { bg: "rgba(180, 40, 40, 0.15)", color: "var(--error)" },
-};
-
 export default function AdminLandsPage() {
   const [lands, setLands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState("draft");
+  const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [actionMsg, setActionMsg] = useState("");
 
@@ -44,7 +37,7 @@ export default function AdminLandsPage() {
     try {
       await updateLandStatus(landId, nextStatus);
       setLands((prev) => prev.map((l) => l.id === landId ? { ...l, status: nextStatus } : l));
-      setActionMsg(`Terreno ${nextStatus === "active" ? "aprobado" : "rechazado"}`);
+      setActionMsg(`Terreno ${nextStatus === "active" ? "aprobado" : nextStatus === "rejected" ? "rechazado" : "desactivado"}`);
     } catch (e) {
       setError(e.message);
     }
@@ -52,70 +45,56 @@ export default function AdminLandsPage() {
   };
 
   return (
-    <div>
-      <div className="section-header">
-        <h1>Moderación de Terrenos</h1>
-        <p>Revisa y aprueba los terrenos publicados en la plataforma</p>
-      </div>
+    <div className="admin-page-header">
+      <h1>Moderación de Terrenos</h1>
+      <p>Revisa y aprueba los terrenos publicados en la plataforma</p>
 
-      <div className="filters-bar" style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+      <div className="admin-filters-bar">
         <input
           type="text"
           placeholder="Buscar por título o provincia..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ maxWidth: "300px", flex: 1 }}
+          className="admin-search-input"
         />
-        <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="admin-select">
           <option value="all">Todos</option>
           <option value="draft">Borrador (pendiente)</option>
           <option value="active">Activos</option>
           <option value="inactive">Inactivos</option>
           <option value="rejected">Rechazados</option>
         </select>
-        <span style={{ opacity: 0.7 }}>{lands.length} terreno{lands.length !== 1 ? "s" : ""}</span>
-        {actionMsg && (
-          <span style={{ color: "var(--leaf-600)", fontWeight: 600 }}>{actionMsg}</span>
-        )}
+        <span className="admin-count">{lands.length} terreno{lands.length !== 1 ? "s" : ""}</span>
+        {actionMsg && <span className="admin-action-msg">{actionMsg}</span>}
       </div>
 
-      {loading && <p className="muted" style={{ marginTop: "1rem" }}>Cargando...</p>}
-      {error && <p className="error-text" style={{ marginTop: "1rem" }}>{error}</p>}
+      {loading && <div className="admin-loading">Cargando...</div>}
+      {error && <div className="admin-error">{error}</div>}
 
       {!loading && !error && (
-        <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {lands.map((land) => {
-            const colors = statusColors[land.status] ?? statusColors.draft;
-            return (
-              <div key={land.id} className="panel" style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0 }}>{land.title}</h3>
-                  <p style={{ margin: "0.25rem 0 0", opacity: 0.7, fontSize: "0.875rem" }}>
-                    Propietario: {land.ownerEmail}
-                  </p>
-                  <p style={{ margin: "0.25rem 0 0", opacity: 0.5, fontSize: "0.75rem" }}>
-                    ID: {land.id}
-                  </p>
+        <div className="admin-lands-list">
+          {lands.length === 0 ? (
+            <div className="admin-empty">No se encontraron terrenos</div>
+          ) : (
+            lands.map((land) => (
+              <div key={land.id} className="admin-data-card">
+                <div className="admin-data-card-info">
+                  <h3>{land.title}</h3>
+                  <p className="land-owner">Propietario: {land.ownerEmail}</p>
                 </div>
-                <span style={{
-                  display: "inline-block", padding: "0.25rem 0.75rem",
-                  borderRadius: "999px", fontSize: "0.75rem", fontWeight: 700,
-                  background: colors.bg, color: colors.color,
-                }}>
+                <span className={`admin-status-badge ${land.status}`}>
                   {statusLabels[land.status] ?? land.status}
                 </span>
                 {land.status === "draft" && (
                   <>
                     <button
-                      className="btn btn-primary"
-                      style={{ fontSize: "0.75rem", padding: "0.35rem 0.75rem" }}
+                      className="admin-btn admin-btn-primary"
                       onClick={() => handleUpdateStatus(land.id, land.status, "active")}
                     >
                       Aprobar
                     </button>
                     <button
-                      className="btn btn-ghost"
-                      style={{ fontSize: "0.75rem", padding: "0.35rem 0.75rem" }}
+                      className="admin-btn admin-btn-ghost"
                       onClick={() => handleUpdateStatus(land.id, land.status, "rejected")}
                     >
                       Rechazar
@@ -124,20 +103,14 @@ export default function AdminLandsPage() {
                 )}
                 {land.status === "active" && (
                   <button
-                    className="btn btn-ghost"
-                    style={{ fontSize: "0.75rem", padding: "0.35rem 0.75rem" }}
+                    className="admin-btn admin-btn-ghost"
                     onClick={() => handleUpdateStatus(land.id, land.status, "inactive")}
                   >
                     Desactivar
                   </button>
                 )}
               </div>
-            );
-          })}
-          {lands.length === 0 && (
-            <div className="panel" style={{ textAlign: "center", opacity: 0.5, padding: "2rem" }}>
-              No se encontraron terrenos
-            </div>
+            ))
           )}
         </div>
       )}

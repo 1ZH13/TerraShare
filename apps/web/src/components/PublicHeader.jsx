@@ -14,7 +14,13 @@ export default function PublicHeader() {
   };
 
   const handleSignUp = () => {
-    openSignUp({ redirectUrl: "/dashboard" });
+    if (isSignedIn) {
+      signOut({ redirectUrl: "/" }).then(() => {
+        openSignUp({});
+      });
+    } else {
+      openSignUp({});
+    }
   };
 
   const handleSignOut = async () => {
