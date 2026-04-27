@@ -43,95 +43,59 @@ export default function AdminUsersPage() {
     setTimeout(() => setActionMsg(""), 3000);
   };
 
-  const filtered = users; // Backend already filters
+  const filtered = users;
 
   return (
-    <div>
-      <div className="section-header">
-        <h1>Gestión de Usuarios</h1>
-        <p>Administra cuentas de usuarios y propietarios</p>
-      </div>
+    <div className="admin-page-header">
+      <h1>Gestión de Usuarios</h1>
+      <p>Administra cuentas de usuarios y propietarios de la plataforma</p>
 
-      <div className="filters-bar" style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+      <div className="admin-filters-bar">
         <input
           type="text"
           placeholder="Buscar por nombre o email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ maxWidth: "300px", flex: 1 }}
+          className="admin-search-input"
         />
-        <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="admin-select">
           <option value="all">Todos</option>
           <option value="active">Activos</option>
           <option value="blocked">Bloqueados</option>
         </select>
-        <span style={{ opacity: 0.7 }}>{filtered.length} usuario{filtered.length !== 1 ? "s" : ""}</span>
-        {actionMsg && (
-          <span style={{ color: "var(--leaf-600)", fontWeight: 600 }}>{actionMsg}</span>
-        )}
+        <span className="admin-count">{filtered.length} usuario{filtered.length !== 1 ? "s" : ""}</span>
+        {actionMsg && <span className="admin-action-msg">{actionMsg}</span>}
       </div>
 
-      {loading && <p className="muted" style={{ marginTop: "1rem" }}>Cargando...</p>}
-      {error && <p className="error-text" style={{ marginTop: "1rem" }}>{error}</p>}
+      {loading && <div className="admin-loading">Cargando...</div>}
+      {error && <div className="admin-error">{error}</div>}
 
       {!loading && !error && (
-        <div className="panel" style={{ marginTop: "1rem" }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Fecha de registro</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u) => (
-                <tr key={u.id}>
-                  <td style={{ fontWeight: 700 }}>{u.profile.fullName}</td>
-                  <td>{u.email}</td>
-                  <td>
-                    <span className="role-badge" style={{
-                      display: "inline-block", padding: "0.2rem 0.5rem",
-                      borderRadius: "999px", fontSize: "0.75rem", fontWeight: 700,
-                      background: u.role === "owner"
-                        ? "rgba(13, 111, 147, 0.15)"
-                        : "rgba(11, 95, 55, 0.15)",
-                      color: u.role === "owner" ? "var(--river-500)" : "var(--leaf-700)",
-                    }}>
-                      {roleLabel[u.role] ?? u.role}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge status-${u.status === "active" ? "active" : "blocked"}`}>
-                      {statusLabel[u.status] ?? u.status}
-                    </span>
-                  </td>
-                  <td style={{ opacity: 0.7 }}>
-                    {new Date(u.createdAt).toLocaleDateString("es-PA")}
-                  </td>
-                  <td>
-                    <button
-                      className={`btn ${u.status === "active" ? "btn-ghost" : "btn-primary"}`}
-                      onClick={() => handleToggleStatus(u.id, u.status)}
-                      style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
-                    >
-                      {u.status === "active" ? "Bloquear" : "Activar"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: "center", opacity: 0.5, padding: "2rem" }}>
-                    No se encontraron usuarios
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="admin-users-list">
+          {filtered.length === 0 ? (
+            <div className="admin-empty">No se encontraron usuarios</div>
+          ) : (
+            filtered.map((u) => (
+              <div key={u.id} className="admin-data-card">
+                <div className="admin-data-card-info">
+                  <h3>{u.profile.fullName}</h3>
+                  <p>{u.email}</p>
+                </div>
+                <span className={`role-badge role-${u.role}`}>
+                  {roleLabel[u.role] ?? u.role}
+                </span>
+                <span className={`admin-status-badge ${u.status === "active" ? "approved" : "rejected"}`}>
+                  {statusLabel[u.status] ?? u.status}
+                </span>
+                <button
+                  className={`admin-btn ${u.status === "active" ? "admin-btn-ghost" : "admin-btn-primary"}`}
+                  onClick={() => handleToggleStatus(u.id, u.status)}
+                >
+                  {u.status === "active" ? "Bloquear" : "Activar"}
+                </button>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

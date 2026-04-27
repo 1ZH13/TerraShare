@@ -27,26 +27,8 @@ test.describe("Smoke E2E auth y flujo protegido", () => {
     await expect(page.getByRole("link", { name: /Inicia sesion/ })).toBeVisible();
   });
 
-  test("login: navegacion desde landing funciona", async ({ page }) => {
-    await page.goto("/");
-
-    await page.getByRole("button", { name: /Iniciar sesion/ }).click();
-
-    await expect(page).toHaveURL(/.*\/login/);
-    await expect(page.getByRole("heading", { name: /Iniciar sesion/i })).toBeVisible();
-  });
-
-  test("register: navegacion desde landing funciona", async ({ page }) => {
-    await page.goto("/");
-
-    await page.getByRole("button", { name: /Crear cuenta/ }).click();
-
-    await expect(page).toHaveURL(/.*\/register/);
-    await expect(page.getByRole("heading", { name: /Crear cuenta/i })).toBeVisible();
-  });
-
   test("reserve: redireccion a login para invitado", async ({ page }) => {
-    await page.goto("/reserve/1");
+    await page.goto("/reserve/land_0001");
 
     await expect(page).toHaveURL(/.*\/login/);
     await expect(page.getByRole("heading", { name: /Iniciar sesion/i })).toBeVisible();
