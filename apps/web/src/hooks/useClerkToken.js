@@ -8,7 +8,7 @@ export function useClerkToken(setTokenFn) {
   useEffect(() => {
     let active = true;
 
-    if (!user) {
+    if (!user || !user.getToken) {
       setTokenFn(() => null);
       setReady(true);
       return undefined;

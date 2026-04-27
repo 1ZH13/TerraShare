@@ -55,6 +55,10 @@ export const getAdminUser = (userId) =>
 export const updateUserStatus = (userId, status) =>
   request("PATCH", `/api/v1/admin/users/${userId}/status`, { status });
 
+/** PATCH /api/v1/admin/users/:userId/role — { role: "user"|"owner"|"admin" } */
+export const updateUserRole = (userId, role) =>
+  request("PATCH", `/api/v1/admin/users/${userId}/role`, { role });
+
 // ─── Lands ───────────────────────────────────────────────────────────────────
 
 /** GET /api/v1/admin/lands?status=&search= */

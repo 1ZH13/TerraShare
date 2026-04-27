@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { listAdminUsers, updateUserStatus, setTokenFn } from "../services/adminApi";
+import { listAdminUsers, updateUserStatus, updateUserRole, setTokenFn } from "../services/adminApi";
 import { useClerkToken } from "../hooks/useClerkToken";
 
-const roleLabel = { user: "Usuario", admin: "Admin" };
+const roleLabel = { user: "Usuario", owner: "Propietario", admin: "Admin" };
 const statusLabel = { active: "Activo", blocked: "Bloqueado" };
 
 export default function AdminUsersPage() {
@@ -42,6 +42,19 @@ export default function AdminUsersPage() {
         prev.map((u) => u.id === userId ? { ...u, status: nextStatus } : u)
       );
       setActionMsg(`Usuario ${nextStatus === "blocked" ? "bloqueado" : "activado"}`);
+    } catch (e) {
+      setError(e.message);
+    }
+    setTimeout(() => setActionMsg(""), 3000);
+  };
+
+  const handleChangeRole = async (userId, newRole) => {
+    try {
+      await updateUserRole(userId, newRole);
+      setUsers((prev) =>
+        prev.map((u) => u.id === userId ? { ...u, role: newRole } : u)
+      );
+      setActionMsg(`Rol actualizado a ${roleLabel[newRole] || newRole}`);
     } catch (e) {
       setError(e.message);
     }
@@ -98,16 +111,15 @@ export default function AdminUsersPage() {
                   <td style={{ fontWeight: 700 }}>{u.profile.fullName}</td>
                   <td>{u.email}</td>
                   <td>
-                    <span className="role-badge" style={{
-                      display: "inline-block", padding: "0.2rem 0.5rem",
-                      borderRadius: "999px", fontSize: "0.75rem", fontWeight: 700,
-                      background: u.role === "owner"
-                        ? "rgba(13, 111, 147, 0.15)"
-                        : "rgba(11, 95, 55, 0.15)",
-                      color: u.role === "owner" ? "var(--river-500)" : "var(--leaf-700)",
-                    }}>
-                      {roleLabel[u.role] ?? u.role}
-                    </span>
+                    <select
+                      value={u.role || "user"}
+                      onChange={(e) => handleChangeRole(u.id, e.target.value)}
+                      style={{ width: "auto", padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
+                    >
+                      <option value="user">Usuario</option>
+                      <option value="owner">Propietario</option>
+                      <option value="admin">Admin</option>
+                    </select>
                   </td>
                   <td>
                     <span className={`status-badge status-${u.status === "active" ? "active" : "blocked"}`}>

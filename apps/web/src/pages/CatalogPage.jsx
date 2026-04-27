@@ -1,13 +1,46 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listLands } from "../services/api";
+import PanamaMap from "../components/PanamaMap.jsx";
+
+const PROVINCE_COORDS = {
+  "Bocas del Toro": { x: 15, y: 25 },
+  "Chiriquí": { x: 25, y: 60 },
+  "Veraguas": { x: 45, y: 90 },
+  "Herrera": { x: 55, y: 115 },
+  "Los Santos": { x: 50, y: 140 },
+  "Darién": { x: 90, y: 120 },
+  "Coclé": { x: 65, y: 80 },
+  "Colón": { x: 80, y: 120 },
+  "Panamá": { x: 85, y: 145 },
+  "Panamá Oeste": { x: 65, y: 135 },
+  "Emberá": { x: 85, y: 70 },
+};
+
+function MapCluster({ province, count, lands, active, onClick }) {
+  const coords = PROVINCE_COORDS[province] || { x: 50, y: 50 };
+  return (
+    <button
+      type="button"
+      className={`map-cluster ${active ? "active" : ""}`}
+      style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
+      onClick={onClick}
+      aria-label={`${count} terrenos en ${province}`}
+    >
+      <span className="cluster-count">{count}</span>
+      <span className="cluster-label">{province}</span>
+    </button>
+  );
+}
 
 function MapPin({ land, active, onClick }) {
+  const province = land.location?.province || "Panamá";
+  const coords = PROVINCE_COORDS[province] || { x: 50, y: 50 };
   return (
     <button
       type="button"
       className={`map-pin ${active ? "active" : ""}`}
-      style={{ left: `${land.mapPosition?.x || 50}%`, top: `${land.mapPosition?.y || 50}%` }}
+      style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
       onClick={onClick}
       aria-label={`Ver ${land.title}`}
     >
@@ -56,12 +89,29 @@ export default function CatalogPage() {
     });
   }, [lands, type, province, maxPrice, query]);
 
+  const landsByProvince = useMemo(() => {
+    const grouped = {};
+    filteredLands.forEach((land) => {
+      const prov = land.location?.province || "Panamá";
+      if (!grouped[prov]) grouped[prov] = [];
+      grouped[prov].push(land);
+    });
+    return grouped;
+  }, [filteredLands]);
+
   const USE_FILTERS = useMemo(() => ["Todos", ...new Set(lands.map((l) => l.allowedUses?.[0] || l.type).filter(Boolean))], [lands]);
   const PROVINCE_FILTERS = useMemo(() => ["Todas", ...new Set(lands.map((l) => l.location?.province).filter(Boolean))], [lands]);
 
   const selectedLand = filteredLands.find((l) => l.id === selectedId) || filteredLands[0];
 
   const handlePinClick = (land) => setSelectedId(land.id);
+  const handleClusterClick = (provinceLands) => {
+    if (provinceLands.length === 1) {
+      setSelectedId(provinceLands[0].id);
+    } else {
+      setProvince(provinceLands[0].location?.province);
+    }
+  };
 
   return (
     <div className="page-shell">
@@ -79,17 +129,11 @@ export default function CatalogPage() {
               <p>Vista geográfica</p>
             </div>
             <div className="map-stage" role="img" aria-label="Mapa de terrenos">
-              <div className="map-grid" />
-              <div className="map-glow map-glow-one" />
-              <div className="map-glow map-glow-two" />
-              {filteredLands.map((land) => (
-                <MapPin
-                  key={land.id}
-                  land={land}
-                  active={selectedLand?.id === land.id}
-                  onClick={() => handlePinClick(land)}
-                />
-              ))}
+              <PanamaMap
+                lands={filteredLands}
+                selectedLand={selectedLand}
+                onSelectLand={handlePinClick}
+              />
               {selectedLand && (
                 <div className="map-callout">
                   <span className="card-badge">{selectedLand.allowedUses?.[0]}</span>
