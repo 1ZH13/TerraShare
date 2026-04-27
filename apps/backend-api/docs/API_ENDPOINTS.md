@@ -223,6 +223,7 @@ Estados de solicitud (v1):
 | GET | `/analytics/overview` | Si | admin | implemented | #82 |
 | GET | `/analytics/lands` | Si | admin | implemented | #82 |
 | GET | `/analytics/requests` | Si | admin | implemented | #82 |
+| GET | `/analytics/owner/:ownerId` | Si | owner, admin | implemented | #87 |
 
 `GET /analytics/overview` response example:
 
@@ -303,6 +304,30 @@ Estados de solicitud (v1):
     },
     "avgTimeToApprovalHours": 36.2,
     "approvalRate": 75.3
+  }
+}
+```
+
+`GET /analytics/owner/:ownerId` response example:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "totalLands": 2,
+    "totalRequests": 5,
+    "pendingOwner": 1,
+    "approved": 3,
+    "rejected": 1,
+    "requestsLast30Days": 4,
+    "requestsLast7Days": 1,
+    "avgTimeToDecisionHours": 36.5,
+    "requestApprovalRate": 60.0,
+    "totalRevenue": 2550,
+    "landsByCategory": {
+      "agricultura": 1,
+      "ganaderia": 1
+    }
   }
 }
 ```
