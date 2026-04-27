@@ -4,17 +4,27 @@ import { failure, success } from "../lib/api-response";
 import { isOwnerOrAdmin } from "../lib/auth-helpers";
 import { getNumericQuery, getOptionalNumericQuery } from "../lib/request-utils";
 import { requireAuth } from "../middleware/require-auth";
-import { createAuditEvent } from "../store/audit";
+import { createAuditEvent as createAudit } from "../store/audit";
+import { listLands, getLandById, createLand, updateLand, deleteLand } from "../db/collections";
 import { getStore } from "../store/in-memory-db";
 import type { LandRecord, LandUse } from "../store/types";
 import type { AppEnv } from "../types";
 
 const allowedSortFields = new Set(["createdAt", "price", "area"]);
 
+function useMongoDB(): boolean {
+  try {
+    const { getDatabase } = require("../config/database");
+    return !!getDatabase();
+  } catch {
+    return false;
+  }
+}
+
 export const landRoutes = new Hono<AppEnv>();
 
-landRoutes.get("/lands", (c) => {
-  const store = getStore();
+landRoutes.get("/lands", async (c) => {
+  const mongoOk = useMongoDB();
   const page = getNumericQuery(c, "page", 1, { min: 1 });
   const pageSize = getNumericQuery(c, "pageSize", 20, { min: 1, max: 100 });
   const sort = c.req.query("sort") ?? "createdAt";
@@ -33,7 +43,15 @@ landRoutes.get("/lands", (c) => {
     ]);
   }
 
-  let lands = Array.from(store.lands.values()).filter((land) => land.status === "active");
+  let lands: LandRecord[];
+  
+  if (mongoOk) {
+    const filters: Record<string, string> = {};
+    if (use) filters.status = "active";
+    lands = await listLands({ status: "active" }) as LandRecord[];
+  } else {
+    lands = Array.from(getStore().lands.values()).filter((land) => land.status === "active");
+  }
 
   if (use) {
     lands = lands.filter((land) => land.allowedUses.includes(use as LandUse));
@@ -89,9 +107,17 @@ landRoutes.get("/lands", (c) => {
   });
 });
 
-landRoutes.get("/lands/:landId", (c) => {
-  const store = getStore();
-  const land = store.lands.get(c.req.param("landId"));
+landRoutes.get("/lands/:landId", async (c) => {
+  const mongoOk = useMongoDB();
+  const landId = c.req.param("landId");
+  
+  let land: LandRecord | undefined;
+  if (mongoOk) {
+    land = await getLandById(landId) as LandRecord | undefined;
+  } else {
+    land = getStore().lands.get(landId);
+  }
+  
   if (!land || land.status === "inactive") {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
@@ -125,9 +151,14 @@ landRoutes.post("/lands", requireAuth, async (c) => {
     updatedAt: now,
   };
 
-  const store = getStore();
-  store.lands.set(land.id, land);
-  createAuditEvent({
+  const mongoOk = useMongoDB();
+  if (mongoOk) {
+    await createLand(land);
+  } else {
+    getStore().lands.set(land.id, land);
+  }
+  
+  createAudit({
     actor: authUser,
     entity: "land",
     action: "created",
@@ -139,9 +170,16 @@ landRoutes.post("/lands", requireAuth, async (c) => {
 
 landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
   const landId = c.req.param("landId");
-  const current = store.lands.get(landId);
+  const mongoOk = useMongoDB();
+  
+  let current: LandRecord | undefined;
+  if (mongoOk) {
+    current = await getLandById(landId) as LandRecord | undefined;
+  } else {
+    current = getStore().lands.get(landId);
+  }
+  
   if (!current) {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
@@ -163,8 +201,13 @@ landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
     updatedAt: new Date().toISOString(),
   };
 
-  store.lands.set(updated.id, updated);
-  createAuditEvent({
+  if (mongoOk) {
+    await updateLand(landId, updated);
+  } else {
+    getStore().lands.set(updated.id, updated);
+  }
+  
+  createAudit({
     actor: authUser,
     entity: "land",
     action: "updated",
@@ -176,9 +219,16 @@ landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
 
 landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
   const landId = c.req.param("landId");
-  const current = store.lands.get(landId);
+  const mongoOk = useMongoDB();
+  
+  let current: LandRecord | undefined;
+  if (mongoOk) {
+    current = await getLandById(landId) as LandRecord | undefined;
+  } else {
+    current = getStore().lands.get(landId);
+  }
+  
   if (!current) {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
@@ -199,9 +249,14 @@ landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
     status,
     updatedAt: new Date().toISOString(),
   };
-  store.lands.set(landId, updated);
+  
+  if (mongoOk) {
+    await updateLand(landId, updated);
+  } else {
+    getStore().lands.set(landId, updated);
+  }
 
-  createAuditEvent({
+  createAudit({
     actor: authUser,
     entity: "land",
     action: "status_changed",
@@ -212,11 +267,18 @@ landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
   return success(c, updated);
 });
 
-landRoutes.delete("/lands/:landId", requireAuth, (c) => {
+landRoutes.delete("/lands/:landId", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
   const landId = c.req.param("landId");
-  const current = store.lands.get(landId);
+  const mongoOk = useMongoDB();
+  
+  let current: LandRecord | undefined;
+  if (mongoOk) {
+    current = await getLandById(landId) as LandRecord | undefined;
+  } else {
+    current = getStore().lands.get(landId);
+  }
+  
   if (!current) {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
@@ -225,8 +287,13 @@ landRoutes.delete("/lands/:landId", requireAuth, (c) => {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can delete this land");
   }
 
-  store.lands.delete(landId);
-  createAuditEvent({
+  if (mongoOk) {
+    await deleteLand(landId);
+  } else {
+    getStore().lands.delete(landId);
+  }
+  
+  createAudit({
     actor: authUser,
     entity: "land",
     action: "deleted",
