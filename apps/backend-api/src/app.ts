@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import { failure } from "./lib/api-response";
 import { requestIdMiddleware } from "./middleware/request-id";
@@ -18,6 +19,11 @@ import type { AppEnv } from "./types";
 export function createApp() {
   const app = new Hono<AppEnv>();
 
+  app.use("*", cors({
+    origin: "*",
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  }));
   app.use("*", requestIdMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));
 

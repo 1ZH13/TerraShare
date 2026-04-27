@@ -447,6 +447,64 @@ a {
 .catalog-map-panel,
 .catalog-list-panel {
   min-width: 0;
+  position: relative;
+}
+
+.catalog-map-panel {
+  height: 560px;
+}
+
+.panama-map-container {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.panama-map-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 24px;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.panama-map-container .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(11, 95, 55, 0.15);
+}
+
+.panama-map-container .leaflet-popup-content {
+  margin: 12px 16px;
+}
+
+.land-popup .popup-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--leaf-700);
+  color: white;
+  margin-bottom: 6px;
+}
+
+.land-popup h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--ink-900);
+}
+
+.land-popup p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(19, 33, 24, 0.7);
+}
+
+.land-popup strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.1rem;
+  color: var(--soil-500);
 }
 
 .map-stage {

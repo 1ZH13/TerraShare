@@ -40,22 +40,28 @@ const request = async (method, path, body) => {
 
 /** GET /api/v1/lands — listado con filtros (use, province, district, priceMax, availableFrom, sort, order) */
 export const listLands = async (filters = {}) => {
-  const params = new URLSearchParams();
-  if (filters.type && filters.type !== "all") params.set("use", filters.type);
-  if (filters.location) {
-    params.set("province", filters.location);
-  }
-  if (filters.maxPrice) params.set("priceMax", filters.maxPrice);
-  if (filters.availableOn) params.set("availableFrom", filters.availableOn);
-  params.set("sort", filters.sort || "createdAt");
-  params.set("order", filters.order || "desc");
-  if (filters.page) params.set("page", filters.page);
-  if (filters.pageSize) params.set("pageSize", filters.pageSize);
+  try {
+    const params = new URLSearchParams();
+    if (filters.type && filters.type !== "all") params.set("use", filters.type);
+    if (filters.location) {
+      params.set("province", filters.location);
+    }
+    if (filters.maxPrice) params.set("priceMax", filters.maxPrice);
+    if (filters.availableOn) params.set("availableFrom", filters.availableOn);
+    params.set("sort", filters.sort || "createdAt");
+    params.set("order", filters.order || "desc");
+    if (filters.page) params.set("page", filters.page);
+    if (filters.pageSize) params.set("pageSize", filters.pageSize);
 
-  const qs = params.toString();
-  const res = await request("GET", `/api/v1/lands${qs ? `?${qs}` : ""}`);
-  const items = res?.data?.items ?? [];
-  return items.map(adaptLandForCatalog);
+    const qs = params.toString();
+    const res = await request("GET", `/api/v1/lands${qs ? `?${qs}` : ""}`);
+    const items = res?.data?.items ?? [];
+    return items.map(adaptLandForCatalog);
+  } catch (err) {
+    console.warn("[listLands] API failed, using local data:", err.message);
+    const localLands = await import("../data/lands.js").then(m => m.LANDS || []);
+    return localLands.filter(l => l.status === "active").map(adaptLandForCatalog);
+  }
 };
 
 /** POST /api/v1/rental-requests */
