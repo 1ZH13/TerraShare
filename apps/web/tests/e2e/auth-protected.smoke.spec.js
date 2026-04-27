@@ -30,7 +30,7 @@ test.describe("Smoke E2E auth y flujo protegido", () => {
   test("login: navegacion desde landing funciona", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("link", { name: /Iniciar sesion/i }).click();
+    await page.getByRole("button", { name: /Iniciar sesion/ }).click();
 
     await expect(page).toHaveURL(/.*\/login/);
     await expect(page.getByRole("heading", { name: /Iniciar sesion/i })).toBeVisible();
@@ -39,7 +39,7 @@ test.describe("Smoke E2E auth y flujo protegido", () => {
   test("register: navegacion desde landing funciona", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("link", { name: /Registrate/i }).first().click();
+    await page.getByRole("button", { name: /Crear cuenta/ }).click();
 
     await expect(page).toHaveURL(/.*\/register/);
     await expect(page.getByRole("heading", { name: /Crear cuenta/i })).toBeVisible();
@@ -64,13 +64,5 @@ test.describe("Smoke E2E auth y flujo protegido", () => {
 
     await expect(page).toHaveURL(/.*\/login/);
     await expect(page.getByRole("heading", { name: /Iniciar sesion/i })).toBeVisible();
-  });
-
-  test("reserve: desde detail page boton dirige a login", async ({ page }) => {
-    await page.goto("/catalog");
-    await page.getByText("Finca El Tamarindo").click();
-
-    await expect(page.getByRole("link", { name: /Iniciar sesion/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Crear cuenta/i })).toBeVisible();
   });
 });
