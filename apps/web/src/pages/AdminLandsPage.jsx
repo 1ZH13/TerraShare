@@ -37,10 +37,8 @@ export default function AdminLandsPage() {
   };
 
   useEffect(() => {
-    if (tokenReady) {
-      loadLands();
-    }
-  }, [tokenReady, filter, search]);
+    loadLands();
+  }, [filter, search]);
 
   const handleUpdateStatus = async (landId, currentStatus, nextStatus) => {
     try {

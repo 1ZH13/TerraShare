@@ -26,10 +26,8 @@ export default function AdminUsersPage() {
   };
 
   useEffect(() => {
-    if (tokenReady) {
-      loadUsers();
-    }
-  }, [tokenReady, filter, search]);
+    loadUsers();
+  }, [filter, search]);
 
   const handleToggleStatus = async (userId, currentStatus) => {
     const nextStatus = currentStatus === "active" ? "blocked" : "active";

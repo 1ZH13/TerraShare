@@ -69,11 +69,6 @@ export default function ReservePage() {
       return;
     }
 
-    if (!tokenReady) {
-      setError("Cargando tu sesión, intenta de nuevo en un momento.");
-      return;
-    }
-
     if (!form.startDate || !form.endDate || !form.intendedUse) {
       setError("Completa todos los campos obligatorios.");
       return;
@@ -236,10 +231,10 @@ export default function ReservePage() {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={submitting || !tokenReady}
+                    disabled={submitting}
                     style={{ width: "100%" }}
                   >
-                    {!tokenReady ? "Cargando sesión..." : submitting ? "Enviando..." : "Enviar solicitud"}
+                    {submitting ? "Enviando..." : "Enviar solicitud"}
                   </button>
                 </div>
               </form>
