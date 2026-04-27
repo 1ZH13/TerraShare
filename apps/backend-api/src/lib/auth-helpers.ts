@@ -1,6 +1,6 @@
 import type { AuthContextUser } from "../types";
 
-export function isAdmin(user: AuthContextUser) {
+function isAdmin(user: AuthContextUser) {
   return user.role === "admin";
 }
 

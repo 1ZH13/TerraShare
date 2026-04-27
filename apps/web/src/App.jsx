@@ -11,10 +11,6 @@ import PaymentButton from "./components/PaymentButton";
 import AdminLandsPage from "./pages/AdminLandsPage";
 import MyLandsPage from "./pages/MyLandsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
-import ProfilePage from "./pages/ProfilePage";
-import ChatsPage from "./pages/ChatsPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import PaymentsPage from "./pages/PaymentsPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import UserDashboardLayout from "./components/UserDashboardLayout";
@@ -91,30 +87,6 @@ function AdminRoute({ children }) {
   }
 
   return children;
-}
-
-function DashboardLayout({ children, onSignOut }) {
-  const location = useLocation();
-  const currentPath = location.pathname;
-  const { user } = useUser();
-  const userName = user?.firstName || user?.fullName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Usuario";
-
-  return (
-    <div className="page-shell">
-      <nav className="glass-nav">
-        <Link to="/dashboard" className="brand">TerraShare Dashboard</Link>
-        <nav className="menu">
-          <Link to="/dashboard" className={currentPath === "/dashboard" ? "active" : ""}>Mis solicitudes</Link>
-          <Link to="/dashboard/lands" className={currentPath === "/dashboard/lands" ? "active" : ""}>Mis terrenos</Link>
-        </nav>
-        <div className="auth-actions">
-          <span className="user-chip">{userName}</span>
-          <button className="btn btn-ghost" onClick={onSignOut}>Cerrar sesión</button>
-        </div>
-      </nav>
-      <main>{children}</main>
-    </div>
-  );
 }
 
 function AdminLayout({ children, onSignOut }) {
