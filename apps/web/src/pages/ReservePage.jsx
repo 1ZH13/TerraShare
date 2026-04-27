@@ -4,8 +4,6 @@ import { useUser } from "@clerk/clerk-react";
 import { getLandById, createRentalRequest, adaptLand } from "../services/api";
 import PublicHeader from "../components/PublicHeader";
 import { normalizeReserveLand } from "../data/lands";
-import { useClerkToken } from "../hooks/useClerkToken";
-import { setTokenFn } from "../services/api";
 
 const USO_OPCIONES = [
   { value: "", label: "Selecciona un uso" },
@@ -22,7 +20,6 @@ export default function ReservePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isSignedIn } = useUser();
-  const tokenReady = useClerkToken(setTokenFn);
 
   const [land, setLand] = useState(normalizeReserveLand(location.state?.land) ?? null);
   const [loading, setLoading] = useState(!land);

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { listAdminLands, updateLandStatus, setTokenFn } from "../services/adminApi";
-import { useClerkToken } from "../hooks/useClerkToken";
+import { listAdminLands, updateLandStatus } from "../services/adminApi";
 
 const statusLabels = {
   draft: "Borrador",
@@ -23,8 +22,6 @@ export default function AdminLandsPage() {
   const [filter, setFilter] = useState("draft");
   const [search, setSearch] = useState("");
   const [actionMsg, setActionMsg] = useState("");
-
-  const tokenReady = useClerkToken(setTokenFn);
 
   const loadLands = () => {
     setLoading(true);

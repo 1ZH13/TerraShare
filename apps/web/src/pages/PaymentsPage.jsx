@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { getMyPayments, setTokenFn } from "../services/api";
+import { getMyPayments } from "../services/api";
 
 const statusLabels = {
   pending: "Pendiente",
@@ -23,12 +23,6 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
-
-  useEffect(() => {
-    if (user?.getToken) {
-      setTokenFn(user.getToken);
-    }
-  }, [user]);
 
   useEffect(() => {
     const fetchPayments = async () => {

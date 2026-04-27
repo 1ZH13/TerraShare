@@ -1,21 +1,17 @@
 /**
  * API client para apps/web — conecta con backend-api.
- *
- * Base URL: VITE_API_BASE_URL (definida en .env)
- * Auth: Authorization: Bearer <clerk_token>
+ * Always uses dev bypass headers in development.
+ * No authentication tokens required.
  */
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-let authTokenFn = () => null;
-export const setTokenFn = (fn) => {
-  authTokenFn = fn;
-};
-
 const buildHeaders = () => {
   const headers = { "Content-Type": "application/json" };
-  const token = authTokenFn();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (import.meta.env.DEV) {
+    headers["x-dev-role"] = "user";
+    headers["x-dev-user-id"] = "web_dev_user";
+  }
   return headers;
 };
 
@@ -166,7 +162,6 @@ export const getExternalContact = async (chatId) => {
 };
 
 export const api = {
-  setTokenFn,
   listLands,
   getMyLands,
   getLandById,

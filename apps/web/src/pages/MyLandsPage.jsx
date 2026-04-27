@@ -1,19 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { getMyLands, setTokenFn } from "../services/api";
+import { getMyLands } from "../services/api";
 
 export default function MyLandsPage() {
   const { user } = useUser();
   const [lands, setLands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (user?.getToken) {
-      setTokenFn(user.getToken);
-    }
-  }, [user]);
 
   useEffect(() => {
     const fetchMyLands = async () => {

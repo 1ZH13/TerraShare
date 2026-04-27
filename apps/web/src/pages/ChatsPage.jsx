@@ -1,19 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { getChats, setTokenFn } from "../services/api";
+import { getChats } from "../services/api";
 
 export default function ChatsPage() {
   const { user } = useUser();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (user?.getToken) {
-      setTokenFn(user.getToken);
-    }
-  }, [user]);
 
   useEffect(() => {
     const fetchChats = async () => {
