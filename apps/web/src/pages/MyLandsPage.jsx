@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { listLands, setTokenFn } from "../services/api";
+import { getMyLands, setTokenFn } from "../services/api";
 
 export default function MyLandsPage() {
   const { user } = useUser();
@@ -10,13 +10,17 @@ export default function MyLandsPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (user?.getToken) {
+      setTokenFn(user.getToken);
+    }
+  }, [user]);
+
+  useEffect(() => {
     const fetchMyLands = async () => {
       if (!user) return;
       try {
-        setTokenFn(() => user.getToken());
-        const data = await listLands();
-        const myLands = data.filter((land) => land.ownerId === user.id);
-        setLands(myLands);
+        const data = await getMyLands();
+        setLands(data || []);
       } catch (err) {
         console.error("Error fetching my lands:", err);
         setError(err.message);

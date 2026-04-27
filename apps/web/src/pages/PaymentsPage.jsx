@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
+import { getMyPayments, setTokenFn } from "../services/api";
 
 const statusLabels = {
   pending: "Pendiente",
@@ -24,20 +25,20 @@ export default function PaymentsPage() {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
+    if (user?.getToken) {
+      setTokenFn(user.getToken);
+    }
+  }, [user]);
+
+  useEffect(() => {
     const fetchPayments = async () => {
-      if (!user || !user.getToken) {
+      if (!user) {
         setLoading(false);
         return;
       }
       try {
-        const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const token = await user.getToken();
-        const res = await fetch(`${BASE_URL}/api/v1/payments`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        setPayments(data?.data || []);
+        const data = await getMyPayments();
+        setPayments(data || []);
       } catch (err) {
         console.error("Error fetching payments:", err);
         setError(err.message);

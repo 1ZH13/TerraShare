@@ -102,7 +102,7 @@ export default function ReservePage() {
 
       setSuccess(`Solicitud enviada. ID: ${result?.id ?? "—"}. Espera la respuesta del propietario.`);
       setTimeout(() => {
-        navigate("/dashboard/admin", { replace: true });
+        navigate("/dashboard", { replace: true });
       }, 2500);
     } catch (err) {
       setError(err.message || "Error al enviar la solicitud.");
