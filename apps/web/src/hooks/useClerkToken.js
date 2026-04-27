@@ -1,6 +1,21 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/clerk-react";
 
+async function tryGetToken(getToken, retries = 3, delay = 300) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const token = await getToken();
+      if (token) return token;
+    } catch {
+      // ignore error
+    }
+    if (i < retries - 1) {
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  return null;
+}
+
 export function useClerkToken(setTokenFn) {
   const { user } = useUser();
   const [ready, setReady] = useState(false);
@@ -22,14 +37,9 @@ export function useClerkToken(setTokenFn) {
     }
 
     setReady(false);
-    getToken().then((token) => {
+    tryGetToken(getToken, 3, 300).then((token) => {
       if (active) {
         setTokenFn(() => token);
-        setReady(true);
-      }
-    }).catch(() => {
-      if (active) {
-        setTokenFn(() => null);
         setReady(true);
       }
     });
