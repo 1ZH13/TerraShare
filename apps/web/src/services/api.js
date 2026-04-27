@@ -156,6 +156,11 @@ export const getExternalContact = async (chatId) => {
   return res?.data ?? null;
 };
 
+export const getNotifications = async () => {
+  const res = await request("GET", "/api/v1/notifications");
+  return res?.data ?? [];
+};
+
 export const api = {
   setTokenFn,
   listLands,

@@ -22,6 +22,7 @@ const store: InMemoryStore = {
   chatMessages: new Map(),
   auditEvents: new Map(),
   leads: new Map(),
+  notifications: new Map(),
 };
 
 const now = new Date().toISOString();
@@ -87,14 +88,14 @@ for (const user of seedUsers) {
 const seedLandA: LandRecord = {
   id: "land_seed_01",
   ownerId: "user_owner_01",
-  title: "Finca para agricultura en Chiriqui",
-  description: "Terreno con acceso a agua y via principal.",
+  title: "Finca Agroforestal Chiriquí",
+  description: "Terreno fértil en las tierras altas de Chiriquí. Ideal para cultivos de clima templado.",
   area: 150,
   allowedUses: ["agricultura", "mixto"],
   location: {
-    province: "Chiriqui",
-    district: "David",
-    corregimiento: "San Pablo Nuevo",
+    province: "Chiriquí",
+    district: "Bugaba",
+    corregimiento: "Caisán",
   },
   availability: {
     availableFrom: now,
@@ -111,13 +112,13 @@ const seedLandA: LandRecord = {
 const seedLandB: LandRecord = {
   id: "land_seed_02",
   ownerId: "user_owner_02",
-  title: "Terreno ganadero en Cocle",
-  description: "Zona apta para pastoreo.",
+  title: "Rancho Ganadero Coclé",
+  description: "Zona apta para pastoreo con agua permanente.",
   area: 220,
   allowedUses: ["ganaderia"],
   location: {
-    province: "Cocle",
-    district: "Penonome",
+    province: "Coclé",
+    district: "Penonomé",
   },
   availability: {
     availableFrom: now,
@@ -131,8 +132,104 @@ const seedLandB: LandRecord = {
   updatedAt: now,
 };
 
+const seedLandC: LandRecord = {
+  id: "land_seed_03",
+  ownerId: "user_owner_01",
+  title: "Parcela Mixta Herrera",
+  description: "Terreno versátil cerca de la ciudad de Chitré.",
+  area: 45,
+  allowedUses: ["mixto", "agricultura"],
+  location: {
+    province: "Herrera",
+    district: "Chitré",
+  },
+  availability: {
+    availableFrom: now,
+  },
+  priceRule: {
+    currency: "USD",
+    pricePerMonth: 380,
+  },
+  status: "active",
+  createdAt: now,
+  updatedAt: now,
+};
+
+const seedLandD: LandRecord = {
+  id: "land_seed_04",
+  ownerId: "user_owner_02",
+  title: "Terreno Forestal Darién",
+  description: "Zona boscosa en el Darién. Potencial para agroforestería.",
+  area: 320,
+  allowedUses: ["forestal"],
+  location: {
+    province: "Darién",
+    district: "Yaviza",
+  },
+  availability: {
+    availableFrom: now,
+  },
+  priceRule: {
+    currency: "USD",
+    pricePerMonth: 650,
+  },
+  status: "active",
+  createdAt: now,
+  updatedAt: now,
+};
+
+const seedLandE: LandRecord = {
+  id: "land_seed_05",
+  ownerId: "user_owner_01",
+  title: "Finca Los Santos",
+  description: "Terreno productivo en la peninsula de Azuero.",
+  area: 85,
+  allowedUses: ["agricultura"],
+  location: {
+    province: "Los Santos",
+    district: "Guararé",
+  },
+  availability: {
+    availableFrom: now,
+  },
+  priceRule: {
+    currency: "USD",
+    pricePerMonth: 520,
+  },
+  status: "active",
+  createdAt: now,
+  updatedAt: now,
+};
+
+const seedLandF: LandRecord = {
+  id: "land_seed_06",
+  ownerId: "user_owner_02",
+  title: "Terreno Veraguas",
+  description: "Terreno extenso en el centro del país.",
+  area: 180,
+  allowedUses: ["mixto", "ganaderia"],
+  location: {
+    province: "Veraguas",
+    district: "Santiago",
+  },
+  availability: {
+    availableFrom: now,
+  },
+  priceRule: {
+    currency: "USD",
+    pricePerMonth: 720,
+  },
+  status: "active",
+  createdAt: now,
+  updatedAt: now,
+};
+
 store.lands.set(seedLandA.id, seedLandA);
 store.lands.set(seedLandB.id, seedLandB);
+store.lands.set(seedLandC.id, seedLandC);
+store.lands.set(seedLandD.id, seedLandD);
+store.lands.set(seedLandE.id, seedLandE);
+store.lands.set(seedLandF.id, seedLandF);
 
 const seedRequest: RentalRequestRecord = {
   id: "rr_seed_01",

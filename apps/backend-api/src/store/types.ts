@@ -164,6 +164,20 @@ export interface LeadRecord {
   createdAt: string;
 }
 
+export type NotificationType = "rental_request_status" | "payment" | "message" | "land_available" | "system";
+
+export interface NotificationRecord {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  actionUrl?: string;
+  read: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
 export interface InMemoryStore {
   users: Map<string, AuthContextUser>;
   lands: Map<string, LandRecord>;
@@ -174,6 +188,7 @@ export interface InMemoryStore {
   chatMessages: Map<string, ChatMessageRecord[]>;
   auditEvents: Map<string, AuditEventRecord>;
   leads: Map<string, LeadRecord>;
+  notifications: Map<string, NotificationRecord>;
 }
 
 export interface UserRecord extends AuthContextUser {

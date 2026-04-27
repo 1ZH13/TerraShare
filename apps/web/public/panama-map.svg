@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400" width="500" height="400">
+  <!-- Panama provinces map outline -->
+  <g fill="rgba(255,255,255,0.9)" stroke="rgba(11,95,55,0.3)" stroke-width="1">
+    <!-- Bocas del Toro -->
+    <path class="province" data-province="Bocas del Toro" d="M45,95 L85,85 L90,105 L60,120 L35,110 Z"/>
+    <!-- Chiriquí -->
+    <path class="province" data-province="Chiriquí" d="M35,110 L60,120 L80,150 L50,180 L20,160 L15,130 Z"/>
+    <!-- Veraguas -->
+    <path class="province" data-province="Veraguas" d="M50,180 L80,150 L110,170 L100,210 L60,220 L55,190 Z"/>
+    <!-- Herrera -->
+    <path class="province" data-province="Herrera" d="M60,220 L100,210 L115,235 L90,250 L65,240 Z"/>
+    <!-- Los Santos -->
+    <path class="province" data-province="Los Santos" d="M65,240 L90,250 L95,280 L70,290 L60,260 Z"/>
+    <!-- Darién -->
+    <path class="province" data-province="Darién" d="M100,210 L130,180 L160,200 L170,260 L140,300 L110,280 L105,250 Z"/>
+    <!-- Coclé -->
+    <path class="province" data-province="Coclé" d="M80,150 L110,170 L125,200 L110,230 L90,250 L115,235 L100,210 L130,180 Z"/>
+    <!-- Colón -->
+    <path class="province" data-province="Colón" d="M90,250 L110,230 L120,250 L105,280 L90,280 L85,260 Z"/>
+    <!-- Panamá -->
+    <path class="province" data-province="Panamá" d="M105,250 L120,250 L150,270 L140,310 L110,300 L100,280 Z"/>
+    <!-- Panamá Oeste -->
+    <path class="province" data-province="Panamá Oeste" d="M90,250 L85,260 L80,280 L85,300 L100,290 L110,280 L105,250 Z"/>
+    <!-- Emberá (Comarca) -->
+    <path class="province" data-province="Emberá" d="M130,180 L180,160 L200,200 L170,260 L160,200 Z"/>
+  </g>
+  <!-- Province labels -->
+  <g font-size="8" fill="rgba(19,33,24,0.6)" text-anchor="middle">
+    <text x="60" y="105">Bocas del Toro</text>
+    <text x="45" y="150">Chiriquí</text>
+    <text x="80" y="195">Veraguas</text>
+    <text x="90" y="235">Herrera</text>
+    <text x="80" y="270">Los Santos</text>
+    <text x="140" y="245">Darién</text>
+    <text x="100" y="190">Coclé</text>
+    <text x="105" y="265">Panamá</text>
+    <text x="125" y="215">Colón</text>
+  </g>
+</svg>

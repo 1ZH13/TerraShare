@@ -11,7 +11,7 @@ export default function MyLandsPage() {
 
   useEffect(() => {
     const fetchMyLands = async () => {
-      if (!user) return;
+      if (!user || !user.getToken) return;
       try {
         setTokenFn(() => user.getToken());
         const data = await listLands();

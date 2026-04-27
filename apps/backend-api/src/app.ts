@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import { failure } from "./lib/api-response";
 import { requestIdMiddleware } from "./middleware/request-id";
@@ -13,11 +14,17 @@ import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
 import { analyticsRoutes } from "./routes/analytics";
+import { notificationRoutes } from "./routes/notifications";
 import type { AppEnv } from "./types";
 
 export function createApp() {
   const app = new Hono<AppEnv>();
 
+  app.use("*", cors({
+    origin: "*",
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  }));
   app.use("*", requestIdMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));
 
@@ -38,7 +45,8 @@ export function createApp() {
   app.route("/api/v1", contractRoutes);
   app.route("/api/v1", paymentRoutes);
   app.route("/api/v1", chatRoutes);
-  app.route("/api/v1", analyticsRoutes);
+app.route("/api/v1", analyticsRoutes);
+  app.route("/api/v1", notificationRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 
