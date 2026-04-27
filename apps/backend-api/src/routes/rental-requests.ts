@@ -77,6 +77,9 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
     }
   }
 
+  const isDev = process.env.NODE_ENV !== "production";
+  const initialStatus = isDev ? "approved" : "pending_owner";
+
   const record = await RentalRequest.create({
     id: `rr_${crypto.randomUUID()}`,
     landId: body.landId,
@@ -87,7 +90,7 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
     },
     intendedUse: body.intendedUse,
     notes: body.notes,
-    status: "pending_owner",
+    status: initialStatus,
   });
 
   createAuditEvent({
