@@ -10,13 +10,89 @@ import type { AppEnv } from "../types";
 
 let stripeClient: Stripe | null = null;
 
+type StripeEventObject = {
+  id?: string;
+  metadata?: Record<string, string>;
+  payment_intent?: string | { id?: string } | null;
+  client_reference_id?: string | null;
+};
+
+type StripeWebhookEvent = {
+  type?: string;
+  data?: { object?: StripeEventObject };
+};
+
+const paidWebhookEvents = new Set([
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+  "payment_intent.succeeded",
+]);
+
+const failedWebhookEvents = new Set([
+  "checkout.session.expired",
+  "checkout.session.async_payment_failed",
+  "payment_intent.payment_failed",
+]);
+
+function extractPaymentIntentId(paymentIntent: StripeEventObject["payment_intent"]) {
+  if (typeof paymentIntent === "string") {
+    return paymentIntent;
+  }
+
+  if (paymentIntent && typeof paymentIntent === "object" && typeof paymentIntent.id === "string") {
+    return paymentIntent.id;
+  }
+
+  return undefined;
+}
+
+async function resolvePaymentIdFromWebhook(event: StripeWebhookEvent) {
+  const object = event.data?.object;
+  if (!object) {
+    return undefined;
+  }
+
+  const metadataPaymentId = object.metadata?.paymentId;
+  if (metadataPaymentId) {
+    return metadataPaymentId;
+  }
+
+  if (typeof object.client_reference_id === "string" && object.client_reference_id.trim()) {
+    return object.client_reference_id;
+  }
+
+  if (event.type?.startsWith("checkout.session") && object.id) {
+    const paymentBySession = await Payment.findOne({ stripeSessionId: object.id }).lean();
+    if (paymentBySession) {
+      return paymentBySession.id;
+    }
+  }
+
+  const paymentIntentId =
+    extractPaymentIntentId(object.payment_intent) ??
+    (event.type?.startsWith("payment_intent") ? object.id : undefined);
+
+  if (paymentIntentId) {
+    const paymentByIntent = await Payment.findOne({ stripePaymentIntentId: paymentIntentId }).lean();
+    if (paymentByIntent) {
+      return paymentByIntent.id;
+    }
+  }
+
+  return undefined;
+}
+
 function getStripeClient() {
   if (!env.stripeSecretKey) {
     return null;
   }
 
+  if (env.stripeSecretKey === "sk_test_placeholder") {
+    return null;
+  }
+
   if (!stripeClient) {
-    stripeClient = new Stripe(env.stripeSecretKey, { apiVersion: "2025-02-24.acacia" });
+    stripeClient = new Stripe(env.stripeSecretKey, { apiVersion: "2026-03-25.dahlia" });
   }
 
   return stripeClient;
@@ -75,6 +151,7 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
   if (stripe) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      client_reference_id: payment.id,
       success_url: body.successUrl,
       cancel_url: body.cancelUrl,
       line_items: [
@@ -93,11 +170,23 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
         paymentId: payment.id,
         rentalRequestId: request.id,
       },
+      payment_intent_data: {
+        metadata: {
+          paymentId: payment.id,
+          rentalRequestId: request.id,
+        },
+      },
     });
+
+    const paymentIntentId = extractPaymentIntentId(session.payment_intent);
 
     await Payment.updateOne(
       { id: payment.id },
-      { stripeSessionId: session.id, checkoutUrl: session.url ?? undefined },
+      {
+        stripeSessionId: session.id,
+        stripePaymentIntentId: paymentIntentId,
+        checkoutUrl: session.url ?? undefined,
+      },
     );
   } else {
     await Payment.updateOne(
@@ -184,44 +273,46 @@ paymentRoutes.get("/payments/:paymentId", requireAuth, async (c) => {
 paymentRoutes.post("/webhooks/stripe", async (c) => {
   const signature = c.req.header("stripe-signature");
   const webhookSecret = env.stripeWebhookSecret;
+  const stripe = getStripeClient();
 
   const rawBody = await c.req.text();
+  const isDev = process.env.NODE_ENV !== "production";
+  let event: StripeWebhookEvent;
 
-  if (webhookSecret && signature) {
-    const stripe = getStripeClient();
-    if (stripe) {
-      try {
-        stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-      } catch (err) {
-        console.error("Stripe webhook signature verification failed:", err);
-        return failure(c, 401, "UNAUTHORIZED", "Invalid webhook signature");
-      }
+  if (signature && webhookSecret && stripe) {
+    try {
+      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret) as unknown as StripeWebhookEvent;
+    } catch (err) {
+      console.error("Stripe webhook signature verification failed:", err);
+      return failure(c, 401, "UNAUTHORIZED", "Invalid webhook signature");
     }
-  } else if (!signature) {
-    return failure(c, 401, "UNAUTHORIZED", "Missing stripe-signature header");
+  } else {
+    if (!isDev) {
+      if (!signature) {
+        return failure(c, 401, "UNAUTHORIZED", "Missing stripe-signature header");
+      }
+
+      return failure(c, 500, "INTERNAL_ERROR", "Stripe webhook verification is not configured correctly");
+    }
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");
+    }
+
+    if (!payload || typeof payload !== "object") {
+      return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");
+    }
+
+    event = payload as StripeWebhookEvent;
   }
 
-  let payload: unknown;
-  try {
-    payload = JSON.parse(rawBody);
-  } catch {
-    return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");
-  }
-
-  if (!payload || typeof payload !== "object") {
-    return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");
-  }
-
-  const event = payload as {
-    type?: string;
-    data?: { object?: { metadata?: Record<string, string>; id?: string; payment_intent?: string } };
-  };
-
-  const metadata = event.data?.object?.metadata ?? {};
-  const paymentId = metadata.paymentId;
+  const paymentId = await resolvePaymentIdFromWebhook(event);
 
   if (!paymentId) {
-    return failure(c, 400, "VALIDATION_ERROR", "Missing paymentId in webhook metadata");
+    return failure(c, 400, "VALIDATION_ERROR", "Unable to resolve payment from webhook event");
   }
 
   const payment = await Payment.findOne({ id: paymentId }).lean();
@@ -229,23 +320,47 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
     return failure(c, 404, "NOT_FOUND", "Payment not found");
   }
 
+  const eventType = event.type ?? "";
+
+  if (!paidWebhookEvents.has(eventType) && !failedWebhookEvents.has(eventType)) {
+    return success(c, {
+      received: true,
+      paymentId: payment.id,
+      status: payment.status,
+      ignored: true,
+    });
+  }
+
   let newStatus = payment.status;
-  if (event.type === "checkout.session.completed" || event.type === "payment_intent.succeeded") {
+  if (paidWebhookEvents.has(eventType)) {
     newStatus = "paid";
-  } else if (event.type === "checkout.session.expired" || event.type === "payment_intent.payment_failed") {
+  } else if (failedWebhookEvents.has(eventType)) {
     newStatus = "failed";
+  }
+
+  const paymentIntentId =
+    extractPaymentIntentId(event.data?.object?.payment_intent) ??
+    (eventType.startsWith("payment_intent") ? event.data?.object?.id : undefined);
+
+  const stripeSessionId = eventType.startsWith("checkout.session") ? event.data?.object?.id : undefined;
+
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (newStatus !== payment.status) {
+    updateData.status = newStatus;
+  }
+  if (paymentIntentId) {
+    updateData.stripePaymentIntentId = paymentIntentId;
+  }
+  if (stripeSessionId) {
+    updateData.stripeSessionId = stripeSessionId;
   }
 
   await Payment.updateOne(
     { id: payment.id },
-    {
-      status: newStatus,
-      stripePaymentIntentId: event.data?.object?.payment_intent || payment.stripePaymentIntentId,
-      updatedAt: new Date(),
-    },
+    updateData,
   );
 
-  if (newStatus === "paid") {
+  if (newStatus === "paid" && payment.status !== "paid") {
     await RentalRequest.updateOne(
       { id: payment.rentalRequestId },
       { status: "paid", updatedAt: new Date() },

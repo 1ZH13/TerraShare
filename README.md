@@ -8,6 +8,7 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 - Flujo de trabajo (issues + PR): [docs/WORKFLOW.md](docs/WORKFLOW.md)
 - Estructura de repositorio: [docs/REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
 - Setup y comandos: [docs/SETUP_AND_COMMANDS.md](docs/SETUP_AND_COMMANDS.md)
+- Stripe en desarrollo: [docs/STRIPE_DEV_SETUP.md](docs/STRIPE_DEV_SETUP.md)
 - Contratos entre modulos: [docs/MODULE_INTEGRATION_CONTRACTS.md](docs/MODULE_INTEGRATION_CONTRACTS.md)
 
 ## Stack tecnologico
