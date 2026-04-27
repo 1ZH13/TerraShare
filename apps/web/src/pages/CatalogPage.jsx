@@ -1,21 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listLands } from "../services/api";
+import PanamaMap from "../components/PanamaMap";
 
-function MapPin({ land, active, onClick }) {
-  return (
-    <button
-      type="button"
-      className={`map-pin ${active ? "active" : ""}`}
-      style={{ left: `${land.mapPosition?.x || 50}%`, top: `${land.mapPosition?.y || 50}%` }}
-      onClick={onClick}
-      aria-label={`Ver ${land.title}`}
-    >
-      <span className="map-pin-dot" />
-      <span className="map-pin-label">{land.location?.province}</span>
-    </button>
-  );
-}
+
 
 export default function CatalogPage() {
   const navigate = useNavigate();
@@ -78,30 +66,11 @@ export default function CatalogPage() {
               <h1>Mapa</h1>
               <p>Vista geográfica</p>
             </div>
-            <div className="map-stage" role="img" aria-label="Mapa de terrenos">
-              <div className="map-grid" />
-              <div className="map-glow map-glow-one" />
-              <div className="map-glow map-glow-two" />
-              {filteredLands.map((land) => (
-                <MapPin
-                  key={land.id}
-                  land={land}
-                  active={selectedLand?.id === land.id}
-                  onClick={() => handlePinClick(land)}
-                />
-              ))}
-              {selectedLand && (
-                <div className="map-callout">
-                  <span className="card-badge">{selectedLand.allowedUses?.[0]}</span>
-                  <h3>{selectedLand.title}</h3>
-                  <p>{selectedLand.location?.province} · {selectedLand.location?.district}</p>
-                  <strong>${selectedLand.priceRule?.pricePerMonth}/mes</strong>
-                  <button className="btn btn-primary" onClick={() => navigate(`/lands/${selectedLand.id}`)}>
-                    Ver detalle
-                  </button>
-                </div>
-              )}
-            </div>
+            <PanamaMap
+              lands={filteredLands}
+              selectedLand={selectedLand}
+              onSelectLand={(land) => setSelectedId(land.id)}
+            />
           </aside>
 
           <section className="catalog-list-panel">
