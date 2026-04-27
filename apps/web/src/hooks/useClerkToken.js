@@ -14,10 +14,22 @@ export function useClerkToken(setTokenFn) {
       return undefined;
     }
 
+    const getToken = user.getToken;
+    if (typeof getToken !== "function") {
+      setTokenFn(() => null);
+      setReady(true);
+      return undefined;
+    }
+
     setReady(false);
-    user.getToken().then((token) => {
+    getToken().then((token) => {
       if (active) {
         setTokenFn(() => token);
+        setReady(true);
+      }
+    }).catch(() => {
+      if (active) {
+        setTokenFn(() => null);
         setReady(true);
       }
     });
