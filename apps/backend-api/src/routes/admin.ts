@@ -3,87 +3,64 @@ import { Hono } from "hono";
 import { failure, success } from "../lib/api-response";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
-import { getStore } from "../store/in-memory-db";
-import type { AdminLandSummary, AdminUserSummary, UserStatus } from "../store/types";
+import { User, Land, RentalRequest } from "../db/schemas";
+import type { UserStatus } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 export const adminRoutes = new Hono<AppEnv>();
 
-// ─── Users ──────────────────────────────────────────────────────────────────
-
-/**
- * GET /api/v1/admin/users
- * Lista todos los usuarios del sistema con filtros opcionales.
- * Auth: required (admin)
- */
-adminRoutes.get("/admin/users", requireAuth, requireAdmin, (c) => {
-  const store = getStore();
+adminRoutes.get("/admin/users", requireAuth, requireAdmin, async (c) => {
   const role = c.req.query("role") as "user" | "admin" | undefined;
   const status = c.req.query("status") as UserStatus | undefined;
   const search = c.req.query("search")?.toLowerCase();
 
-  let users = Array.from(store.users.values()) as AdminUserSummary[];
+  const query: Record<string, any> = {};
+  if (role) query.role = role;
+  if (status) query.status = status;
 
-  if (role) {
-    users = users.filter((u) => u.role === role);
-  }
-  if (status) {
-    users = users.filter((u) => u.status === status);
-  }
+  let users = await User.find(query).lean();
+
   if (search) {
     users = users.filter(
       (u) =>
         u.email.toLowerCase().includes(search) ||
-        u.profile.fullName.toLowerCase().includes(search),
+        (u.profile?.fullName ?? "").toLowerCase().includes(search),
     );
   }
 
   return success(c, { items: users, total: users.length });
 });
 
-/**
- * GET /api/v1/admin/users/:userId
- * Detalle de un usuario.
- * Auth: required (admin)
- */
-adminRoutes.get("/admin/users/:userId", requireAuth, requireAdmin, (c) => {
-  const store = getStore();
+adminRoutes.get("/admin/users/:userId", requireAuth, requireAdmin, async (c) => {
   const userId = c.req.param("userId");
-  const user = store.users.get(userId);
+  
+  const user = await User.findOne({ clerkUserId: userId }).lean();
   if (!user) {
     return failure(c, 404, "NOT_FOUND", "User not found");
   }
   return success(c, user);
 });
 
-/**
- * PATCH /api/v1/admin/users/:userId/status
- * Bloquea o activa un usuario.
- * Auth: required (admin)
- * Body: { status: "active" | "blocked" }
- */
 adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, async (c) => {
-  const store = getStore();
   const authUser = c.get("authUser");
   const userId = c.req.param("userId");
-  const user = store.users.get(userId);
+
+  const user = await User.findOne({ clerkUserId: userId }).lean();
   if (!user) {
     return failure(c, 404, "NOT_FOUND", "User not found");
   }
 
   const body = (await c.req.json().catch(() => null)) as { status?: UserStatus } | null;
   const nextStatus = body?.status;
-  if (!nextStatus || !["active", "blocked"].includes(nextStatus)) {
+  if (!nextStatus || !["active", "inactive"].includes(nextStatus)) {
     return failure(c, 400, "VALIDATION_ERROR", "Invalid status value");
   }
 
-  // Cannot block yourself
   if (userId === authUser.id) {
     return failure(c, 400, "BUSINESS_RULE_VIOLATION", "Cannot modify own account status");
   }
 
-  const updated = { ...user, status: nextStatus, updatedAt: new Date().toISOString() };
-  store.users.set(userId, updated);
+  await User.updateOne({ clerkUserId: userId }, { status: nextStatus });
 
   createAuditEvent({
     actor: authUser,
@@ -93,26 +70,21 @@ adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, asyn
     metadata: { email: user.email },
   });
 
+  const updated = await User.findOne({ clerkUserId: userId }).lean();
   return success(c, updated);
 });
 
-// ─── Lands ───────────────────────────────────────────────────────────────────
-
-/**
- * GET /api/v1/admin/lands
- * Lista terrenos con filtros — centrado en moderation (draft/inactive).
- * Auth: required (admin)
- */
-adminRoutes.get("/admin/lands", requireAuth, requireAdmin, (c) => {
-  const store = getStore();
+adminRoutes.get("/admin/lands", requireAuth, requireAdmin, async (c) => {
   const status = c.req.query("status");
   const search = c.req.query("search")?.toLowerCase();
 
-  let lands = Array.from(store.lands.values());
-
+  const query: Record<string, any> = {};
   if (status && ["draft", "active", "inactive"].includes(status)) {
-    lands = lands.filter((l) => l.status === status);
+    query.status = status;
   }
+
+  let lands = await Land.find(query).lean();
+
   if (search) {
     lands = lands.filter(
       (l) =>
@@ -121,44 +93,38 @@ adminRoutes.get("/admin/lands", requireAuth, requireAdmin, (c) => {
     );
   }
 
-  const items: AdminLandSummary[] = lands.map((l) => {
-    const owner = store.users.get(l.ownerId);
-    return {
-      id: l.id,
-      ownerId: l.ownerId,
-      ownerEmail: owner?.email ?? l.ownerId,
-      title: l.title,
-      status: l.status,
-      createdAt: l.createdAt,
-    };
-  });
+  const ownerClerkIds = [...new Set(lands.map((l) => l.ownerId))];
+  const owners = await User.find({ clerkUserId: { $in: ownerClerkIds } }).lean();
+  const ownerMap = new Map(owners.map((o) => [o.clerkUserId, o]));
+
+  const items = lands.map((l) => ({
+    id: l.id,
+    ownerId: l.ownerId,
+    ownerEmail: ownerMap.get(l.ownerId)?.email ?? l.ownerId,
+    title: l.title,
+    status: l.status,
+    createdAt: l.createdAt,
+  }));
 
   return success(c, { items, total: items.length });
 });
 
-/**
- * PATCH /api/v1/admin/lands/:landId/status
- * Cambia el estado de un terreno — usado para aprobar/rechazar moderation.
- * Auth: required (admin)
- * Body: { status: "active" | "inactive" | "rejected" }
- */
 adminRoutes.patch("/admin/lands/:landId/status", requireAuth, requireAdmin, async (c) => {
-  const store = getStore();
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
-  const land = store.lands.get(landId);
+
+  const land = await Land.findOne({ id: landId }).lean();
   if (!land) {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
 
   const body = (await c.req.json().catch(() => null)) as { status?: string } | null;
   const nextStatus = body?.status;
-  if (!nextStatus || !["active", "inactive", "rejected"].includes(nextStatus)) {
+  if (!nextStatus || !["active", "inactive"].includes(nextStatus)) {
     return failure(c, 400, "VALIDATION_ERROR", "Invalid status value");
   }
 
-  const updated = { ...land, status: nextStatus as typeof land.status, updatedAt: new Date().toISOString() };
-  store.lands.set(landId, updated);
+  await Land.updateOne({ id: landId }, { status: nextStatus as any });
 
   createAuditEvent({
     actor: authUser,
@@ -168,23 +134,22 @@ adminRoutes.patch("/admin/lands/:landId/status", requireAuth, requireAdmin, asyn
     metadata: { title: land.title },
   });
 
+  const updated = await Land.findOne({ id: landId }).lean();
   return success(c, updated);
 });
 
-// ─── Dashboard summary ──────────────────────────────────────────────────────
-
-adminRoutes.get("/admin/summary", requireAuth, requireAdmin, (c) => {
-  const store = getStore();
-
-  const users = Array.from(store.users.values());
-  const lands = Array.from(store.lands.values());
-  const requests = Array.from(store.rentalRequests.values());
+adminRoutes.get("/admin/summary", requireAuth, requireAdmin, async (c) => {
+  const [users, lands, requests] = await Promise.all([
+    User.find().lean(),
+    Land.find().lean(),
+    RentalRequest.find().lean(),
+  ]);
 
   return success(c, {
     users: {
       total: users.length,
       active: users.filter((u) => u.status === "active").length,
-      blocked: users.filter((u) => u.status === "blocked").length,
+      blocked: users.filter((u) => u.status === "inactive").length,
     },
     lands: {
       total: lands.length,
@@ -200,21 +165,30 @@ adminRoutes.get("/admin/summary", requireAuth, requireAdmin, (c) => {
   });
 });
 
-adminRoutes.get("/admin/rental-requests", requireAuth, requireAdmin, (c) => {
-  const store = getStore();
+adminRoutes.get("/admin/rental-requests", requireAuth, requireAdmin, async (c) => {
   const status = c.req.query("status");
   const search = c.req.query("search")?.toLowerCase();
 
-  let requests = Array.from(store.rentalRequests.values());
-
+  const query: Record<string, any> = {};
   if (status && status !== "all") {
-    requests = requests.filter((request) => request.status === status);
+    query.status = status;
   }
 
+  let requests = await RentalRequest.find(query).lean();
+
   if (search) {
+    const landIds = [...new Set(requests.map((r) => r.landId))];
+    const tenantIds = [...new Set(requests.map((r) => r.tenantId))];
+    const [lands, tenants] = await Promise.all([
+      Land.find({ id: { $in: landIds } }).lean(),
+      User.find({ clerkUserId: { $in: tenantIds } }).lean(),
+    ]);
+    const landMap = new Map(lands.map((l) => [l.id, l]));
+    const tenantMap = new Map(tenants.map((t) => [t.clerkUserId, t]));
+
     requests = requests.filter((request) => {
-      const land = store.lands.get(request.landId);
-      const tenant = store.users.get(request.tenantId);
+      const land = landMap.get(request.landId);
+      const tenant = tenantMap.get(request.tenantId);
       return Boolean(
         request.id.toLowerCase().includes(search) ||
         land?.title.toLowerCase().includes(search) ||
@@ -223,9 +197,18 @@ adminRoutes.get("/admin/rental-requests", requireAuth, requireAdmin, (c) => {
     });
   }
 
+  const landIds = [...new Set(requests.map((r) => r.landId))];
+  const tenantIds = [...new Set(requests.map((r) => r.tenantId))];
+  const [lands, tenants] = await Promise.all([
+    Land.find({ id: { $in: landIds } }).lean(),
+    User.find({ clerkUserId: { $in: tenantIds } }).lean(),
+  ]);
+  const landMap = new Map(lands.map((l) => [l.id, l]));
+  const tenantMap = new Map(tenants.map((t) => [t.clerkUserId, t]));
+
   const items = requests.map((request) => {
-    const land = store.lands.get(request.landId);
-    const tenant = store.users.get(request.tenantId);
+    const land = landMap.get(request.landId);
+    const tenant = tenantMap.get(request.tenantId);
     return {
       id: request.id,
       landId: request.landId,

@@ -4,27 +4,23 @@ import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
-import { getStore } from "../store/in-memory-db";
-import type { ChatMessageRecord, ChatRecord } from "../store/types";
+import { Chat, ChatMessage } from "../db/schemas";
 import type { AppEnv } from "../types";
 
-function isParticipant(chat: ChatRecord, userId: string) {
+function isParticipant(chat: { participants: { userId: string }[] }, userId: string) {
   return chat.participants.some((participant) => participant.userId === userId);
 }
 
 export const chatRoutes = new Hono<AppEnv>();
 
-chatRoutes.get("/chats", requireAuth, (c) => {
+chatRoutes.get("/chats", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
 
-  const chats = Array.from(store.chats.values()).filter((chat) => {
-    if (authUser.role === "admin") {
-      return true;
-    }
-    return isParticipant(chat, authUser.id);
-  });
+  const query = authUser.role === "admin"
+    ? {}
+    : { "participants.userId": authUser.id };
 
+  const chats = await Chat.find(query).lean();
   return success(c, chats);
 });
 
@@ -46,20 +42,13 @@ chatRoutes.post("/chats", requireAuth, async (c) => {
     return failure(c, 403, "FORBIDDEN", "Current user must be part of chat participants");
   }
 
-  const now = new Date().toISOString();
-  const chat: ChatRecord = {
+  const chat = await Chat.create({
     id: `chat_${crypto.randomUUID()}`,
     landId: body.landId,
     rentalRequestId: body.rentalRequestId,
     participants: body.participants,
     status: "active",
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const store = getStore();
-  store.chats.set(chat.id, chat);
-  store.chatMessages.set(chat.id, []);
+  });
 
   createAuditEvent({
     actor: authUser,
@@ -76,33 +65,33 @@ chatRoutes.post("/chats", requireAuth, async (c) => {
   return success(c, chat, 201);
 });
 
-chatRoutes.get("/chats/:chatId/messages", requireAuth, (c) => {
+chatRoutes.get("/chats/:chatId/messages", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
+  const chatId = c.req.param("chatId");
 
-  const chat = store.chats.get(c.req.param("chatId"));
+  const chat = await Chat.findOne({ id: chatId }).lean();
   if (!chat) {
     return failure(c, 404, "NOT_FOUND", "Chat not found");
   }
 
-  if (authUser.role !== "admin" && !isParticipant(chat, authUser.id)) {
+  if (authUser.role !== "admin" && !isParticipant(chat as any, authUser.id)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this chat");
   }
 
-  const messages = store.chatMessages.get(chat.id) ?? [];
+  const messages = await ChatMessage.find({ chatId: chat.id }).sort({ createdAt: 1 }).lean();
   return success(c, messages);
 });
 
 chatRoutes.post("/chats/:chatId/messages", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
-  const chat = store.chats.get(c.req.param("chatId"));
+  const chatId = c.req.param("chatId");
 
+  const chat = await Chat.findOne({ id: chatId }).lean();
   if (!chat) {
     return failure(c, 404, "NOT_FOUND", "Chat not found");
   }
 
-  if (authUser.role !== "admin" && !isParticipant(chat, authUser.id)) {
+  if (authUser.role !== "admin" && !isParticipant(chat as any, authUser.id)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to send messages in this chat");
   }
 
@@ -111,17 +100,12 @@ chatRoutes.post("/chats/:chatId/messages", requireAuth, async (c) => {
     return failure(c, 400, "VALIDATION_ERROR", "Message text is required");
   }
 
-  const message: ChatMessageRecord = {
+  const message = await ChatMessage.create({
     id: `msg_${crypto.randomUUID()}`,
     chatId: chat.id,
     senderId: authUser.id,
     text: body.text.trim(),
-    createdAt: new Date().toISOString(),
-  };
-
-  const list = store.chatMessages.get(chat.id) ?? [];
-  list.push(message);
-  store.chatMessages.set(chat.id, list);
+  });
 
   createAuditEvent({
     actor: authUser,
@@ -136,16 +120,16 @@ chatRoutes.post("/chats/:chatId/messages", requireAuth, async (c) => {
   return success(c, message, 201);
 });
 
-chatRoutes.get("/chats/:chatId/external-contact", requireAuth, (c) => {
+chatRoutes.get("/chats/:chatId/external-contact", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
-  const chat = store.chats.get(c.req.param("chatId"));
+  const chatId = c.req.param("chatId");
 
+  const chat = await Chat.findOne({ id: chatId }).lean();
   if (!chat) {
     return failure(c, 404, "NOT_FOUND", "Chat not found");
   }
 
-  if (authUser.role !== "admin" && !isParticipant(chat, authUser.id)) {
+  if (authUser.role !== "admin" && !isParticipant(chat as any, authUser.id)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to view external contact for this chat");
   }
 
