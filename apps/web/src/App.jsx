@@ -24,28 +24,22 @@ import { useClerkToken } from "./hooks/useClerkToken";
 import { isAdminUser } from "./components/authDisplay";
 
 function ProtectedRoute({ children }) {
-  const { openSignIn } = useClerk();
-  const { isSignedIn, user } = useUser();
+  const { isLoaded } = useClerk();
+  const { isSignedIn } = useUser();
   const location = useLocation();
 
-  if (!isSignedIn) {
+  if (!isLoaded) {
     return (
       <div className="page-shell">
-        <nav className="glass-nav">
-          <a href="/" className="brand">TerraShare</a>
-          <nav className="menu">
-            <a href="/catalog">Terrenos</a>
-          </nav>
-        </nav>
-        <div className="glass-panel" style={{ textAlign: "center", padding: "3rem", marginTop: "2rem" }}>
-          <h1>Requiere inicio de sesion</h1>
-          <p>Para acceder a esta seccion necesitas estar logueado.</p>
-          <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={() => openSignIn({ redirectUrl: location.pathname })}>
-            Iniciar sesion
-          </button>
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p>Cargando...</p>
         </div>
       </div>
     );
+  }
+
+  if (!isSignedIn) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return children;
@@ -66,14 +60,7 @@ function AdminRoute({ children }) {
   }
 
   if (!isSignedIn) {
-    if (import.meta.env.DEV) {
-      return children;
-    }
     return <Navigate to="/login" replace />;
-  }
-
-  if (import.meta.env.DEV) {
-    return children;
   }
 
   if (!isAdminUser(user)) {
@@ -361,20 +348,20 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/catalog" element={<UserDashboardLayout><CatalogPage /></UserDashboardLayout>} />
       <Route path="/lands/:id" element={<LandDetailPage />} />
-      <Route path="/reserve/:landId" element={<ReservePage />} />
+      <Route path="/reserve/:landId" element={<ProtectedRoute><ReservePage /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/checkout/success" element={<PaymentSuccessPage />} />
       <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
-      <Route path="/dashboard" element={<UserDashboardLayout><DashboardPage /></UserDashboardLayout>} />
-      <Route path="/dashboard/lands" element={<UserDashboardLayout><MyLandsPage /></UserDashboardLayout>} />
-      <Route path="/dashboard/chats" element={<UserDashboardLayout><ChatsPage /></UserDashboardLayout>} />
-      <Route path="/dashboard/notifications" element={<UserDashboardLayout><NotificationsPage /></UserDashboardLayout>} />
-      <Route path="/dashboard/payments" element={<UserDashboardLayout><PaymentsPage /></UserDashboardLayout>} />
-      <Route path="/dashboard/profile" element={<UserDashboardLayout><ProfilePage /></UserDashboardLayout>} />
-      <Route path="/dashboard/admin" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
-      <Route path="/dashboard/admin/users" element={<AdminLayout><AdminUsersPage /></AdminLayout>} />
-      <Route path="/dashboard/admin/lands" element={<AdminLayout><AdminLandsPage /></AdminLayout>} />
+      <Route path="/dashboard" element={<ProtectedRoute><UserDashboardLayout><DashboardPage /></UserDashboardLayout></ProtectedRoute>} />
+      <Route path="/dashboard/lands" element={<ProtectedRoute><UserDashboardLayout><MyLandsPage /></UserDashboardLayout></ProtectedRoute>} />
+      <Route path="/dashboard/chats" element={<ProtectedRoute><UserDashboardLayout><ChatsPage /></UserDashboardLayout></ProtectedRoute>} />
+      <Route path="/dashboard/notifications" element={<ProtectedRoute><UserDashboardLayout><NotificationsPage /></UserDashboardLayout></ProtectedRoute>} />
+      <Route path="/dashboard/payments" element={<ProtectedRoute><UserDashboardLayout><PaymentsPage /></UserDashboardLayout></ProtectedRoute>} />
+      <Route path="/dashboard/profile" element={<ProtectedRoute><UserDashboardLayout><ProfilePage /></UserDashboardLayout></ProtectedRoute>} />
+      <Route path="/dashboard/admin" element={<AdminRoute><AdminLayout><AdminDashboardPage /></AdminLayout></AdminRoute>} />
+      <Route path="/dashboard/admin/users" element={<AdminRoute><AdminLayout><AdminUsersPage /></AdminLayout></AdminRoute>} />
+      <Route path="/dashboard/admin/lands" element={<AdminRoute><AdminLayout><AdminLandsPage /></AdminLayout></AdminRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
