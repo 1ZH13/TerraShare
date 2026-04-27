@@ -5,27 +5,104 @@ import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
-import { getStore } from "../store/in-memory-db";
-import type { PaymentRecord, RentalRequestRecord } from "../store/types";
+import { Payment, RentalRequest, Land } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 let stripeClient: Stripe | null = null;
+
+type StripeEventObject = {
+  id?: string;
+  metadata?: Record<string, string>;
+  payment_intent?: string | { id?: string } | null;
+  client_reference_id?: string | null;
+};
+
+type StripeWebhookEvent = {
+  type?: string;
+  data?: { object?: StripeEventObject };
+};
+
+const paidWebhookEvents = new Set([
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+  "payment_intent.succeeded",
+]);
+
+const failedWebhookEvents = new Set([
+  "checkout.session.expired",
+  "checkout.session.async_payment_failed",
+  "payment_intent.payment_failed",
+]);
+
+function extractPaymentIntentId(paymentIntent: StripeEventObject["payment_intent"]) {
+  if (typeof paymentIntent === "string") {
+    return paymentIntent;
+  }
+
+  if (paymentIntent && typeof paymentIntent === "object" && typeof paymentIntent.id === "string") {
+    return paymentIntent.id;
+  }
+
+  return undefined;
+}
+
+async function resolvePaymentIdFromWebhook(event: StripeWebhookEvent) {
+  const object = event.data?.object;
+  if (!object) {
+    return undefined;
+  }
+
+  const metadataPaymentId = object.metadata?.paymentId;
+  if (metadataPaymentId) {
+    return metadataPaymentId;
+  }
+
+  if (typeof object.client_reference_id === "string" && object.client_reference_id.trim()) {
+    return object.client_reference_id;
+  }
+
+  if (event.type?.startsWith("checkout.session") && object.id) {
+    const paymentBySession = await Payment.findOne({ stripeSessionId: object.id }).lean();
+    if (paymentBySession) {
+      return paymentBySession.id;
+    }
+  }
+
+  const paymentIntentId =
+    extractPaymentIntentId(object.payment_intent) ??
+    (event.type?.startsWith("payment_intent") ? object.id : undefined);
+
+  if (paymentIntentId) {
+    const paymentByIntent = await Payment.findOne({ stripePaymentIntentId: paymentIntentId }).lean();
+    if (paymentByIntent) {
+      return paymentByIntent.id;
+    }
+  }
+
+  return undefined;
+}
 
 function getStripeClient() {
   if (!env.stripeSecretKey) {
     return null;
   }
 
+  if (env.stripeSecretKey === "sk_test_placeholder") {
+    return null;
+  }
+
   if (!stripeClient) {
-    stripeClient = new Stripe(env.stripeSecretKey, { apiVersion: "2025-02-24.acacia" });
+    stripeClient = new Stripe(env.stripeSecretKey, { apiVersion: "2026-03-25.dahlia" });
   }
 
   return stripeClient;
 }
 
-function computePaymentAmount(request: RentalRequestRecord, fallback = 1000) {
-  const store = getStore();
-  const land = store.lands.get(request.landId);
+async function computePaymentAmount(rentalRequestId: string, fallback = 1000) {
+  const request = await RentalRequest.findOne({ id: rentalRequestId }).lean();
+  if (!request) return fallback;
+  
+  const land = await Land.findOne({ id: request.landId }).lean();
   return land?.priceRule?.pricePerMonth ?? fallback;
 }
 
@@ -46,9 +123,7 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
     return failure(c, 400, "VALIDATION_ERROR", "Missing checkout session fields");
   }
 
-  const store = getStore();
-  const request = store.rentalRequests.get(body.rentalRequestId);
-
+  const request = await RentalRequest.findOne({ id: body.rentalRequestId }).lean();
   if (!request) {
     return failure(c, 404, "NOT_FOUND", "Rental request not found");
   }
@@ -61,22 +136,22 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
     return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Rental request is not payable");
   }
 
-  const now = new Date().toISOString();
-  const payment: PaymentRecord = {
+  const amount = await computePaymentAmount(request.id);
+
+  const payment = await Payment.create({
     id: `pay_${crypto.randomUUID()}`,
     rentalRequestId: request.id,
-    amount: computePaymentAmount(request),
+    amount,
     currency: body.currency,
     status: "pending",
-    createdAt: now,
-    updatedAt: now,
-  };
+  });
 
   const stripe = getStripeClient();
 
   if (stripe) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      client_reference_id: payment.id,
       success_url: body.successUrl,
       cancel_url: body.cancelUrl,
       line_items: [
@@ -84,7 +159,7 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
           quantity: 1,
           price_data: {
             currency: body.currency.toLowerCase(),
-            unit_amount: Math.round(payment.amount * 100),
+            unit_amount: Math.round(amount * 100),
             product_data: {
               name: `TerraShare rental ${request.id}`,
             },
@@ -95,21 +170,35 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
         paymentId: payment.id,
         rentalRequestId: request.id,
       },
+      payment_intent_data: {
+        metadata: {
+          paymentId: payment.id,
+          rentalRequestId: request.id,
+        },
+      },
     });
 
-    payment.stripeSessionId = session.id;
-    payment.checkoutUrl = session.url ?? undefined;
+    const paymentIntentId = extractPaymentIntentId(session.payment_intent);
+
+    await Payment.updateOne(
+      { id: payment.id },
+      {
+        stripeSessionId: session.id,
+        stripePaymentIntentId: paymentIntentId,
+        checkoutUrl: session.url ?? undefined,
+      },
+    );
   } else {
-    payment.stripeSessionId = `cs_dev_${crypto.randomUUID()}`;
-    payment.checkoutUrl = body.successUrl;
+    await Payment.updateOne(
+      { id: payment.id },
+      { stripeSessionId: `cs_dev_${crypto.randomUUID()}`, checkoutUrl: body.successUrl },
+    );
   }
 
-  store.payments.set(payment.id, payment);
-  store.rentalRequests.set(request.id, {
-    ...request,
-    status: "pending_payment",
-    updatedAt: now,
-  });
+  await RentalRequest.updateOne(
+    { id: request.id },
+    { status: "pending_payment", updatedAt: new Date() },
+  );
 
   createAuditEvent({
     actor: authUser,
@@ -118,64 +207,58 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
     entityId: payment.id,
     metadata: {
       rentalRequestId: request.id,
-      stripeSessionId: payment.stripeSessionId,
-      amount: payment.amount,
-      currency: payment.currency,
+      amount,
+      currency: body.currency,
     },
   });
+
+  const updatedPayment = await Payment.findOne({ id: payment.id }).lean();
 
   return success(
     c,
     {
-      paymentId: payment.id,
-      stripeSessionId: payment.stripeSessionId,
-      checkoutUrl: payment.checkoutUrl,
-      status: payment.status,
+      paymentId: updatedPayment?.id,
+      stripeSessionId: updatedPayment?.stripeSessionId,
+      checkoutUrl: updatedPayment?.checkoutUrl,
+      status: updatedPayment?.status,
     },
     201,
   );
 });
 
-paymentRoutes.get("/payments", requireAuth, (c) => {
+paymentRoutes.get("/payments", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
 
   const rentalRequestId = c.req.query("rentalRequestId");
   const contractId = c.req.query("contractId");
   const status = c.req.query("status");
 
-  let items = Array.from(store.payments.values()).filter((payment) => {
-    const request = store.rentalRequests.get(payment.rentalRequestId);
-    if (!request) {
-      return authUser.role === "admin";
-    }
-    return authUser.role === "admin" || request.tenantId === authUser.id;
-  });
+  const query: Record<string, any> = {};
 
-  if (rentalRequestId) {
-    items = items.filter((payment) => payment.rentalRequestId === rentalRequestId);
-  }
-  if (contractId) {
-    items = items.filter((payment) => payment.contractId === contractId);
-  }
-  if (status) {
-    items = items.filter((payment) => payment.status === status);
+  if (authUser.role !== "admin") {
+    const requests = await RentalRequest.find({ tenantId: authUser.id }).select("id").lean();
+    const requestIds = requests.map((r) => r.id);
+    query.rentalRequestId = { $in: requestIds };
   }
 
-  items.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  if (rentalRequestId) query.rentalRequestId = rentalRequestId;
+  if (contractId) query.contractId = contractId;
+  if (status) query.status = status;
+
+  const items = await Payment.find(query).sort({ createdAt: -1 }).lean();
   return success(c, items);
 });
 
-paymentRoutes.get("/payments/:paymentId", requireAuth, (c) => {
+paymentRoutes.get("/payments/:paymentId", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
-  const payment = store.payments.get(c.req.param("paymentId"));
+  const paymentId = c.req.param("paymentId");
 
+  const payment = await Payment.findOne({ id: paymentId }).lean();
   if (!payment) {
     return failure(c, 404, "NOT_FOUND", "Payment not found");
   }
 
-  const request = store.rentalRequests.get(payment.rentalRequestId);
+  const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
   if (
     authUser.role !== "admin" &&
     request &&
@@ -188,60 +271,105 @@ paymentRoutes.get("/payments/:paymentId", requireAuth, (c) => {
 });
 
 paymentRoutes.post("/webhooks/stripe", async (c) => {
-  if (env.stripeWebhookSecret) {
-    const signature = c.req.header("stripe-signature");
-    if (!signature) {
-      return failure(c, 401, "UNAUTHORIZED", "Missing stripe-signature header");
+  const signature = c.req.header("stripe-signature");
+  const webhookSecret = env.stripeWebhookSecret;
+  const stripe = getStripeClient();
+
+  const rawBody = await c.req.text();
+  const isDev = process.env.NODE_ENV !== "production";
+  let event: StripeWebhookEvent;
+
+  if (signature && webhookSecret && stripe) {
+    try {
+      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret) as unknown as StripeWebhookEvent;
+    } catch (err) {
+      console.error("Stripe webhook signature verification failed:", err);
+      return failure(c, 401, "UNAUTHORIZED", "Invalid webhook signature");
     }
+  } else {
+    if (!isDev) {
+      if (!signature) {
+        return failure(c, 401, "UNAUTHORIZED", "Missing stripe-signature header");
+      }
+
+      return failure(c, 500, "INTERNAL_ERROR", "Stripe webhook verification is not configured correctly");
+    }
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");
+    }
+
+    if (!payload || typeof payload !== "object") {
+      return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");
+    }
+
+    event = payload as StripeWebhookEvent;
   }
 
-  const payload = await c.req.json().catch(() => null);
-  const store = getStore();
-
-  if (!payload || typeof payload !== "object") {
-    return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook payload");
-  }
-
-  const event = payload as {
-    type?: string;
-    data?: { object?: { metadata?: Record<string, string>; id?: string; payment_intent?: string } };
-  };
-
-  const metadata = event.data?.object?.metadata ?? {};
-  const paymentId = metadata.paymentId;
+  const paymentId = await resolvePaymentIdFromWebhook(event);
 
   if (!paymentId) {
-    return failure(c, 400, "VALIDATION_ERROR", "Missing paymentId in webhook metadata");
+    return failure(c, 400, "VALIDATION_ERROR", "Unable to resolve payment from webhook event");
   }
 
-  const payment = store.payments.get(paymentId);
+  const payment = await Payment.findOne({ id: paymentId }).lean();
   if (!payment) {
     return failure(c, 404, "NOT_FOUND", "Payment not found");
   }
 
-  if (event.type === "checkout.session.completed" || event.type === "payment_intent.succeeded") {
-    payment.status = "paid";
-    payment.stripePaymentIntentId =
-      event.data?.object?.payment_intent || payment.stripePaymentIntentId;
-  } else if (event.type === "checkout.session.expired" || event.type === "payment_intent.payment_failed") {
-    payment.status = "failed";
+  const eventType = event.type ?? "";
+
+  if (!paidWebhookEvents.has(eventType) && !failedWebhookEvents.has(eventType)) {
+    return success(c, {
+      received: true,
+      paymentId: payment.id,
+      status: payment.status,
+      ignored: true,
+    });
   }
 
-  payment.updatedAt = new Date().toISOString();
-  store.payments.set(payment.id, payment);
+  let newStatus = payment.status;
+  if (paidWebhookEvents.has(eventType)) {
+    newStatus = "paid";
+  } else if (failedWebhookEvents.has(eventType)) {
+    newStatus = "failed";
+  }
 
-  const request = store.rentalRequests.get(payment.rentalRequestId);
-  if (request && payment.status === "paid") {
-    store.rentalRequests.set(request.id, {
-      ...request,
-      status: "paid",
-      updatedAt: new Date().toISOString(),
-    });
+  const paymentIntentId =
+    extractPaymentIntentId(event.data?.object?.payment_intent) ??
+    (eventType.startsWith("payment_intent") ? event.data?.object?.id : undefined);
+
+  const stripeSessionId = eventType.startsWith("checkout.session") ? event.data?.object?.id : undefined;
+
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (newStatus !== payment.status) {
+    updateData.status = newStatus;
+  }
+  if (paymentIntentId) {
+    updateData.stripePaymentIntentId = paymentIntentId;
+  }
+  if (stripeSessionId) {
+    updateData.stripeSessionId = stripeSessionId;
+  }
+
+  await Payment.updateOne(
+    { id: payment.id },
+    updateData,
+  );
+
+  if (newStatus === "paid" && payment.status !== "paid") {
+    await RentalRequest.updateOne(
+      { id: payment.rentalRequestId },
+      { status: "paid", updatedAt: new Date() },
+    );
   }
 
   return success(c, {
     received: true,
     paymentId: payment.id,
-    status: payment.status,
+    status: newStatus,
   });
 });

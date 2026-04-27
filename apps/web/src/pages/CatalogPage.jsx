@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { listLands } from "../services/api";
+import PanamaMap from "../components/PanamaMap";
 
 function createCustomIcon(isActive) {
   return L.divIcon({
@@ -93,7 +94,7 @@ export default function CatalogPage() {
               <h1>Mapa</h1>
               <p>Vista geográfica</p>
             </div>
-            <div className="map-stage" role="img" aria-label="Mapa de terrenos">
+<div className="map-stage" role="img" aria-label="Mapa de terrenos">
               <MapContainer
                 center={PANAMA_CENTER}
                 zoom={DEFAULT_ZOOM}

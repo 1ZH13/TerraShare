@@ -20,8 +20,7 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import UserDashboardLayout from "./components/UserDashboardLayout";
 import PublicHeader from "./components/PublicHeader";
-import { getAdminSummary, listAdminRentalRequests, setTokenFn as setAdminTokenFn } from "./services/adminApi";
-import { useClerkToken } from "./hooks/useClerkToken";
+import { getAdminSummary, listAdminRentalRequests } from "./services/adminApi";
 import { isAdminUser } from "./components/authDisplay";
 
 function ProtectedRoute({ children }) {
@@ -147,16 +146,17 @@ function DashboardPage() {
 
   useEffect(() => {
     const fetchRequests = async () => {
-      if (!user || !user.getToken) {
-        setLoading(false);
-        return;
-      }
       try {
         const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const token = await user.getToken();
-        const res = await fetch(`${BASE_URL}/api/v1/rental-requests/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const headers = { "Content-Type": "application/json" };
+        if (import.meta.env.DEV) {
+          headers["x-dev-user-id"] = "web_dev_user";
+          headers["x-dev-role"] = "user";
+        } else if (user?.getToken) {
+          const token = await user.getToken();
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+        const res = await fetch(`${BASE_URL}/api/v1/rental-requests`, { headers });
         const data = await res.json();
         if (data?.data) {
           setRequests(data.data);
@@ -167,8 +167,7 @@ function DashboardPage() {
         setLoading(false);
       }
     };
-    if (user) fetchRequests();
-    else setLoading(false);
+    fetchRequests();
   }, [user]);
 
   const statusLabels = {
@@ -236,8 +235,15 @@ function DashboardPage() {
                 </span>
               </div>
 
+              {req.status === "approved" && (
+                <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                  <p style={{ marginBottom: "0.5rem", fontSize: "0.9rem" }}>Tu solicitud fue aprobada. Complete el pago para confirmar el alquiler.</p>
+                  <PaymentButton rentalRequest={req} />
+                </div>
+              )}
               {req.status === "pending_payment" && (
                 <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                  <p style={{ marginBottom: "0.5rem", fontSize: "0.9rem" }}>Pago en proceso...</p>
                   <PaymentButton rentalRequest={req} />
                 </div>
               )}
@@ -261,11 +267,8 @@ function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [requestFilter, setRequestFilter] = useState("all");
-  const tokenReady = useClerkToken(setAdminTokenFn);
 
   useEffect(() => {
-    if (!tokenReady) return;
-
     let active = true;
     setLoading(true);
     setError("");
@@ -289,7 +292,7 @@ function AdminDashboardPage() {
     return () => {
       active = false;
     };
-  }, [tokenReady, requestFilter]);
+  }, [requestFilter]);
 
   const adminName = user?.firstName || user?.fullName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Admin";
 
@@ -313,13 +316,13 @@ function AdminDashboardPage() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center", flexWrap: "wrap", marginBottom: "1rem" }}>
           <h2 style={{ margin: 0 }}>Solicitudes recientes</h2>
           <div style={{ display: "flex", gap: "0.5rem" }}>
-            {["all", "pending_owner", "approved", "rejected", "paid"].map((f) => (
+            {["all", "pending_owner", "approved", "pending_payment", "rejected", "paid"].map((f) => (
               <button
                 key={f}
                 className={`filter-chip ${requestFilter === f ? "active" : ""}`}
                 onClick={() => setRequestFilter(f)}
               >
-                {f === "all" ? "Todas" : f === "pending_owner" ? "Pendientes" : f === "approved" ? "Aprobadas" : f === "rejected" ? "Rechazadas" : "Pagadas"}
+                {f === "all" ? "Todas" : f === "pending_owner" ? "Pendientes" : f === "approved" ? "Aprobadas" : f === "pending_payment" ? "Pago pendiente" : f === "rejected" ? "Rechazadas" : "Pagadas"}
               </button>
             ))}
           </div>

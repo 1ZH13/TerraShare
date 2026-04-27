@@ -1,7 +1,9 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import { failure } from "./lib/api-response";
 import { requestIdMiddleware } from "./middleware/request-id";
+import { rateLimitByIP } from "./middleware/rate-limit";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
 import { adminRoutes } from "./routes/admin";
@@ -12,12 +14,19 @@ import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
 import { passwordRoutes } from "./routes/password";
+import { analyticsRoutes } from "./routes/analytics";
 import type { AppEnv } from "./types";
 
 export function createApp() {
   const app = new Hono<AppEnv>();
 
+  app.use("*", cors({
+    origin: "*",
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "x-dev-role", "x-dev-user-id", "stripe-signature"],
+  }));
   app.use("*", requestIdMiddleware);
+  app.use("/api/v1/*", rateLimitByIP(100));
 
   app.get("/", (c) => {
     return c.json({
@@ -36,6 +45,7 @@ export function createApp() {
   app.route("/api/v1", contractRoutes);
   app.route("/api/v1", paymentRoutes);
   app.route("/api/v1", chatRoutes);
+  app.route("/api/v1", analyticsRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 

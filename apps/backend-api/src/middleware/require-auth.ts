@@ -102,7 +102,7 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 
 export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
   const authUser = c.get("authUser");
-  if (authUser.role !== "admin") {
+  if (!authUser || authUser.role !== "admin") {
     return failure(c, 403, "FORBIDDEN", "Admin role required");
   }
   await next();

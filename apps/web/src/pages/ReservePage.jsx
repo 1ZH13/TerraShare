@@ -4,8 +4,6 @@ import { useUser } from "@clerk/clerk-react";
 import { getLandById, createRentalRequest, adaptLand } from "../services/api";
 import PublicHeader from "../components/PublicHeader";
 import { normalizeReserveLand } from "../data/lands";
-import { useClerkToken } from "../hooks/useClerkToken";
-import { setTokenFn } from "../services/api";
 
 const USO_OPCIONES = [
   { value: "", label: "Selecciona un uso" },
@@ -22,7 +20,6 @@ export default function ReservePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isSignedIn } = useUser();
-  const tokenReady = useClerkToken(setTokenFn);
 
   const [land, setLand] = useState(normalizeReserveLand(location.state?.land) ?? null);
   const [loading, setLoading] = useState(!land);
@@ -72,11 +69,6 @@ export default function ReservePage() {
       return;
     }
 
-    if (!tokenReady) {
-      setError("Cargando tu sesión, intenta de nuevo en un momento.");
-      return;
-    }
-
     if (!form.startDate || !form.endDate || !form.intendedUse) {
       setError("Completa todos los campos obligatorios.");
       return;
@@ -102,7 +94,7 @@ export default function ReservePage() {
 
       setSuccess(`Solicitud enviada. ID: ${result?.id ?? "—"}. Espera la respuesta del propietario.`);
       setTimeout(() => {
-        navigate("/dashboard/admin", { replace: true });
+        navigate("/dashboard", { replace: true });
       }, 2500);
     } catch (err) {
       setError(err.message || "Error al enviar la solicitud.");
@@ -239,10 +231,10 @@ export default function ReservePage() {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={submitting || !tokenReady}
+                    disabled={submitting}
                     style={{ width: "100%" }}
                   >
-                    {!tokenReady ? "Cargando sesión..." : submitting ? "Enviando..." : "Enviar solicitud"}
+                    {submitting ? "Enviando..." : "Enviar solicitud"}
                   </button>
                 </div>
               </form>
