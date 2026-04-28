@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { createCheckoutSession } from "../services/api";
 
-export default function PaymentButton({ rentalRequest, onSuccess, onError }) {
+export default function PaymentButton({ rentalRequest }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handlePay = async () => {
-    if (!rentalRequest?.id) return;
+    if (!rentalRequest?.id) {
+      setError("ID de solicitud no disponible");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -26,10 +29,7 @@ export default function PaymentButton({ rentalRequest, onSuccess, onError }) {
         throw new Error("No se recibió URL de pago");
       }
     } catch (err) {
-      const msg = err.message || "Error al iniciar el pago";
-      setError(msg);
-      onError?.(msg);
-    } finally {
+      setError(err.message || "Error al iniciar el pago");
       setLoading(false);
     }
   };
@@ -43,9 +43,7 @@ export default function PaymentButton({ rentalRequest, onSuccess, onError }) {
       >
         {loading ? "Redirigiendo..." : "Pagar con tarjeta"}
       </button>
-      {error && (
-        <span style={{ color: "#e53e3e", fontSize: "0.875rem" }}>{error}</span>
-      )}
+      {error && <span style={{ color: "#e53e3e", fontSize: "0.875rem" }}>{error}</span>}
     </div>
   );
 }

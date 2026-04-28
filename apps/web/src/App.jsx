@@ -7,6 +7,7 @@ import LandDetailPage from "./pages/LandDetailPage";
 import ReservePage from "./pages/ReservePage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentCancelPage from "./pages/PaymentCancelPage";
+import PaymentPage from "./pages/PaymentPage";
 import PaymentButton from "./components/PaymentButton";
 import AdminLandsPage from "./pages/AdminLandsPage";
 import MyLandsPage from "./pages/MyLandsPage";
@@ -213,8 +214,11 @@ function DashboardPage() {
         }
         const res = await fetch(`${BASE_URL}/api/v1/rental-requests`, { headers });
         const data = await res.json();
+        console.log("API response:", data);
         if (data?.data) {
           setRequests(data.data);
+        } else if (Array.isArray(data)) {
+          setRequests(data);
         }
       } catch (err) {
         console.error("Error fetching requests:", err);
@@ -225,33 +229,25 @@ function DashboardPage() {
     fetchRequests();
   }, [user]);
 
-  const statusLabels = {
-    draft: "Borrador",
-    pending_owner: "Pendiente dueño",
-    approved: "Aprobada",
-    rejected: "Rechazada",
-    pending_payment: "Pago pendiente",
-    paid: "Pagada",
-  };
-
-  const statusColors = {
-    draft: "status-draft",
-    pending_owner: "status-pending",
-    approved: "status-active",
-    rejected: "status-blocked",
-    pending_payment: "status-pending",
-    paid: "status-active",
+  const statusConfig = {
+    draft: { label: "Borrador", color: "#997a00", bg: "rgba(200, 170, 0, 0.15)", icon: "📝" },
+    pending_owner: { label: "Pendiente", color: "var(--river-500)", bg: "rgba(13, 111, 147, 0.12)", icon: "⏳" },
+    approved: { label: "Aprobada", color: "var(--leaf-700)", bg: "rgba(11, 95, 55, 0.12)", icon: "✅" },
+    rejected: { label: "Rechazada", color: "var(--danger)", bg: "rgba(180, 40, 40, 0.12)", icon: "❌" },
+    pending_payment: { label: "Pago pendiente", color: "var(--soil-500)", bg: "rgba(157, 106, 59, 0.15)", icon: "💳" },
+    paid: { label: "Pagada", color: "var(--success)", bg: "rgba(11, 95, 55, 0.12)", icon: "🎉" },
   };
 
   if (loading) {
     return (
       <div>
         <div className="section-header">
-          <h1>Mi Dashboard</h1>
-          <p>Gestiona tus solicitudes y terrenos</p>
+          <h1>Mis Solicitudes</h1>
+          <p>Gestiona tus solicitudes de alquiler</p>
         </div>
         <div className="panel" style={{ marginTop: "1.5rem", textAlign: "center", padding: "3rem" }}>
-          <p>Cargando solicitudes...</p>
+          <div className="dashboard-spinner" />
+          <p style={{ marginTop: "1rem", opacity: 0.7 }}>Cargando solicitudes...</p>
         </div>
       </div>
     );
@@ -260,55 +256,76 @@ function DashboardPage() {
   return (
     <div>
       <div className="section-header">
-        <h1>Mi Dashboard</h1>
-        <p>Gestiona tus solicitudes y terrenos</p>
+        <h1>Mis Solicitudes</h1>
+        <p>Gestiona tus solicitudes de alquiler</p>
       </div>
 
       {requests.length === 0 ? (
-        <div className="panel" style={{ marginTop: "1.5rem" }}>
-          <p>No tienes solicitudes de alquiler.</p>
-          <Link to="/catalog" className="btn btn-primary" style={{ marginTop: "1rem" }}>
+        <div className="glass-panel dashboard-empty">
+          <div className="dashboard-empty-icon">📋</div>
+          <h2>Sin solicitudes aún</h2>
+          <p>Cuando envíes una solicitud de alquiler, aparecerá aquí.</p>
+          <Link to="/catalog" className="btn btn-primary" style={{ marginTop: "1.5rem" }}>
             Explorar terrenos
           </Link>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginTop: "1.5rem" }}>
-          {requests.map((req) => (
-            <div key={req.id} className="panel">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                <div>
-                  <h3>Solicitud #{req.id.slice(0, 8)}</h3>
-                  <p style={{ opacity: 0.7 }}>
-                    Terreno: {req.landId} · Uso: {req.intendedUse}
-                  </p>
-                  <p style={{ opacity: 0.7 }}>
-                    Período: {req.period?.startDate} → {req.period?.endDate}
-                  </p>
+        <div className="dashboard-requests">
+          {requests.map((req) => {
+            const status = statusConfig[req.status] || statusConfig.draft;
+            return (
+              <div key={req.id} className="request-card">
+                <div className="request-header">
+                  <div className="request-id">
+                    <span className="request-icon">{status.icon}</span>
+                    <span>Solicitud #{req.id.slice(0, 8)}</span>
+                  </div>
+                  <span
+                    className="request-status"
+                    style={{ background: status.bg, color: status.color }}
+                  >
+                    {status.label}
+                  </span>
                 </div>
-                <span className={`status-badge ${statusColors[req.status] || ""}`}>
-                  {statusLabels[req.status] || req.status}
-                </span>
-              </div>
 
-              {req.status === "approved" && (
-                <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                  <p style={{ marginBottom: "0.5rem", fontSize: "0.9rem" }}>Tu solicitud fue aprobada. Complete el pago para confirmar el alquiler.</p>
-                  <PaymentButton rentalRequest={req} />
+                <div className="request-body">
+                  <div className="request-detail">
+                    <span className="request-detail-label">Terreno</span>
+                    <span className="request-detail-value">{req.landId}</span>
+                  </div>
+                  <div className="request-detail">
+                    <span className="request-detail-label">Uso</span>
+                    <span className="request-detail-value">{req.intendedUse}</span>
+                  </div>
+                  <div className="request-detail">
+                    <span className="request-detail-label">Período</span>
+                    <span className="request-detail-value">
+                      {req.period?.startDate} → {req.period?.endDate}
+                    </span>
+                  </div>
                 </div>
-              )}
-              {req.status === "pending_payment" && (
-                <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                  <p style={{ marginBottom: "0.5rem", fontSize: "0.9rem" }}>Pago en proceso...</p>
-                  <PaymentButton rentalRequest={req} />
-                </div>
-              )}
-              {req.status === "paid" && (
-                <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)", color: "#48bb78" }}>
-                  ✓ Pago confirmado
-                </div>
-              )}
-            </div>
-          ))}
+
+                {req.status === "approved" && (
+                  <div className="request-action">
+                    <p>Tu solicitud fue aprobada. Completa el pago para confirmar el alquiler.</p>
+                    <PaymentButton rentalRequest={req} />
+                  </div>
+                )}
+                {req.status === "pending_payment" && (
+                  <div className="request-action">
+                    <p>Procesando pago...</p>
+                    <PaymentButton rentalRequest={req} />
+                  </div>
+                )}
+                {req.status === "paid" && (
+                  <div className="request-action request-success">
+                    <span className="request-success-icon">✓</span>
+                    <span>Pago confirmado - ¡Alquiler activo!</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -88,6 +88,12 @@ export const createCheckoutSession = async ({ rentalRequestId, currency = "USD",
   return res?.data ?? null;
 };
 
+/** POST /api/v1/payments/create-intent */
+export const createPaymentIntent = async ({ rentalRequestId, currency = "USD" }) => {
+  const res = await request("POST", "/api/v1/payments/create-intent", { rentalRequestId, currency });
+  return res?.data ?? null;
+};
+
 /** GET /api/v1/payments?rentalRequestId=x */
 export const getPaymentsByRequest = async (rentalRequestId) => {
   const res = await request("GET", `/api/v1/payments?rentalRequestId=${rentalRequestId}`);
