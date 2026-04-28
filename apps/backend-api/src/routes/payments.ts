@@ -108,6 +108,74 @@ async function computePaymentAmount(rentalRequestId: string, fallback = 1000) {
 
 export const paymentRoutes = new Hono<AppEnv>();
 
+paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  const body = (await c.req.json().catch(() => null)) as { rentalRequestId?: string; currency?: "USD" | "PAB" } | null;
+
+  if (!body?.rentalRequestId || !body.currency) {
+    return failure(c, 400, "VALIDATION_ERROR", "Missing rentalRequestId or currency");
+  }
+
+  const request = await RentalRequest.findOne({ id: body.rentalRequestId }).lean();
+  if (!request) {
+    return failure(c, 404, "NOT_FOUND", "Rental request not found");
+  }
+
+  if (request.tenantId !== authUser.id && authUser.role !== "admin") {
+    return failure(c, 403, "FORBIDDEN", "Only tenant or admin can start payment");
+  }
+
+  if (!["approved", "pending_payment"].includes(request.status)) {
+    return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Rental request is not payable");
+  }
+
+  const amount = await computePaymentAmount(request.id);
+  const stripe = getStripeClient();
+
+  if (!stripe) {
+    return failure(c, 503, "STRIPE_NOT_CONFIGURED", "Stripe is not configured");
+  }
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount * 100),
+    currency: body.currency.toLowerCase(),
+    metadata: {
+      paymentId: `pay_${crypto.randomUUID()}`,
+      rentalRequestId: request.id,
+    },
+    automatic_payment_methods: { enabled: true },
+  });
+
+  const payment = await Payment.create({
+    id: paymentIntent.metadata.paymentId,
+    rentalRequestId: request.id,
+    amount,
+    currency: body.currency,
+    status: "pending",
+    stripePaymentIntentId: paymentIntent.id,
+  });
+
+  await RentalRequest.updateOne(
+    { id: request.id },
+    { status: "pending_payment", updatedAt: new Date() },
+  );
+
+  createAuditEvent({
+    actor: authUser,
+    entity: "payment",
+    action: "created",
+    entityId: payment.id,
+    metadata: { rentalRequestId: request.id, amount, currency: body.currency },
+  });
+
+  return success(c, {
+    paymentId: payment.id,
+    clientSecret: paymentIntent.client_secret,
+    amount,
+    currency: body.currency,
+  }, 201);
+});
+
 paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
   const authUser = c.get("authUser");
   const body = (await c.req.json().catch(() => null)) as
@@ -238,10 +306,21 @@ paymentRoutes.get("/payments", requireAuth, async (c) => {
   if (authUser.role !== "admin") {
     const requests = await RentalRequest.find({ tenantId: authUser.id }).select("id").lean();
     const requestIds = requests.map((r) => r.id);
-    query.rentalRequestId = { $in: requestIds };
+    if (requestIds.length === 0) {
+      return success(c, []);
+    }
+    if (rentalRequestId) {
+      if (!requestIds.includes(rentalRequestId)) {
+        return failure(c, 403, "FORBIDDEN", "Cannot access payment for another user's rental request");
+      }
+      query.rentalRequestId = rentalRequestId;
+    } else {
+      query.rentalRequestId = { $in: requestIds };
+    }
+  } else {
+    if (rentalRequestId) query.rentalRequestId = rentalRequestId;
   }
 
-  if (rentalRequestId) query.rentalRequestId = rentalRequestId;
   if (contractId) query.contractId = contractId;
   if (status) query.status = status;
 

@@ -115,14 +115,7 @@ rentalRequestRoutes.get("/rental-requests", requireAuth, async (c) => {
   if (authUser.role === "admin") {
     query = {};
   } else {
-    const userOwnedLands = await Land.find({ ownerId: authUser.id }).select("id").lean();
-    const userLandIds = userOwnedLands.map((l) => l.id);
-    query = {
-      $or: [
-        { tenantId: authUser.id },
-        { landId: { $in: userLandIds } },
-      ],
-    };
+    query = { tenantId: authUser.id };
   }
 
   const items = await RentalRequest.find(query).lean();
