@@ -6,13 +6,13 @@ import PublicHeader from "../components/PublicHeader";
 import { normalizeReserveLand } from "../data/lands";
 
 const USO_OPCIONES = [
-  { value: "", label: "Selecciona un uso" },
-  { value: "agricultura", label: "Agricultura" },
-  { value: "ganaderia", label: "Ganaderia" },
-  { value: "forestal", label: "Forestal" },
-  { value: "acuicultura", label: "Acuicultura" },
-  { value: "mixto", label: "Uso mixto" },
-  { value: "otro", label: "Otro" },
+  { value: "", label: "¿Qué uso le darás?" },
+  { value: "agricultura", label: "🌱 Agricultura" },
+  { value: "ganaderia", label: "🐄 Ganadería" },
+  { value: "forestal", label: "🌲Forestal" },
+  { value: "acuicultura", label: "🐟 Acuicultura" },
+  { value: "mixto", label: "🔄 Uso mixto" },
+  { value: "otro", label: "📋 Otro" },
 ];
 
 export default function ReservePage() {
@@ -35,9 +35,7 @@ export default function ReservePage() {
   });
 
   useEffect(() => {
-    if (land) {
-      return;
-    }
+    if (land) return;
 
     if (landId) {
       let active = true;
@@ -92,10 +90,10 @@ export default function ReservePage() {
         notes: form.notes || undefined,
       });
 
-      setSuccess(`Solicitud enviada. ID: ${result?.id ?? "—"}. Espera la respuesta del propietario.`);
+      setSuccess(`¡Solicitud enviada! El propietario la revisará pronto. ID: ${result?.id ?? "—"}.`);
       setTimeout(() => {
         navigate("/dashboard", { replace: true });
-      }, 2500);
+      }, 3000);
     } catch (err) {
       setError(err.message || "Error al enviar la solicitud.");
     } finally {
@@ -106,8 +104,9 @@ export default function ReservePage() {
   if (loading) {
     return (
       <div className="page-shell">
-        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
-          <p>Cargando terreno...</p>
+        <div className="reserve-loading">
+          <div className="reserve-spinner" />
+          <p>Cargando información del terreno...</p>
         </div>
       </div>
     );
@@ -116,10 +115,10 @@ export default function ReservePage() {
   if (!land) {
     return (
       <div className="page-shell">
-        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+        <div className="glass-panel" style={{ textAlign: "center", padding: "3rem" }}>
           <h2>Terreno no encontrado</h2>
           <Link to="/catalog" className="btn btn-ghost" style={{ marginTop: "1rem" }}>
-            Volver al catalogo
+            Volver al catálogo
           </Link>
         </div>
       </div>
@@ -134,112 +133,143 @@ export default function ReservePage() {
       <PublicHeader showDashboardLink={false} />
 
       <main>
-        <Link to={`/lands/${landId}`} className="btn btn-ghost" style={{ marginBottom: "1rem" }}>
-          &larr; Volver al terreno
+        <Link to={`/lands/${landId}`} className="back-link-text">
+          ← Volver al terreno
         </Link>
 
-        <div className="split-grid" style={{ gap: "1rem", alignItems: "start" }}>
-          {/* Info del terreno */}
-          <div className="panel">
-            <span className="card-badge">{land.type}</span>
-            <h1 style={{ margin: "0.5rem 0" }}>{land.title}</h1>
-            <p style={{ opacity: 0.8 }}>
-              {land.province}{land.district ? `, ${land.district}` : ""}
-            </p>
-            <dl style={{ marginTop: "1rem" }}>
-              <dt>Area</dt>
-              <dd>{land.areaHectares} ha</dd>
-              <dt>Precio</dt>
-              <dd>{land.monthlyPrice > 0 ? `$${land.monthlyPrice}/mes` : "Variable"}</dd>
-              <dt>Disponible desde</dt>
-              <dd>
-                {land.availableFrom
-                  ? new Date(land.availableFrom).toLocaleDateString("es-PA")
-                  : "Ahora"}
-              </dd>
-            </dl>
-          </div>
+        <div className="reserve-layout">
+          <aside className="reserve-sidebar">
+            <div className="reserve-land-card">
+              <span className="card-badge">{land.type}</span>
+              <h2 className="reserve-land-title">{land.title}</h2>
+              <p className="reserve-land-location">
+                {land.province}{land.district ? `, ${land.district}` : ""}
+              </p>
 
-          {/* Formulario */}
-          <div className="panel">
-            <h2 style={{ margin: "0 0 1.25rem" }}>Solicitud de alquiler</h2>
-
-            {success ? (
-              <div className="toast toast-success">
-                <strong>Solicitud enviada!</strong>
-                <p>{success}</p>
+              <div className="reserve-price-block">
+                <span className="reserve-price-value">
+                  {land.monthlyPrice > 0 ? `$${land.monthlyPrice}` : "Precio variable"}
+                </span>
+                {land.monthlyPrice > 0 && <span className="reserve-price-period">/mes</span>}
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="form-grid">
-                <label>
-                  Fecha de inicio *
-                  <input
-                    type="date"
-                    value={form.startDate}
-                    onChange={(e) => handleChange("startDate", e.target.value)}
-                    min={new Date().toISOString().split("T")[0]}
-                    required
-                    disabled={submitting}
-                  />
-                </label>
 
-                <label>
-                  Fecha de fin *
-                  <input
-                    type="date"
-                    value={form.endDate}
-                    onChange={(e) => handleChange("endDate", e.target.value)}
-                    min={form.startDate || new Date().toISOString().split("T")[0]}
-                    required
-                    disabled={submitting}
-                  />
-                </label>
+              <div className="reserve-stats">
+                <div className="reserve-stat">
+                  <span className="reserve-stat-value">{land.areaHectares} ha</span>
+                  <span className="reserve-stat-label">Área</span>
+                </div>
+                <div className="reserve-stat">
+                  <span className="reserve-stat-value">
+                    {land.availableFrom
+                      ? new Date(land.availableFrom).toLocaleDateString("es-PA", { month: "short", year: "numeric" })
+                      : "Ahora"}
+                  </span>
+                  <span className="reserve-stat-label">Disponible</span>
+                </div>
+              </div>
 
-                <label className="full-width">
-                  Uso que le dare al terreno *
-                  <select
-                    value={form.intendedUse}
-                    onChange={(e) => handleChange("intendedUse", e.target.value)}
-                    required
-                    disabled={submitting}
-                  >
-                    {USO_OPCIONES.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+              {(land.features || []).length > 0 && (
+                <div className="reserve-features">
+                  <span className="reserve-features-title">Características</span>
+                  <div className="reserve-features-list">
+                    {land.features.map((f) => (
+                      <span key={f} className="reserve-feature">{f}</span>
                     ))}
-                  </select>
-                </label>
-
-                <label className="full-width">
-                  Mensaje al propietario (opcional)
-                  <textarea
-                    value={form.notes}
-                    onChange={(e) => handleChange("notes", e.target.value)}
-                    placeholder="Cuentale sobre tu proyecto o necesidades..."
-                    rows={4}
-                    disabled={submitting}
-                  />
-                </label>
-
-                {error && (
-                  <div className="toast toast-error full-width">
-                    <strong>Error</strong>
-                    <p>{error}</p>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+          </aside>
 
-                <div className="full-width" style={{ marginTop: "0.5rem" }}>
+          <section className="reserve-main">
+            <div className="glass-panel reserve-form-card">
+              <div className="reserve-form-header">
+                <h1>Solicitar alquiler</h1>
+                <p>Completa los datos para enviar tu solicitud al propietario</p>
+              </div>
+
+              {success ? (
+                <div className="reserve-success">
+                  <div className="reserve-success-icon">✓</div>
+                  <h2>¡Solicitud enviada!</h2>
+                  <p>{success}</p>
+                  <p className="reserve-success-hint">Redirigiendo al dashboard...</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="reserve-form">
+                  <div className="reserve-field-row">
+                    <div className="reserve-field">
+                      <label htmlFor="startDate">Fecha de inicio</label>
+                      <input
+                        id="startDate"
+                        type="date"
+                        value={form.startDate}
+                        onChange={(e) => handleChange("startDate", e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        required
+                        disabled={submitting}
+                      />
+                    </div>
+
+                    <div className="reserve-field">
+                      <label htmlFor="endDate">Fecha de fin</label>
+                      <input
+                        id="endDate"
+                        type="date"
+                        value={form.endDate}
+                        onChange={(e) => handleChange("endDate", e.target.value)}
+                        min={form.startDate || new Date().toISOString().split("T")[0]}
+                        required
+                        disabled={submitting}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="reserve-field">
+                    <label htmlFor="intendedUse">Uso del terreno</label>
+                    <select
+                      id="intendedUse"
+                      value={form.intendedUse}
+                      onChange={(e) => handleChange("intendedUse", e.target.value)}
+                      required
+                      disabled={submitting}
+                    >
+                      {USO_OPCIONES.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="reserve-field">
+                    <label htmlFor="notes">Mensaje al propietario</label>
+                    <textarea
+                      id="notes"
+                      value={form.notes}
+                      onChange={(e) => handleChange("notes", e.target.value)}
+                      placeholder="Preséntate y cuéntale sobre tu proyecto..."
+                      rows={4}
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="toast toast-error">
+                      <strong>Error</strong>
+                      <p>{error}</p>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-full reserve-submit"
                     disabled={submitting}
-                    style={{ width: "100%" }}
                   >
                     {submitting ? "Enviando..." : "Enviar solicitud"}
                   </button>
-                </div>
-              </form>
-            )}
-          </div>
+                </form>
+              )}
+            </div>
+          </section>
         </div>
       </main>
     </div>
