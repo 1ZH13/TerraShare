@@ -149,9 +149,22 @@ export interface AuditEventRecord {
     | "rejected"
     | "cancelled"
     | "paid"
+    | "signed"
+    | "completed"
     | "status_changed";
   entityId: string;
   metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface NotificationRecord {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  body?: string;
+  read: boolean;
+  readAt?: string;
   createdAt: string;
 }
 
@@ -174,6 +187,7 @@ export interface InMemoryStore {
   chatMessages: Map<string, ChatMessageRecord[]>;
   auditEvents: Map<string, AuditEventRecord>;
   leads: Map<string, LeadRecord>;
+  notifications: Map<string, NotificationRecord>;
 }
 
 export interface UserRecord extends AuthContextUser {

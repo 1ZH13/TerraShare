@@ -12,6 +12,7 @@ type ErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "BUSINESS_RULE_VIOLATION"
+  | "INVALID_TRANSITION"
   | "INTERNAL_ERROR";
 
 type SuccessStatus = 200 | 201 | 202;

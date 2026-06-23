@@ -29,7 +29,7 @@ const LAND_TITLES = [
   "Finca Productiva", "Quinta", "Solar", "Hacienda Ganadera", "Finca de Cultivos"
 ];
 
-function randomItem<T>(arr: T[]): T {
+function randomItem<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
@@ -84,7 +84,7 @@ function generateLands(count: number, userIds: string[]) {
     const district = randomItem(province.districts);
     const titlePrefix = randomItem(LAND_TITLES);
     const usesCount = randomBetween(1, 3);
-    const allowedUses = [];
+    const allowedUses: string[] = [];
     for (let j = 0; j < usesCount; j++) {
       const use = randomItem(LAND_USES);
       if (!allowedUses.includes(use)) allowedUses.push(use);
