@@ -10,6 +10,11 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 - Setup y comandos: [docs/SETUP_AND_COMMANDS.md](docs/SETUP_AND_COMMANDS.md)
 - Stripe en desarrollo: [docs/STRIPE_DEV_SETUP.md](docs/STRIPE_DEV_SETUP.md)
 - Contratos entre modulos: [docs/MODULE_INTEGRATION_CONTRACTS.md](docs/MODULE_INTEGRATION_CONTRACTS.md)
+- Endpoints / rutas de la API: [docs/ENDPOINTS_RUTAS.md](docs/ENDPOINTS_RUTAS.md)
+- Migracion a MongoDB: [docs/MIGRATION.md](docs/MIGRATION.md)
+- Correcciones de seguridad: [docs/SECURITY_FIXES.md](docs/SECURITY_FIXES.md)
+- Historias de usuario (entregable): [docs/historias-usuario/index.html](docs/historias-usuario/index.html)
+- Notas historicas: [docs/CLERK_TOKENS_REMOVAL.md](docs/CLERK_TOKENS_REMOVAL.md)
 
 ## Stack tecnologico
 - Frontend: React + Vite + Clerk (unificado en `apps/web`)
@@ -21,7 +26,6 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 ## Estado actual
 - `apps/web`: frontend unificado (landing + dashboard + admin)
 - `apps/backend-api`: API con auth, lands, rental requests, contracts, payments, chat
-- `apps/legacy/`: apps anteriores (landing, app-web, admin-dashboard) - referencia
 - `packages/shared`: DTOs y tipos compartidos
 
 ## Rutas de la app web

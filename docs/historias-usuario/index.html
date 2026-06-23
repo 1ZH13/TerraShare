@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraShare — Historias de Usuario (Implementado + Production-Ready + MCP)</title>
+<style>
+  :root{
+    --green:#2f7d4f; --green-dark:#1e5436; --green-soft:#e7f3ec;
+    --ink:#1f2933; --muted:#5b6b7a; --line:#dce3e8; --bg:#ffffff;
+    --mcp:#7a4fd8; --mcp-soft:#efe9fb; --amber:#b9770a; --amber-soft:#fbf3e2;
+    --code:#0b3d2e;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:#eef2f5; color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; font-size:15px;
+  }
+  .page{max-width:920px; margin:24px auto; background:var(--bg); padding:48px 56px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08); border-radius:8px;}
+
+  /* Cover */
+  .cover{
+    min-height:80vh; display:flex; flex-direction:column; justify-content:center;
+    text-align:center; padding:60px 40px; border-bottom:4px solid var(--green);
+  }
+  .cover .badge{display:inline-block; align-self:center; background:var(--green-soft);
+    color:var(--green-dark); padding:6px 16px; border-radius:999px; font-weight:600;
+    font-size:13px; letter-spacing:.5px; margin-bottom:24px;}
+  .cover h1{font-size:48px; margin:8px 0 4px; color:var(--green-dark); letter-spacing:-1px;}
+  .cover .sub{font-size:19px; color:var(--muted); margin-bottom:36px;}
+  .cover .meta{display:inline-block; text-align:left; background:#f7faf8;
+    border:1px solid var(--line); border-radius:10px; padding:22px 28px; margin:0 auto;}
+  .cover .meta div{margin:5px 0; font-size:15px;}
+  .cover .meta b{color:var(--green-dark); display:inline-block; min-width:130px;}
+
+  h2{color:var(--green-dark); font-size:26px; margin-top:8px; padding-bottom:8px;
+    border-bottom:2px solid var(--green); }
+  h3{color:var(--green-dark); font-size:18px; margin:28px 0 10px; }
+  .section-intro{color:var(--muted); font-size:14.5px; margin-bottom:18px;}
+  a{color:var(--green);}
+
+  /* TOC */
+  .toc{background:#f7faf8; border:1px solid var(--line); border-radius:10px; padding:20px 26px;}
+  .toc ol{margin:8px 0 0; padding-left:22px;}
+  .toc li{margin:6px 0;}
+  .toc a{text-decoration:none; color:var(--ink);}
+  .toc a:hover{color:var(--green); text-decoration:underline;}
+  .pill{font-size:11px; padding:1px 8px; border-radius:999px; font-weight:700; vertical-align:middle;}
+  .pill-mcp{background:var(--mcp-soft); color:var(--mcp);}
+  .pill-count{background:var(--green-soft); color:var(--green-dark);}
+
+  /* Story cards */
+  .story{border:1px solid var(--line); border-left:4px solid var(--green);
+    border-radius:8px; padding:14px 18px; margin:14px 0; background:#fff;
+    page-break-inside:avoid;}
+  .story.mcp{border-left-color:var(--mcp);}
+  .story .h{display:flex; align-items:baseline; gap:10px; margin-bottom:6px;}
+  .story .num{font-weight:800; color:var(--green-dark); font-size:14px;
+    background:var(--green-soft); border-radius:6px; padding:2px 9px; white-space:nowrap;}
+  .story.mcp .num{color:var(--mcp); background:var(--mcp-soft);}
+  .tag{font-size:10.5px; font-weight:800; letter-spacing:.5px; padding:2px 8px; border-radius:5px;}
+  .tag-mcp{background:var(--mcp); color:#fff;}
+  .story .title{font-size:15.5px; font-weight:600;}
+  .story .us{margin:4px 0 10px; font-size:15px;}
+  .story .us .r{color:var(--green-dark); font-weight:600;}
+  .story .us.mcp .r{color:var(--mcp);}
+  .ac{margin:8px 0 0; padding-left:0; list-style:none;}
+  .ac li{position:relative; padding-left:24px; margin:4px 0; font-size:13.8px; color:#36424e;}
+  .ac li::before{content:"✓"; position:absolute; left:4px; color:var(--green); font-weight:800;}
+  .story.mcp .ac li::before{color:var(--mcp);}
+  .mcp-meta{margin-top:10px; background:var(--mcp-soft); border-radius:7px; padding:10px 14px; font-size:13.4px;}
+  .mcp-meta div{margin:3px 0;}
+  .mcp-meta b{color:var(--mcp); display:inline-block; min-width:95px;}
+  code{background:#eef3f0; color:var(--code); padding:1px 6px; border-radius:4px;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; font-size:12.8px;}
+
+  .note{background:var(--amber-soft); border:1px solid #eccf8f; border-radius:8px;
+    padding:12px 16px; font-size:13.6px; color:#6b4e10; margin:16px 0;}
+
+  /* MCP summary table */
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:13px;}
+  th,td{border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--green-soft); color:var(--green-dark); font-size:12.5px;}
+  tbody tr:nth-child(even){background:#f8fbf9;}
+  td code{font-size:12px;}
+
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:13px; margin:10px 0 4px; color:var(--muted);}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .sw{width:14px; height:14px; border-radius:3px; display:inline-block;}
+
+  footer{margin-top:40px; padding-top:16px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:12.5px; text-align:center;}
+
+  @media print{
+    body{background:#fff; font-size:11.5pt;}
+    .page{box-shadow:none; margin:0; max-width:none; padding:0 14mm; border-radius:0;}
+    .cover{min-height:92vh; page-break-after:always; border-bottom:none;}
+    h2{page-break-before:always;}
+    .toc, .story, table, .mcp-meta{page-break-inside:avoid;}
+    a{color:var(--ink); text-decoration:none;}
+    @page{margin:16mm 0;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ====================== PORTADA ====================== -->
+<section class="page cover">
+  <span class="badge">UNIVERSIDAD TECNOLÓGICA DE PANAMÁ</span>
+  <h1>TerraShare</h1>
+  <div class="sub">Historias de Usuario · Inventario, Production-Ready y MCP</div>
+  <div class="meta">
+    <div><b>Curso:</b> Desarrollo de Software IX (9)</div>
+    <div><b>Grupo:</b> 1GS241</div>
+    <div><b>Proyecto:</b> TerraShare — Plataforma de alquiler de terrenos (Panamá)</div>
+    <div><b>Integrantes:</b> César Bazán · Christian Valdespino · Eriel Ten Su</div>
+    <div><b>Fecha:</b> 22 de junio de 2026</div>
+    <div><b>Base:</b> MVP del Parcial #2 (A7)</div>
+  </div>
+</section>
+
+<!-- ====================== ÍNDICE ====================== -->
+<section class="page">
+  <h2>Índice</h2>
+  <div class="toc">
+    <ol>
+      <li><a href="#intro">Introducción y contexto</a></li>
+      <li><a href="#s1">Sección 1 — Inventario actual (implementado)</a> <span class="pill pill-count">HU 1–32</span></li>
+      <li><a href="#s2">Sección 2 — Faltante / Production-Ready</a> <span class="pill pill-count">HU 33–62</span></li>
+      <li><a href="#s3">Sección 3 — Servidor MCP sobre el comercio electrónico</a> <span class="pill pill-mcp">HU 63–92 · [MCP]</span></li>
+      <li><a href="#tabla">Anexo — Tabla resumen de herramientas (tools) MCP</a></li>
+    </ol>
+  </div>
+
+  <h3 id="intro">Introducción y contexto</h3>
+  <p><b>TerraShare</b> es una plataforma de comercio electrónico para el <b>alquiler de terrenos</b>
+  en Panamá. Conecta a <b>dueños</b> que publican parcelas con <b>arrendatarios</b> que las solicitan,
+  cubriendo el ciclo completo: catálogo con filtros, solicitud de alquiler, contrato, pago (Stripe),
+  chat interno y panel de administración.</p>
+  <p>El MVP está construido como un <b>monorepo</b> con tres paquetes: <code>apps/backend-api</code>
+  (Bun + Hono + MongoDB/Mongoose), <code>apps/web</code> (React + Vite) y <code>packages/shared</code>
+  (tipos y contratos compartidos).</p>
+  <p>Este documento lista las funcionalidades en formato de <b>historias de usuario</b> divididas en:
+  <b>(1)</b> lo que <b>ya se implementó</b>, <b>(2)</b> lo que <b>falta</b> para considerar el proyecto
+  <i>production-ready</i>, y <b>(3)</b> las funcionalidades a exponer mediante un <b>servidor MCP</b>
+  (Model Context Protocol) bajo autenticación, importable desde <b>Claude Code</b> o <b>Codex</b>, que
+  alimentará el próximo proyecto.</p>
+
+  <div class="legend">
+    <span><span class="sw" style="background:var(--green)"></span> Implementado / Production-ready</span>
+    <span><span class="sw" style="background:var(--mcp)"></span> Expuesto vía MCP</span>
+    <span><span class="tag tag-mcp">[MCP]</span> historia que se expone como herramienta MCP</span>
+  </div>
+
+  <div class="note">
+    <b>Formato de cada historia:</b> «Como &lt;rol&gt;, quiero &lt;acción&gt;, para &lt;beneficio&gt;»,
+    numerada, con 2–4 criterios de aceptación. Las historias <b>[MCP]</b> incluyen además:
+    <b>tool</b> que la expone, <b>autenticación</b> requerida y <b>qué le permite hacer al agente</b>.
+    <br><b>Resumen de cobertura:</b> 32 implementadas · 30 nuevas production-ready · 30 vía MCP =
+    <b>92 historias</b> (≥30 etiquetadas <span class="tag tag-mcp">[MCP]</span>).
+  </div>
+</section>
+
+<!-- ====================== SECCIÓN 1 — IMPLEMENTADO ====================== -->
+<section class="page">
+  <h2 id="s1">Sección 1 — Inventario actual (implementado)</h2>
+  <p class="section-intro">Funcionalidades que <b>ya existen</b> en el MVP, derivadas del código del backend
+  (rutas Hono) y del frontend (13 páginas React).</p>
+
+  <h3>Autenticación, perfiles y roles</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-01</span><span class="title">Registro e inicio de sesión</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero registrarme e iniciar sesión, para acceder a las funciones autenticadas de la plataforma.</p>
+    <ul class="ac">
+      <li>El registro/login se realiza vía Clerk con email y contraseña.</li>
+      <li>Tras autenticarse, el usuario recibe un token válido para llamar a la API.</li>
+      <li>Las rutas protegidas rechazan peticiones sin token con <code>401</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-02</span><span class="title">Consultar mi perfil</span></div>
+    <p class="us">Como <span class="r">usuario autenticado</span>, quiero consultar mi perfil con <code>GET /auth/me</code>, para ver mis datos y mi rol.</p>
+    <ul class="ac">
+      <li>Devuelve id, email, nombre, rol (<code>user</code>/<code>admin</code>) y estado.</li>
+      <li>Si el usuario está bloqueado (<code>inactive</code>), se deniega el acceso con <code>403</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-03</span><span class="title">Control de acceso por rol (RBAC)</span></div>
+    <p class="us">Como <span class="r">administrador</span>, quiero que ciertas rutas exijan rol admin, para proteger operaciones sensibles.</p>
+    <ul class="ac">
+      <li>El middleware <code>requireAdmin</code> bloquea a usuarios sin rol admin con <code>403</code>.</li>
+      <li>Existe un endpoint de verificación <code>GET /auth/admin/ping</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-04</span><span class="title">Bypass de autenticación en desarrollo</span></div>
+    <p class="us">Como <span class="r">desarrollador</span>, quiero un bypass de auth en entorno dev (cabecera <code>x-dev-user-id</code>), para probar flujos sin depender de Clerk.</p>
+    <ul class="ac">
+      <li>Solo se activa cuando <code>ALLOW_DEV_AUTH_BYPASS=true</code>.</li>
+      <li>Permite simular usuarios y roles mediante cabeceras <code>x-dev-user-id</code> / <code>x-dev-role</code>.</li>
+    </ul>
+  </div>
+
+  <h3>Catálogo y gestión de terrenos</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-05</span><span class="title">Explorar el catálogo con paginación</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero ver el catálogo de terrenos paginado, para explorar la oferta disponible.</p>
+    <ul class="ac">
+      <li><code>GET /lands</code> devuelve solo terrenos en estado <code>active</code>.</li>
+      <li>Soporta <code>page</code> y <code>pageSize</code> con metadatos de paginación (total, páginas).</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-06</span><span class="title">Filtrar terrenos</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero filtrar terrenos por uso, provincia, distrito, precio y disponibilidad, para encontrar lo que necesito.</p>
+    <ul class="ac">
+      <li>Filtros por <code>use</code>, <code>province</code>, <code>district</code>, <code>priceMin/priceMax</code> y rango de fechas.</li>
+      <li>Los filtros se combinan (AND) y respetan la paginación.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-07</span><span class="title">Ordenar resultados</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero ordenar el catálogo por fecha, precio o área, para priorizar lo que más me interesa.</p>
+    <ul class="ac">
+      <li>Soporta <code>sort=createdAt|price|area</code> y <code>order=asc|desc</code>.</li>
+      <li>Un valor de orden inválido devuelve <code>400</code> con mensaje claro.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-08</span><span class="title">Ver detalle de un terreno</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero ver el detalle de un terreno, para conocer ubicación, área, usos permitidos y precio.</p>
+    <ul class="ac">
+      <li><code>GET /lands/:id</code> devuelve la ficha completa.</li>
+      <li>Un terreno inexistente o inactivo devuelve <code>404</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-09</span><span class="title">Publicar un terreno</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero crear un terreno, para ponerlo en alquiler.</p>
+    <ul class="ac">
+      <li><code>POST /lands</code> valida campos requeridos (título, área, ubicación, precio, usos).</li>
+      <li>El terreno se crea en estado <code>draft</code> y queda asociado al dueño autenticado.</li>
+      <li>Se registra un evento de auditoría <code>land/created</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-10</span><span class="title">Editar mi terreno</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero editar mi terreno, para mantener su información actualizada.</p>
+    <ul class="ac">
+      <li>Solo el dueño o un admin pueden editar (<code>PATCH /lands/:id</code>), si no <code>403</code>.</li>
+      <li>El id y el dueño no se pueden alterar; se actualiza <code>updatedAt</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-11</span><span class="title">Cambiar el estado del terreno</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero cambiar el estado de mi terreno (draft/active/inactive), para controlar su visibilidad en el catálogo.</p>
+    <ul class="ac">
+      <li><code>PATCH /lands/:id/status</code> acepta solo estados válidos.</li>
+      <li>Solo terrenos <code>active</code> aparecen en el catálogo público.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-12</span><span class="title">Eliminar mi terreno</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero eliminar un terreno, para retirarlo de la plataforma.</p>
+    <ul class="ac">
+      <li><code>DELETE /lands/:id</code> solo lo permite el dueño o admin.</li>
+      <li>Se registra evento de auditoría <code>land/deleted</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-13</span><span class="title">Ver mis terrenos</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero listar mis terrenos (<code>GET /lands/me</code>), para gestionarlos desde un solo lugar.</p>
+    <ul class="ac">
+      <li>Devuelve únicamente los terrenos cuyo <code>ownerId</code> es el del usuario.</li>
+      <li>La página «Mis Terrenos» del frontend los muestra con sus estados.</li>
+    </ul>
+  </div>
+
+  <h3>Solicitudes de alquiler</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-14</span><span class="title">Crear una solicitud de alquiler</span></div>
+    <p class="us">Como <span class="r">arrendatario</span>, quiero crear una solicitud de alquiler sobre un terreno, para reservar su uso por un período.</p>
+    <ul class="ac">
+      <li><code>POST /rental-requests</code> valida período (inicio &lt; fin) y uso previsto.</li>
+      <li>Un dueño no puede solicitar su propio terreno (<code>422</code>).</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-15</span><span class="title">Listar mis solicitudes</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero listar mis solicitudes de alquiler, para hacer seguimiento de su estado.</p>
+    <ul class="ac">
+      <li>El arrendatario ve sus solicitudes; el dueño ve las de sus terrenos.</li>
+      <li>Se puede filtrar por estado.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-16</span><span class="title">Ver detalle de una solicitud</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero ver el detalle de una solicitud, para conocer fechas, estado y terreno asociado.</p>
+    <ul class="ac">
+      <li><code>GET /rental-requests/:id</code> devuelve la solicitud y datos del terreno.</li>
+      <li>Solo las partes involucradas o un admin pueden verla.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-17</span><span class="title">Aprobar / rechazar solicitudes</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero cambiar el estado de una solicitud (aprobar/rechazar/cancelar), para gestionar la demanda de mi terreno.</p>
+    <ul class="ac">
+      <li><code>PATCH /rental-requests/:id/status</code> aplica transiciones válidas de estado.</li>
+      <li>Solo el dueño del terreno o admin pueden cambiar el estado.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-18</span><span class="title">Evitar reservas solapadas</span></div>
+    <p class="us">Como <span class="r">sistema</span>, quiero impedir solicitudes aprobadas con fechas solapadas en el mismo terreno, para evitar la doble reserva.</p>
+    <ul class="ac">
+      <li>Si existe una solicitud aprobada/pagada que se solapa, devuelve <code>409 CONFLICT</code>.</li>
+      <li>La validación considera el rango <code>[startDate, endDate]</code>.</li>
+    </ul>
+  </div>
+
+  <h3>Contratos y auditoría</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-19</span><span class="title">Generar un contrato</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero generar un contrato a partir de una solicitud, para formalizar el alquiler.</p>
+    <ul class="ac">
+      <li><code>POST /contracts</code> crea el contrato en estado <code>draft</code> con términos y fechas.</li>
+      <li>Queda vinculado a la solicitud, dueño y arrendatario.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-20</span><span class="title">Firmar un contrato</span></div>
+    <p class="us">Como <span class="r">parte del contrato</span>, quiero firmar el contrato, para dar mi consentimiento.</p>
+    <ul class="ac">
+      <li><code>POST /contracts/:id/sign</code> solo es válido si el contrato está en <code>draft</code>.</li>
+      <li>Al firmar pasa a <code>active</code> y registra <code>signedAt</code> + evento de auditoría.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-21</span><span class="title">Completar un contrato</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero completar un contrato activo, para cerrar el ciclo de alquiler.</p>
+    <ul class="ac">
+      <li><code>POST /contracts/:id/complete</code> solo procede si está <code>active</code>.</li>
+      <li>Transición inválida devuelve <code>INVALID_TRANSITION</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-22</span><span class="title">Consultar eventos de auditoría</span></div>
+    <p class="us">Como <span class="r">administrador</span>, quiero consultar la bitácora de auditoría, para rastrear acciones sobre entidades.</p>
+    <ul class="ac">
+      <li><code>GET /audit-events</code> permite filtrar por actor, entidad, acción e id.</li>
+      <li>Cada evento registra actor, rol, entidad, acción y fecha.</li>
+    </ul>
+  </div>
+
+  <h3>Pagos</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-23</span><span class="title">Iniciar un pago (Stripe Checkout)</span></div>
+    <p class="us">Como <span class="r">arrendatario</span>, quiero iniciar el pago de una solicitud aprobada, para concretar el alquiler.</p>
+    <ul class="ac">
+      <li><code>POST /payments/checkout-session</code> crea una sesión de Stripe y devuelve <code>checkoutUrl</code>.</li>
+      <li>Solo se permite si la solicitud está <code>approved</code>/<code>pending_payment</code>.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-24</span><span class="title">Procesar webhooks de pago</span></div>
+    <p class="us">Como <span class="r">sistema</span>, quiero recibir webhooks de Stripe, para actualizar el estado del pago automáticamente.</p>
+    <ul class="ac">
+      <li><code>POST /webhooks/stripe</code> procesa <code>checkout.session.completed</code>.</li>
+      <li>Actualiza el pago a <code>paid</code> y refleja el cambio en la solicitud.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-25</span><span class="title">Ver mis pagos</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero listar y ver el detalle de mis pagos, para conocer su estado.</p>
+    <ul class="ac">
+      <li><code>GET /payments</code> y <code>GET /payments/:id</code> muestran solo los pagos del usuario.</li>
+      <li>El frontend ofrece páginas de éxito y cancelación de pago.</li>
+    </ul>
+  </div>
+
+  <h3>Chat y contacto</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-26</span><span class="title">Chat interno por terreno/solicitud</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero un chat interno asociado a un terreno o solicitud, para coordinar con la otra parte.</p>
+    <ul class="ac">
+      <li><code>GET/POST /chats</code> lista y crea conversaciones entre participantes.</li>
+      <li>Solo los participantes pueden acceder a la conversación.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-27</span><span class="title">Enviar y leer mensajes</span></div>
+    <p class="us">Como <span class="r">participante</span>, quiero enviar y leer mensajes dentro de un chat, para comunicarme.</p>
+    <ul class="ac">
+      <li><code>GET/POST /chats/:id/messages</code> gestiona los mensajes ordenados por fecha.</li>
+      <li>Solo participantes del chat pueden publicar mensajes.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-28</span><span class="title">Contacto externo por WhatsApp</span></div>
+    <p class="us">Como <span class="r">interesado</span>, quiero un enlace de contacto externo (WhatsApp) con el dueño, para una comunicación más directa.</p>
+    <ul class="ac">
+      <li><code>GET /chats/:id/external-contact</code> entrega el contacto cuando está habilitado.</li>
+      <li>Se controla mediante <code>WHATSAPP_CONTACT_ENABLED</code>.</li>
+    </ul>
+  </div>
+
+  <h3>Administración, leads y analítica</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-29</span><span class="title">Gestión de usuarios (admin)</span></div>
+    <p class="us">Como <span class="r">administrador</span>, quiero listar, ver y cambiar el estado de usuarios, para moderar la plataforma.</p>
+    <ul class="ac">
+      <li><code>GET /admin/users</code>, <code>GET /admin/users/:id</code> y <code>PATCH /admin/users/:id/status</code>.</li>
+      <li>Un admin no puede cambiar su propio estado.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-30</span><span class="title">Moderación de terrenos y panel (admin)</span></div>
+    <p class="us">Como <span class="r">administrador</span>, quiero moderar terrenos y ver un panel resumen, para supervisar la operación.</p>
+    <ul class="ac">
+      <li><code>GET /admin/lands</code> + <code>PATCH /admin/lands/:id/status</code> para moderar publicaciones.</li>
+      <li><code>GET /admin/summary</code> y <code>GET /admin/rental-requests</code> alimentan el dashboard.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-31</span><span class="title">Captura de leads</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero dejar mi correo desde la landing, para recibir información de la plataforma.</p>
+    <ul class="ac">
+      <li><code>POST /leads</code> registra el correo y su origen (landing/app-web/admin).</li>
+      <li><code>GET /leads</code> permite a admin consultarlos.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-32</span><span class="title">Analítica e indicadores</span></div>
+    <p class="us">Como <span class="r">dueño/administrador</span>, quiero ver métricas de la plataforma, para tomar decisiones.</p>
+    <ul class="ac">
+      <li><code>GET /analytics/overview</code>, <code>/analytics/lands</code>, <code>/analytics/requests</code>.</li>
+      <li><code>GET /analytics/owner/:ownerId</code> entrega métricas por dueño.</li>
+      <li>El catálogo incluye un mapa de Panamá (Leaflet) con provincias.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ====================== SECCIÓN 2 — PRODUCTION-READY ====================== -->
+<section class="page">
+  <h2 id="s2">Sección 2 — Faltante / Production-Ready</h2>
+  <p class="section-intro">30 historias <b>nuevas</b> necesarias para llevar el MVP a un estado
+  <i>production-ready</i>: seguridad, pagos reales, observabilidad, manejo de errores, pruebas,
+  CI/CD, roles, rate limiting, respaldos, accesibilidad e i18n.</p>
+
+  <h3>Seguridad y autorización</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-33</span><span class="title">Verificación de firma de webhooks</span></div>
+    <p class="us">Como <span class="r">sistema</span>, quiero verificar la firma de los webhooks de Stripe en producción, para evitar eventos falsificados.</p>
+    <ul class="ac">
+      <li>Se valida <code>Stripe-Signature</code> con <code>STRIPE_WEBHOOK_SECRET</code> antes de procesar.</li>
+      <li>Eventos con firma inválida se rechazan con <code>400</code> y se registran.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-34</span><span class="title">Validación y sanitización de entrada</span></div>
+    <p class="us">Como <span class="r">sistema</span>, quiero validar y sanitizar toda entrada con esquemas (Zod), para prevenir datos inválidos e inyecciones.</p>
+    <ul class="ac">
+      <li>Cada endpoint valida body/query con un esquema y devuelve errores estructurados.</li>
+      <li>Se rechazan campos no permitidos y tipos incorrectos.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-35</span><span class="title">Roles y permisos granulares</span></div>
+    <p class="us">Como <span class="r">administrador</span>, quiero permisos granulares por recurso (ownership consistente), para un control de acceso fino.</p>
+    <ul class="ac">
+      <li>Matriz de permisos por rol y verificación de propiedad en cada acción.</li>
+      <li>Pruebas que cubran accesos no autorizados (403) en todos los recursos.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-36</span><span class="title">Gestión segura de secretos</span></div>
+    <p class="us">Como <span class="r">equipo DevOps</span>, quiero gestionar secretos fuera del repositorio (vault/variables seguras), para no exponer credenciales.</p>
+    <ul class="ac">
+      <li>Ningún secreto vive en el código ni en el control de versiones.</li>
+      <li>Rotación de claves documentada y soportada por entorno.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-37</span><span class="title">Autenticación multifactor (MFA)</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero habilitar 2FA/MFA, para proteger mejor mi cuenta.</p>
+    <ul class="ac">
+      <li>Soporte de segundo factor (TOTP o email) en el login.</li>
+      <li>Configurable como obligatorio para cuentas admin.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-38</span><span class="title">Recuperación de contraseña</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero recuperar mi contraseña de forma segura, para no perder el acceso.</p>
+    <ul class="ac">
+      <li>Flujo de reset con token de un solo uso y expiración.</li>
+      <li>Notificación al correo y revocación de sesiones tras el cambio.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-39</span><span class="title">Cabeceras de seguridad y CORS estricto</span></div>
+    <p class="us">Como <span class="r">sistema</span>, quiero cabeceras de seguridad (HSTS, CSP) y CORS por entorno, para reducir la superficie de ataque.</p>
+    <ul class="ac">
+      <li>CORS restringe orígenes según entorno (no <code>*</code> en producción).</li>
+      <li>Se aplican cabeceras de seguridad estándar a todas las respuestas.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-40</span><span class="title">Rate limiting por usuario/clave</span></div>
+    <p class="us">Como <span class="r">sistema</span>, quiero limitar la tasa por usuario y por clave de API (no solo por IP), para mitigar abuso de cuentas autenticadas.</p>
+    <ul class="ac">
+      <li>Límites configurables por identidad y por tool de MCP.</li>
+      <li>Respuestas <code>429</code> con cabeceras <code>Retry-After</code>.</li>
+    </ul>
+  </div>
+
+  <h3>Pagos reales</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-41</span><span class="title">Pagos reales y conciliación</span></div>
+    <p class="us">Como <span class="r">negocio</span>, quiero operar Stripe en modo real con conciliación, para procesar dinero efectivamente.</p>
+    <ul class="ac">
+      <li>Claves <i>live</i>, manejo de moneda y comisiones.</li>
+      <li>Conciliación entre pagos, solicitudes y contratos.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-42</span><span class="title">Idempotencia en pagos</span></div>
+    <p class="us">Como <span class="r">sistema</span>, quiero claves de idempotencia en pagos y webhooks, para evitar cobros o actualizaciones duplicadas.</p>
+    <ul class="ac">
+      <li>Cada operación de pago usa <code>Idempotency-Key</code>.</li>
+      <li>Webhooks duplicados no producen efectos repetidos.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-43</span><span class="title">Reembolsos y facturación</span></div>
+    <p class="us">Como <span class="r">administrador</span>, quiero gestionar reembolsos y emitir recibos, para cumplir con la operación comercial.</p>
+    <ul class="ac">
+      <li>Endpoint de reembolso total/parcial con auditoría.</li>
+      <li>Generación de recibo/factura descargable para el usuario.</li>
+    </ul>
+  </div>
+
+  <h3>Observabilidad</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-44</span><span class="title">Logs estructurados con correlación</span></div>
+    <p class="us">Como <span class="r">equipo de operaciones</span>, quiero logs estructurados (JSON) correlacionados por <code>requestId</code>, para depurar incidentes.</p>
+    <ul class="ac">
+      <li>Cada log incluye nivel, timestamp, requestId, ruta y usuario.</li>
+      <li>Se envían a un agregador central (p. ej. Loki/ELK).</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-45</span><span class="title">Métricas y dashboards</span></div>
+    <p class="us">Como <span class="r">equipo</span>, quiero métricas (Prometheus) y dashboards, para vigilar la salud del sistema.</p>
+    <ul class="ac">
+      <li>Métricas de latencia, throughput y tasa de errores por endpoint.</li>
+      <li>Dashboard con SLOs visibles (Grafana).</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-46</span><span class="title">Tracing distribuido</span></div>
+    <p class="us">Como <span class="r">equipo</span>, quiero trazas distribuidas (OpenTelemetry), para seguir una petición de extremo a extremo.</p>
+    <ul class="ac">
+      <li>Spans desde la API hasta MongoDB y Stripe.</li>
+      <li>Trace-id propagado y visible en los logs.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-47</span><span class="title">Alertas y monitoreo</span></div>
+    <p class="us">Como <span class="r">equipo de operaciones</span>, quiero alertas automáticas, para reaccionar ante caídas o picos de error.</p>
+    <ul class="ac">
+      <li>Alertas por error rate, latencia y disponibilidad.</li>
+      <li>Notificación a un canal (email/Slack) con runbook asociado.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-48</span><span class="title">Health/Readiness/Liveness probes</span></div>
+    <p class="us">Como <span class="r">orquestador</span>, quiero sondas de salud, readiness y liveness, para gestionar el ciclo de vida del servicio.</p>
+    <ul class="ac">
+      <li><code>/health</code> verifica dependencias (DB, Stripe).</li>
+      <li>Readiness separa "arrancando" de "listo para tráfico".</li>
+    </ul>
+  </div>
+
+  <h3>Manejo de errores y resiliencia</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-49</span><span class="title">Manejo centralizado de errores</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero mensajes de error claros y consistentes, para entender qué salió mal.</p>
+    <ul class="ac">
+      <li>Catálogo de códigos de error y respuestas uniformes (ya parcialmente existente).</li>
+      <li>El frontend muestra estados de error y vacío amigables.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-50</span><span class="title">Reintentos y circuit breaker</span></div>
+    <p class="us">Como <span class="r">sistema</span>, quiero reintentos con backoff y circuit breaker hacia servicios externos, para tolerar fallos transitorios.</p>
+    <ul class="ac">
+      <li>Reintentos idempotentes ante fallos de Stripe/DB.</li>
+      <li>El circuito se abre tras N fallos y se recupera automáticamente.</li>
+    </ul>
+  </div>
+
+  <h3>Pruebas, CI/CD y despliegue</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-51</span><span class="title">Pruebas unitarias del backend</span></div>
+    <p class="us">Como <span class="r">desarrollador</span>, quiero cobertura de pruebas unitarias, para evitar regresiones.</p>
+    <ul class="ac">
+      <li>Cobertura mínima acordada (p. ej. ≥70%) en lógica de negocio.</li>
+      <li>Las pruebas corren con MongoDB en memoria (sin DB externa).</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-52</span><span class="title">Pruebas E2E de flujos críticos</span></div>
+    <p class="us">Como <span class="r">equipo</span>, quiero pruebas E2E (Playwright) de los flujos clave, para validar la experiencia completa.</p>
+    <ul class="ac">
+      <li>Cubre login, publicar terreno, solicitar, contratar y pagar.</li>
+      <li>Se ejecutan en CI sobre un entorno efímero.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-53</span><span class="title">Pipeline de CI bloqueante</span></div>
+    <p class="us">Como <span class="r">equipo</span>, quiero un pipeline de CI (lint, typecheck, test) que bloquee merges, para mantener la calidad.</p>
+    <ul class="ac">
+      <li>El merge a <code>main</code> requiere CI verde.</li>
+      <li>Typecheck del backend y build del web en 0 errores.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-54</span><span class="title">Despliegue continuo (CD)</span></div>
+    <p class="us">Como <span class="r">equipo</span>, quiero CD a staging y producción, para entregar cambios de forma segura y repetible.</p>
+    <ul class="ac">
+      <li>Despliegues automatizados con estrategia de rollback.</li>
+      <li>Variables por entorno y promoción staging→prod controlada.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-55</span><span class="title">Migraciones de base de datos versionadas</span></div>
+    <p class="us">Como <span class="r">equipo</span>, quiero migraciones versionadas, para evolucionar el esquema sin pérdida de datos.</p>
+    <ul class="ac">
+      <li>Migraciones reproducibles y reversibles.</li>
+      <li>Índices únicos (id, clerkUserId) creados de forma consistente.</li>
+    </ul>
+  </div>
+
+  <h3>Datos y operación</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-56</span><span class="title">Respaldos automáticos y restauración</span></div>
+    <p class="us">Como <span class="r">equipo de operaciones</span>, quiero respaldos automáticos con restauración probada, para no perder datos.</p>
+    <ul class="ac">
+      <li>Backups periódicos cifrados de MongoDB.</li>
+      <li>Restauración verificada al menos una vez por ciclo.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-57</span><span class="title">Privacidad y retención de datos</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero control sobre mis datos personales, para ejercer mis derechos (Habeas Data/GDPR).</p>
+    <ul class="ac">
+      <li>Exportación y borrado de datos a solicitud.</li>
+      <li>Política de retención y anonimización documentada.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-58</span><span class="title">Almacenamiento de imágenes de terrenos</span></div>
+    <p class="us">Como <span class="r">dueño</span>, quiero subir fotos de mi terreno a un almacenamiento (S3/CDN), para mostrarlo mejor.</p>
+    <ul class="ac">
+      <li>Carga con validación de tipo/tamaño y URLs servidas por CDN.</li>
+      <li>Miniaturas optimizadas para el catálogo.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-59</span><span class="title">Búsqueda full-text y geoespacial</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero buscar terrenos por texto y cercanía geográfica, para encontrar opciones relevantes.</p>
+    <ul class="ac">
+      <li>Índice de texto sobre título/descripción.</li>
+      <li>Consulta por radio usando coordenadas (lat/lng).</li>
+    </ul>
+  </div>
+
+  <h3>Experiencia, inclusión y entrega</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-60</span><span class="title">Notificaciones reales (email/push)</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero recibir notificaciones por email/push de eventos clave, para enterarme a tiempo.</p>
+    <ul class="ac">
+      <li>Entrega real ante aprobación de solicitud, pago y mensajes.</li>
+      <li>Centro de notificaciones con estado leído/no leído (ya hay base en el MVP).</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-61</span><span class="title">Accesibilidad WCAG 2.1 AA</span></div>
+    <p class="us">Como <span class="r">usuario con discapacidad</span>, quiero una interfaz accesible, para usar la plataforma sin barreras.</p>
+    <ul class="ac">
+      <li>Contraste, navegación por teclado y roles ARIA correctos.</li>
+      <li>Auditoría automatizada (axe) integrada en CI.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-62</span><span class="title">Internacionalización (i18n) y documentación de API</span></div>
+    <p class="us">Como <span class="r">usuario/integrador</span>, quiero soporte multi-idioma y documentación de API, para ampliar el alcance y facilitar la integración.</p>
+    <ul class="ac">
+      <li>i18n ES/EN en el frontend con detección de idioma.</li>
+      <li>Especificación OpenAPI publicada y versionado de API (<code>/api/v1</code>).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ====================== SECCIÓN 3 — MCP ====================== -->
+<section class="page">
+  <h2 id="s3">Sección 3 — Servidor MCP sobre el comercio electrónico</h2>
+  <p class="section-intro">30 historias <span class="tag tag-mcp">[MCP]</span> que exponen funcionalidades de
+  TerraShare a través de un <b>servidor MCP</b> (Model Context Protocol), <b>bajo autenticación</b> e
+  <b>importable desde Claude Code o Codex</b> (vía <code>.mcp.json</code>). Para cada una se indica la
+  <b>tool</b> que la expone, la <b>autenticación</b> requerida y <b>qué le permite hacer al agente</b>.</p>
+
+  <div class="note">
+    <b>Modelo de autenticación del MCP:</b> el servidor se autentica con <b>OAuth 2.1</b> (token emitido por
+    Clerk) o con <b>API keys con alcances (scopes)</b>: <code>read</code>, <code>tenant</code>,
+    <code>owner</code> y <code>admin</code>. Cada tool declara el scope mínimo requerido; el servidor valida
+    identidad y permisos en cada invocación y aplica rate limiting por clave.
+  </div>
+
+  <h3>Catálogo y terrenos vía MCP</h3>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-63</span><span class="tag tag-mcp">[MCP]</span><span class="title">Buscar terrenos</span></div>
+    <p class="us mcp">Como <span class="r">agente de IA</span>, quiero buscar terrenos con filtros, para responder consultas del usuario sobre la oferta disponible.</p>
+    <ul class="ac">
+      <li>Devuelve resultados paginados respetando los filtros (uso, provincia, precio…).</li>
+      <li>No expone terrenos en <code>draft</code>/<code>inactive</code>.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>search_lands</code></div>
+      <div><b>Auth:</b> API key scope <code>read</code> (público autenticado)</div>
+      <div><b>Permite:</b> que el agente consulte el catálogo y resuma opciones para el usuario.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-64</span><span class="tag tag-mcp">[MCP]</span><span class="title">Obtener detalle de terreno</span></div>
+    <p class="us mcp">Como <span class="r">agente</span>, quiero obtener la ficha completa de un terreno, para dar información precisa.</p>
+    <ul class="ac">
+      <li>Retorna ubicación, área, usos, precio y disponibilidad.</li>
+      <li>Devuelve error controlado si no existe.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>get_land</code></div>
+      <div><b>Auth:</b> scope <code>read</code></div>
+      <div><b>Permite:</b> que el agente describa un terreno concreto al usuario.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-65</span><span class="tag tag-mcp">[MCP]</span><span class="title">Publicar un terreno</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero publicar un terreno desde el agente, para listar mi parcela rápidamente.</p>
+    <ul class="ac">
+      <li>Valida campos requeridos antes de crear.</li>
+      <li>Crea el terreno en <code>draft</code> asociado al dueño autenticado.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>create_land</code></div>
+      <div><b>Auth:</b> scope <code>owner</code> (token del dueño)</div>
+      <div><b>Permite:</b> que el agente cree publicaciones en nombre del dueño.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-66</span><span class="tag tag-mcp">[MCP]</span><span class="title">Actualizar un terreno</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero actualizar los datos de mi terreno desde el agente, para mantenerlo al día.</p>
+    <ul class="ac">
+      <li>Solo el dueño/admin puede modificar; respeta ownership.</li>
+      <li>No permite alterar id ni dueño.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>update_land</code></div>
+      <div><b>Auth:</b> scope <code>owner</code></div>
+      <div><b>Permite:</b> que el agente edite atributos del terreno.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-67</span><span class="tag tag-mcp">[MCP]</span><span class="title">Cambiar estado de un terreno</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero activar/desactivar mi terreno desde el agente, para controlar su visibilidad.</p>
+    <ul class="ac">
+      <li>Acepta solo estados válidos (draft/active/inactive).</li>
+      <li>Registra evento de auditoría.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>set_land_status</code></div>
+      <div><b>Auth:</b> scope <code>owner</code></div>
+      <div><b>Permite:</b> que el agente publique o retire un terreno del catálogo.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-68</span><span class="tag tag-mcp">[MCP]</span><span class="title">Listar mis terrenos</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero listar mis terrenos desde el agente, para revisarlos.</p>
+    <ul class="ac">
+      <li>Devuelve solo los terrenos del dueño autenticado.</li>
+      <li>Incluye estado y métricas básicas.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>list_my_lands</code></div>
+      <div><b>Auth:</b> scope <code>owner</code></div>
+      <div><b>Permite:</b> que el agente resuma el portafolio del dueño.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-69</span><span class="tag tag-mcp">[MCP]</span><span class="title">Eliminar un terreno</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero eliminar un terreno desde el agente, para retirarlo.</p>
+    <ul class="ac">
+      <li>Solo dueño/admin; pide confirmación explícita del agente.</li>
+      <li>Registra auditoría <code>land/deleted</code>.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>delete_land</code></div>
+      <div><b>Auth:</b> scope <code>owner</code></div>
+      <div><b>Permite:</b> que el agente retire publicaciones (acción destructiva, confirmada).</div>
+    </div>
+  </div>
+
+  <h3>Solicitudes y contratos vía MCP</h3>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-70</span><span class="tag tag-mcp">[MCP]</span><span class="title">Crear solicitud de alquiler</span></div>
+    <p class="us mcp">Como <span class="r">arrendatario (vía agente)</span>, quiero crear una solicitud de alquiler desde el agente, para reservar un terreno.</p>
+    <ul class="ac">
+      <li>Valida período y uso; bloquea si el solicitante es el dueño.</li>
+      <li>Devuelve la solicitud creada con su estado inicial.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>create_rental_request</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code></div>
+      <div><b>Permite:</b> que el agente inicie una reserva en nombre del arrendatario.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-71</span><span class="tag tag-mcp">[MCP]</span><span class="title">Listar solicitudes</span></div>
+    <p class="us mcp">Como <span class="r">usuario (vía agente)</span>, quiero listar mis solicitudes desde el agente, para hacer seguimiento.</p>
+    <ul class="ac">
+      <li>Devuelve solicitudes según rol (arrendatario o dueño).</li>
+      <li>Permite filtrar por estado.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>list_rental_requests</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code> u <code>owner</code></div>
+      <div><b>Permite:</b> que el agente reporte el estado de las solicitudes.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-72</span><span class="tag tag-mcp">[MCP]</span><span class="title">Gestionar estado de solicitud</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero aprobar o rechazar solicitudes desde el agente, para gestionar la demanda.</p>
+    <ul class="ac">
+      <li>Aplica transiciones válidas y verifica ownership.</li>
+      <li>Respeta la regla de no solapamiento.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>update_request_status</code></div>
+      <div><b>Auth:</b> scope <code>owner</code></div>
+      <div><b>Permite:</b> que el agente apruebe/rechace reservas por el dueño.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-73</span><span class="tag tag-mcp">[MCP]</span><span class="title">Generar contrato</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero generar un contrato desde el agente, para formalizar un alquiler aprobado.</p>
+    <ul class="ac">
+      <li>Crea el contrato en <code>draft</code> vinculado a la solicitud.</li>
+      <li>Incluye términos, fechas y partes.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>create_contract</code></div>
+      <div><b>Auth:</b> scope <code>owner</code></div>
+      <div><b>Permite:</b> que el agente redacte y registre el contrato.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-74</span><span class="tag tag-mcp">[MCP]</span><span class="title">Firmar contrato</span></div>
+    <p class="us mcp">Como <span class="r">parte (vía agente)</span>, quiero firmar un contrato desde el agente, para dar consentimiento.</p>
+    <ul class="ac">
+      <li>Solo válido si está en <code>draft</code>; pasa a <code>active</code>.</li>
+      <li>Requiere confirmación explícita del agente.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>sign_contract</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code>/<code>owner</code> (parte del contrato)</div>
+      <div><b>Permite:</b> que el agente firme en nombre de la parte autenticada.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-75</span><span class="tag tag-mcp">[MCP]</span><span class="title">Completar contrato</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero completar un contrato activo desde el agente, para cerrar el ciclo.</p>
+    <ul class="ac">
+      <li>Solo procede si el contrato está <code>active</code>.</li>
+      <li>Devuelve <code>INVALID_TRANSITION</code> si no aplica.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>complete_contract</code></div>
+      <div><b>Auth:</b> scope <code>owner</code></div>
+      <div><b>Permite:</b> que el agente marque el contrato como completado.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-76</span><span class="tag tag-mcp">[MCP]</span><span class="title">Consultar contrato</span></div>
+    <p class="us mcp">Como <span class="r">parte (vía agente)</span>, quiero consultar un contrato desde el agente, para revisar sus términos.</p>
+    <ul class="ac">
+      <li>Solo las partes o admin pueden verlo.</li>
+      <li>Devuelve estado, fechas y términos.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>get_contract</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code>/<code>owner</code></div>
+      <div><b>Permite:</b> que el agente explique el contrato al usuario.</div>
+    </div>
+  </div>
+
+  <h3>Pagos vía MCP</h3>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-77</span><span class="tag tag-mcp">[MCP]</span><span class="title">Crear sesión de pago</span></div>
+    <p class="us mcp">Como <span class="r">arrendatario (vía agente)</span>, quiero generar un enlace de pago desde el agente, para pagar mi alquiler.</p>
+    <ul class="ac">
+      <li>Solo si la solicitud es pagable; devuelve <code>checkoutUrl</code>.</li>
+      <li>No expone secretos de Stripe al agente.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>create_payment_session</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code></div>
+      <div><b>Permite:</b> que el agente entregue al usuario un enlace seguro de pago.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-78</span><span class="tag tag-mcp">[MCP]</span><span class="title">Consultar estado de pago</span></div>
+    <p class="us mcp">Como <span class="r">usuario (vía agente)</span>, quiero consultar el estado de un pago desde el agente, para saber si se completó.</p>
+    <ul class="ac">
+      <li>Devuelve estado (<code>pending/paid/failed</code>) del pago del usuario.</li>
+      <li>Solo accede a pagos propios.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>get_payment_status</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code></div>
+      <div><b>Permite:</b> que el agente informe si el pago se concretó.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-79</span><span class="tag tag-mcp">[MCP]</span><span class="title">Listar pagos</span></div>
+    <p class="us mcp">Como <span class="r">usuario (vía agente)</span>, quiero listar mis pagos desde el agente, para llevar control.</p>
+    <ul class="ac">
+      <li>Devuelve solo los pagos del usuario autenticado.</li>
+      <li>Incluye monto, moneda y estado.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>list_payments</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code></div>
+      <div><b>Permite:</b> que el agente resuma el historial de pagos.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-80</span><span class="tag tag-mcp">[MCP]</span><span class="title">Reembolsar pago (admin)</span></div>
+    <p class="us mcp">Como <span class="r">administrador (vía agente)</span>, quiero emitir un reembolso desde el agente, para resolver disputas.</p>
+    <ul class="ac">
+      <li>Solo admin; reembolso total/parcial con auditoría.</li>
+      <li>Requiere confirmación explícita (acción sensible).</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>refund_payment</code></div>
+      <div><b>Auth:</b> scope <code>admin</code></div>
+      <div><b>Permite:</b> que el agente procese reembolsos de forma controlada.</div>
+    </div>
+  </div>
+
+  <h3>Comunicación vía MCP</h3>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-81</span><span class="tag tag-mcp">[MCP]</span><span class="title">Listar conversaciones</span></div>
+    <p class="us mcp">Como <span class="r">usuario (vía agente)</span>, quiero listar mis chats desde el agente, para ubicar una conversación.</p>
+    <ul class="ac">
+      <li>Devuelve solo chats donde el usuario participa.</li>
+      <li>Incluye terreno/solicitud asociados.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>list_chats</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code>/<code>owner</code></div>
+      <div><b>Permite:</b> que el agente localice conversaciones del usuario.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-82</span><span class="tag tag-mcp">[MCP]</span><span class="title">Leer mensajes de un chat</span></div>
+    <p class="us mcp">Como <span class="r">participante (vía agente)</span>, quiero leer los mensajes de un chat desde el agente, para resumir la conversación.</p>
+    <ul class="ac">
+      <li>Solo participantes acceden a los mensajes.</li>
+      <li>Devuelve mensajes ordenados por fecha.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>get_chat_messages</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code>/<code>owner</code></div>
+      <div><b>Permite:</b> que el agente resuma o traduzca la conversación.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-83</span><span class="tag tag-mcp">[MCP]</span><span class="title">Enviar mensaje</span></div>
+    <p class="us mcp">Como <span class="r">participante (vía agente)</span>, quiero enviar un mensaje desde el agente, para responder rápidamente.</p>
+    <ul class="ac">
+      <li>Solo participantes pueden publicar.</li>
+      <li>El mensaje queda registrado con autor y fecha.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>send_chat_message</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code>/<code>owner</code></div>
+      <div><b>Permite:</b> que el agente redacte y envíe respuestas en nombre del usuario.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-84</span><span class="tag tag-mcp">[MCP]</span><span class="title">Obtener contacto externo</span></div>
+    <p class="us mcp">Como <span class="r">participante (vía agente)</span>, quiero obtener el contacto externo (WhatsApp) desde el agente, para una comunicación directa.</p>
+    <ul class="ac">
+      <li>Devuelve el contacto solo si está habilitado.</li>
+      <li>Respeta privacidad de las partes.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>get_external_contact</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code>/<code>owner</code></div>
+      <div><b>Permite:</b> que el agente entregue el enlace de WhatsApp al usuario.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-85</span><span class="tag tag-mcp">[MCP]</span><span class="title">Gestionar notificaciones</span></div>
+    <p class="us mcp">Como <span class="r">usuario (vía agente)</span>, quiero consultar y marcar como leídas mis notificaciones desde el agente, para gestionarlas.</p>
+    <ul class="ac">
+      <li>Lista notificaciones del usuario y permite marcar leídas.</li>
+      <li>Solo accede a las propias.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>list_notifications</code> / <code>mark_notification_read</code></div>
+      <div><b>Auth:</b> scope <code>tenant</code>/<code>owner</code></div>
+      <div><b>Permite:</b> que el agente resuma y despeje el centro de notificaciones.</div>
+    </div>
+  </div>
+
+  <h3>Captación, analítica y administración vía MCP</h3>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-86</span><span class="tag tag-mcp">[MCP]</span><span class="title">Registrar lead</span></div>
+    <p class="us mcp">Como <span class="r">agente</span>, quiero registrar un lead (correo) desde una conversación, para capturar interés.</p>
+    <ul class="ac">
+      <li>Valida formato de correo y registra el origen.</li>
+      <li>Evita duplicados por correo.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>capture_lead</code></div>
+      <div><b>Auth:</b> scope <code>read</code> (API key pública autenticada)</div>
+      <div><b>Permite:</b> que el agente capture prospectos durante la conversación.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-87</span><span class="tag tag-mcp">[MCP]</span><span class="title">Consultar leads (admin)</span></div>
+    <p class="us mcp">Como <span class="r">administrador (vía agente)</span>, quiero consultar los leads desde el agente, para nutrir el pipeline comercial.</p>
+    <ul class="ac">
+      <li>Solo admin; devuelve correos con su origen y fecha.</li>
+      <li>Soporta filtrado y paginación.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>list_leads</code></div>
+      <div><b>Auth:</b> scope <code>admin</code></div>
+      <div><b>Permite:</b> que el agente reporte los prospectos captados.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-88</span><span class="tag tag-mcp">[MCP]</span><span class="title">Analítica general (admin)</span></div>
+    <p class="us mcp">Como <span class="r">administrador (vía agente)</span>, quiero obtener métricas generales desde el agente, para evaluar el negocio.</p>
+    <ul class="ac">
+      <li>Devuelve overview de terrenos, solicitudes y pagos.</li>
+      <li>Solo admin.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>get_analytics_overview</code></div>
+      <div><b>Auth:</b> scope <code>admin</code></div>
+      <div><b>Permite:</b> que el agente genere reportes ejecutivos.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-89</span><span class="tag tag-mcp">[MCP]</span><span class="title">Analítica por dueño</span></div>
+    <p class="us mcp">Como <span class="r">dueño (vía agente)</span>, quiero métricas de mis terrenos desde el agente, para evaluar mi desempeño.</p>
+    <ul class="ac">
+      <li>Devuelve métricas del dueño autenticado (<code>/analytics/owner/:id</code>).</li>
+      <li>No expone datos de otros dueños.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>get_owner_analytics</code></div>
+      <div><b>Auth:</b> scope <code>owner</code></div>
+      <div><b>Permite:</b> que el agente resuma el rendimiento del dueño.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-90</span><span class="tag tag-mcp">[MCP]</span><span class="title">Moderar terreno (admin)</span></div>
+    <p class="us mcp">Como <span class="r">administrador (vía agente)</span>, quiero moderar terrenos desde el agente, para mantener la calidad del catálogo.</p>
+    <ul class="ac">
+      <li>Solo admin; cambia el estado de un terreno reportado.</li>
+      <li>Registra auditoría de la acción.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>moderate_land</code></div>
+      <div><b>Auth:</b> scope <code>admin</code></div>
+      <div><b>Permite:</b> que el agente despublique contenido que viole políticas.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-91</span><span class="tag tag-mcp">[MCP]</span><span class="title">Gestionar estado de usuario (admin)</span></div>
+    <p class="us mcp">Como <span class="r">administrador (vía agente)</span>, quiero activar o bloquear usuarios desde el agente, para moderar la comunidad.</p>
+    <ul class="ac">
+      <li>Solo admin; no puede modificar su propia cuenta.</li>
+      <li>Requiere confirmación explícita (acción sensible).</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>manage_user_status</code></div>
+      <div><b>Auth:</b> scope <code>admin</code></div>
+      <div><b>Permite:</b> que el agente bloquee/active cuentas bajo supervisión.</div>
+    </div>
+  </div>
+
+  <div class="story mcp"><div class="h"><span class="num">HU-92</span><span class="tag tag-mcp">[MCP]</span><span class="title">Consultar bitácora de auditoría (admin)</span></div>
+    <p class="us mcp">Como <span class="r">administrador (vía agente)</span>, quiero consultar la auditoría desde el agente, para investigar incidentes.</p>
+    <ul class="ac">
+      <li>Solo admin; filtra por actor, entidad, acción y fecha.</li>
+      <li>Devuelve eventos inmutables con su contexto.</li>
+    </ul>
+    <div class="mcp-meta">
+      <div><b>Tool:</b> <code>list_audit_events</code></div>
+      <div><b>Auth:</b> scope <code>admin</code></div>
+      <div><b>Permite:</b> que el agente rastree quién hizo qué y cuándo.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== ANEXO — TABLA MCP ====================== -->
+<section class="page">
+  <h2 id="tabla">Anexo — Tabla resumen de herramientas (tools) MCP</h2>
+  <p class="section-intro">Las 30 herramientas que expondrá el servidor MCP de TerraShare, con su scope de
+  autenticación y la capacidad que habilitan en el agente (Claude Code / Codex).</p>
+  <table>
+    <thead>
+      <tr><th>HU</th><th>Tool</th><th>Auth (scope)</th><th>Qué permite al agente</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>63</td><td><code>search_lands</code></td><td>read</td><td>Buscar terrenos en el catálogo.</td></tr>
+      <tr><td>64</td><td><code>get_land</code></td><td>read</td><td>Obtener la ficha de un terreno.</td></tr>
+      <tr><td>65</td><td><code>create_land</code></td><td>owner</td><td>Publicar un terreno.</td></tr>
+      <tr><td>66</td><td><code>update_land</code></td><td>owner</td><td>Editar un terreno.</td></tr>
+      <tr><td>67</td><td><code>set_land_status</code></td><td>owner</td><td>Activar/retirar un terreno.</td></tr>
+      <tr><td>68</td><td><code>list_my_lands</code></td><td>owner</td><td>Listar terrenos del dueño.</td></tr>
+      <tr><td>69</td><td><code>delete_land</code></td><td>owner</td><td>Eliminar un terreno (confirmado).</td></tr>
+      <tr><td>70</td><td><code>create_rental_request</code></td><td>tenant</td><td>Crear una solicitud de alquiler.</td></tr>
+      <tr><td>71</td><td><code>list_rental_requests</code></td><td>tenant/owner</td><td>Listar solicitudes.</td></tr>
+      <tr><td>72</td><td><code>update_request_status</code></td><td>owner</td><td>Aprobar/rechazar solicitudes.</td></tr>
+      <tr><td>73</td><td><code>create_contract</code></td><td>owner</td><td>Generar un contrato.</td></tr>
+      <tr><td>74</td><td><code>sign_contract</code></td><td>tenant/owner</td><td>Firmar un contrato (confirmado).</td></tr>
+      <tr><td>75</td><td><code>complete_contract</code></td><td>owner</td><td>Completar un contrato.</td></tr>
+      <tr><td>76</td><td><code>get_contract</code></td><td>tenant/owner</td><td>Consultar un contrato.</td></tr>
+      <tr><td>77</td><td><code>create_payment_session</code></td><td>tenant</td><td>Generar enlace de pago Stripe.</td></tr>
+      <tr><td>78</td><td><code>get_payment_status</code></td><td>tenant</td><td>Consultar estado de un pago.</td></tr>
+      <tr><td>79</td><td><code>list_payments</code></td><td>tenant</td><td>Listar pagos del usuario.</td></tr>
+      <tr><td>80</td><td><code>refund_payment</code></td><td>admin</td><td>Emitir reembolsos (confirmado).</td></tr>
+      <tr><td>81</td><td><code>list_chats</code></td><td>tenant/owner</td><td>Listar conversaciones.</td></tr>
+      <tr><td>82</td><td><code>get_chat_messages</code></td><td>tenant/owner</td><td>Leer mensajes de un chat.</td></tr>
+      <tr><td>83</td><td><code>send_chat_message</code></td><td>tenant/owner</td><td>Enviar un mensaje.</td></tr>
+      <tr><td>84</td><td><code>get_external_contact</code></td><td>tenant/owner</td><td>Obtener contacto de WhatsApp.</td></tr>
+      <tr><td>85</td><td><code>list_notifications</code> / <code>mark_notification_read</code></td><td>tenant/owner</td><td>Gestionar notificaciones.</td></tr>
+      <tr><td>86</td><td><code>capture_lead</code></td><td>read</td><td>Registrar un lead.</td></tr>
+      <tr><td>87</td><td><code>list_leads</code></td><td>admin</td><td>Consultar leads.</td></tr>
+      <tr><td>88</td><td><code>get_analytics_overview</code></td><td>admin</td><td>Métricas generales del negocio.</td></tr>
+      <tr><td>89</td><td><code>get_owner_analytics</code></td><td>owner</td><td>Métricas del dueño.</td></tr>
+      <tr><td>90</td><td><code>moderate_land</code></td><td>admin</td><td>Moderar publicaciones.</td></tr>
+      <tr><td>91</td><td><code>manage_user_status</code></td><td>admin</td><td>Activar/bloquear usuarios (confirmado).</td></tr>
+      <tr><td>92</td><td><code>list_audit_events</code></td><td>admin</td><td>Consultar la bitácora de auditoría.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>Importación en Claude Code / Codex:</b> el servidor MCP se declara en <code>.mcp.json</code> con su
+    endpoint y la API key/OAuth del usuario; al iniciar, el agente descubre estas 30 tools y puede invocarlas
+    respetando el scope autenticado. Operaciones sensibles (eliminar, firmar, reembolsar, bloquear) exigen
+    confirmación explícita.
+  </div>
+
+  <footer>
+    TerraShare · Grupo 1GS241 · Universidad Tecnológica de Panamá · Desarrollo de Software IX ·
+    22 de junio de 2026 · 92 historias de usuario (32 implementadas · 30 production-ready · 30 [MCP]).
+    <br>Documento HTML — para entregar como PDF: abrir en el navegador → Imprimir → «Guardar como PDF».
+  </footer>
+</section>
+
+</body>
+</html>
