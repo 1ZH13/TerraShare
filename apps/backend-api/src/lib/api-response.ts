@@ -13,10 +13,11 @@ type ErrorCode =
   | "CONFLICT"
   | "BUSINESS_RULE_VIOLATION"
   | "INVALID_TRANSITION"
+  | "STRIPE_NOT_CONFIGURED"
   | "INTERNAL_ERROR";
 
 type SuccessStatus = 200 | 201 | 202;
-type FailureStatus = 400 | 401 | 403 | 404 | 409 | 422 | 500;
+type FailureStatus = 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503;
 
 function getRequestId(c: Context): string {
   return c.get("requestId") ?? crypto.randomUUID();
