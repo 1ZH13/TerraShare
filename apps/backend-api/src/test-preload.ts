@@ -1,0 +1,58 @@
+// Test preload: spins up an in-memory MongoDB, connects both data layers
+// (native driver + mongoose), and seeds it from the in-memory store fixtures
+// before every test. Wired via bunfig.toml `[test].preload`.
+import { afterAll, beforeEach } from "bun:test";
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+import "./setup-test-env";
+import { connectDatabase, getDatabase, closeDatabase } from "./config/database";
+import { connectMongoose, disconnectMongoose } from "./db/mongoose";
+import { getStore, resetStore } from "./store/in-memory-db";
+
+// Maps the in-memory store collections to the Mongo collection names the routes
+// actually read from. Mongoose auto-pluralizes model names (RentalRequest ->
+// "rentalrequests"), so we seed those lowercased names; lands/contracts/payments/
+// chats share the same name across both layers.
+function fixtures(): Record<string, Record<string, unknown>[]> {
+  const store = getStore();
+  return {
+    lands: [...store.lands.values()],
+    rentalrequests: [...store.rentalRequests.values()],
+    contracts: [...store.contracts.values()],
+    payments: [...store.payments.values()],
+    chats: [...store.chats.values()],
+    chatmessages: [...store.chatMessages.values()].flat(),
+    auditevents: [...store.auditEvents.values()],
+  } as unknown as Record<string, Record<string, unknown>[]>;
+}
+
+async function seedDatabase(): Promise<void> {
+  const db = getDatabase();
+  if (!db) return;
+  for (const [collection, docs] of Object.entries(fixtures())) {
+    await db.collection(collection).deleteMany({});
+    if (docs.length > 0) {
+      // Spread each doc so insertMany's injected _id never mutates the store.
+      await db.collection(collection).insertMany(docs.map((doc) => ({ ...doc })));
+    }
+  }
+}
+
+const mongod = await MongoMemoryServer.create();
+process.env.MONGODB_URI = `${mongod.getUri()}terrashare`;
+
+await connectDatabase();
+await connectMongoose();
+await seedDatabase();
+
+beforeEach(async () => {
+  // Normalize the in-memory store, then mirror it into Mongo for test isolation.
+  resetStore();
+  await seedDatabase();
+});
+
+afterAll(async () => {
+  await disconnectMongoose();
+  await closeDatabase();
+  await mongod.stop();
+});
