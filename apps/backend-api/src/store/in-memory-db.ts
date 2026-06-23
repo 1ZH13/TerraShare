@@ -22,6 +22,7 @@ const store: InMemoryStore = {
   chatMessages: new Map(),
   auditEvents: new Map(),
   leads: new Map(),
+  notifications: new Map(),
 };
 
 const now = new Date().toISOString();

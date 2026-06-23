@@ -43,3 +43,6 @@ apps/**/.vite/
 # Temporary PR body drafts
 pr_body*.txt
 pr_body*.md
+
+# Local tooling config (MCP / OpenCode)
+opencode.json

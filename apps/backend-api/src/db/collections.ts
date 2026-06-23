@@ -1,4 +1,5 @@
 import { getDatabase } from "../config/database";
+import type { LandRecord } from "../store/types";
 import {
   User, Land, RentalRequest, Contract, Payment,
   Chat, ChatMessage, AuditEvent, Lead
@@ -10,27 +11,29 @@ function getColl(name: string) {
   return db.collection(name);
 }
 
-export async function listLands(filters?: { ownerId?: string; status?: string }) {
+export async function listLands(filters?: { ownerId?: string; status?: string }): Promise<LandRecord[]> {
   const coll = getColl("lands");
   const query: Record<string, unknown> = {};
   if (filters?.ownerId) query.ownerId = filters.ownerId;
   if (filters?.status) query.status = filters.status;
-  return coll.find(query).toArray();
+  const docs = await coll.find(query).toArray();
+  return docs as unknown as LandRecord[];
 }
 
-export async function getLandById(id: string) {
+export async function getLandById(id: string): Promise<LandRecord | null> {
   const coll = getColl("lands");
-  return coll.findOne({ id });
+  const doc = await coll.findOne({ id });
+  return doc as unknown as LandRecord | null;
 }
 
-export async function createLand(data: Record<string, unknown>) {
+export async function createLand(data: LandRecord) {
   const coll = getColl("lands");
   const doc = { ...data, createdAt: new Date(), updatedAt: new Date() };
   await coll.insertOne(doc);
   return doc;
 }
 
-export async function updateLand(id: string, data: Record<string, unknown>) {
+export async function updateLand(id: string, data: Partial<LandRecord>) {
   const coll = getColl("lands");
   const result = await coll.findOneAndUpdate(
     { id },
