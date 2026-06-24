@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/clerk-react";
 
-async function tryGetToken(getToken, retries = 3, delay = 300) {
+type GetTokenFn = () => Promise<string | null>;
+type SetTokenFn = (getter: () => string | null) => void;
+
+async function tryGetToken(
+  getToken: GetTokenFn,
+  retries = 3,
+  delay = 300,
+): Promise<string | null> {
   for (let i = 0; i < retries; i++) {
     try {
       const token = await getToken();
@@ -16,7 +23,7 @@ async function tryGetToken(getToken, retries = 3, delay = 300) {
   return null;
 }
 
-export function useClerkToken(setTokenFn) {
+export function useClerkToken(setTokenFn: SetTokenFn): boolean {
   const { user } = useUser();
   const [ready, setReady] = useState(false);
 
@@ -29,7 +36,9 @@ export function useClerkToken(setTokenFn) {
       return undefined;
     }
 
-    const getToken = user.getToken;
+    // getToken lives on the auth/session resource, not UserResource; this is a
+    // defensive lookup, so reach for it through a permissive cast.
+    const getToken = (user as unknown as { getToken?: GetTokenFn }).getToken;
     if (typeof getToken !== "function") {
       setTokenFn(() => null);
       setReady(true);

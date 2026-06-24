@@ -1,4 +1,4 @@
-export const PROVINCE_CENTERS = {
+export const PROVINCE_CENTERS: Record<string, [number, number]> = {
   "Bocas del Toro": [9.1637, -82.0528],
   "Cocle": [8.4412, -80.3032],
   "Colón": [9.3106, -79.6527],
@@ -15,7 +15,15 @@ export const PROVINCE_CENTERS = {
   "Comarca Ngöbe Buglé": [8.1286, -81.6801],
 };
 
-export function getLandPosition(location) {
+interface LocationLike {
+  lat?: number | null;
+  lng?: number | null;
+  province?: string | null;
+}
+
+export function getLandPosition(
+  location: LocationLike | null | undefined,
+): [number, number] | null {
   if (location?.lat && location?.lng) {
     return [location.lat, location.lng];
   }
@@ -24,7 +32,7 @@ export function getLandPosition(location) {
     let coords = PROVINCE_CENTERS[location.province];
     // Try without accent
     if (!coords) {
-      const normalized = location.province.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const normalized = location.province.normalize("NFD").replace(/\p{Diacritic}/gu, "");
       coords = PROVINCE_CENTERS[normalized];
     }
     console.log("[getLandPosition]", location.province, "->", coords);
