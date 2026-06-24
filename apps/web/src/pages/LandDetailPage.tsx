@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import type { ChatDto, LandDto } from "@terrashare/shared";
 import { getLandPrimaryUse, formatLandUse, getChatSeedMessages } from "../data/lands";
 import { getLandById, getChats, createChat, getMessages, sendMessage, getExternalContact } from "../services/api";
@@ -25,7 +25,12 @@ interface ExternalContactVM {
   phone: string;
 }
 
-function useChat(landId: string | undefined, isSignedIn: boolean | undefined, user: any) {
+function useChat(
+  landId: string | undefined,
+  isSignedIn: boolean | undefined,
+  user: { id: string } | null | undefined,
+) {
+  const { getToken } = useAuth();
   const [messages, setMessages] = useState<ChatMessageVM[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatId, setChatId] = useState<string | null>(null);
@@ -43,7 +48,7 @@ function useChat(landId: string | undefined, isSignedIn: boolean | undefined, us
 
     const initChat = async () => {
       try {
-        const token = await user.getToken();
+        const token = await getToken();
         if (!token) throw new Error("No token");
 
         const chats = await getChats();

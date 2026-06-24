@@ -35,16 +35,11 @@ export default function Register() {
         </div>
 
         <div className="btn-stack">
+          {/* Clerk's modal presents every provider enabled in the dashboard
+              (Google, Microsoft, email). openSignUp has no per-provider option,
+              so a single entry point is the correct flow. */}
           <button className="btn btn-primary btn-full" onClick={handleSignUp}>
-            Continuar con Google
-          </button>
-          {/* NOTE: `strategy` is not a valid openSignUp option in Clerk and is
-              ignored at runtime — kept as-is to preserve current behavior. */}
-          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" } as any)}>
-            Continuar con Microsoft
-          </button>
-          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "email", redirectUrl: "/dashboard" } as any)}>
-            Continuar con email
+            Crear cuenta
           </button>
         </div>
 

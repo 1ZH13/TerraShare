@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 
 const typeLabels: Record<string, string> = {
   rental_request_status: "Solicitud",
@@ -22,14 +22,14 @@ interface NotificationItem {
 
 export default function NotificationsPage() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      const getToken = (user as unknown as { getToken?: () => Promise<string | null> })?.getToken;
-      if (!user || !getToken) {
+      if (!user) {
         setLoading(false);
         return;
       }

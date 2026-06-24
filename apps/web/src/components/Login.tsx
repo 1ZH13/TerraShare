@@ -31,16 +31,11 @@ export default function Login() {
         </div>
 
         <div className="btn-stack">
+          {/* Clerk's modal presents every provider enabled in the dashboard
+              (Google, Microsoft, email). openSignIn has no per-provider option,
+              so a single entry point is the correct flow. */}
           <button className="btn btn-primary btn-full" onClick={handleSignIn}>
-            Continuar con Google
-          </button>
-          {/* NOTE: `strategy` is not a valid openSignIn option in Clerk and is
-              ignored at runtime — kept as-is to preserve current behavior. */}
-          <button className="btn btn-ghost btn-full" onClick={() => openSignIn({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" } as any)}>
-            Continuar con Microsoft
-          </button>
-          <button className="btn btn-ghost btn-full" onClick={() => openSignIn({ strategy: "email", redirectUrl: "/dashboard" } as any)}>
-            Continuar con email
+            Iniciar sesion
           </button>
         </div>
 

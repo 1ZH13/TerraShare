@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import type { RentalRequestDto } from "@terrashare/shared";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
@@ -222,6 +222,7 @@ function AdminLayout({ children, onSignOut }: LayoutProps) {
 
 function DashboardPage() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [requests, setRequests] = useState<RentalRequestDto[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -233,9 +234,9 @@ function DashboardPage() {
         if (import.meta.env.DEV) {
           headers["x-dev-user-id"] = "web_dev_user";
           headers["x-dev-role"] = "user";
-        } else if ((user as any)?.getToken) {
-          const token = await (user as any).getToken();
-          headers["Authorization"] = `Bearer ${token}`;
+        } else {
+          const token = await getToken();
+          if (token) headers["Authorization"] = `Bearer ${token}`;
         }
         const res = await fetch(`${BASE_URL}/api/v1/rental-requests`, { headers });
         const data = await res.json();
