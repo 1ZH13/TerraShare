@@ -1,12 +1,18 @@
-// @ts-nocheck
-// TODO(ts-migration): tipar este archivo y eliminar @ts-nocheck.
-// Migracion gradual JS->TS: estructura ya en .tsx; falta tipado estricto.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
+import type { LandDto } from "@terrashare/shared";
 import PublicHeader from "../components/PublicHeader";
 import { listLands } from "../services/api";
 import { isAdminUser } from "../components/authDisplay";
+
+type FeaturedLand = LandDto & {
+  type?: string;
+  areaHectares?: number;
+  water?: string;
+  access?: string;
+  monthlyPrice?: number;
+};
 
 const metrics = [
   { value: "+120", label: "Terrenos disponibles" },
@@ -48,7 +54,7 @@ export default function LandingPage() {
   const { isSignedIn, user } = useUser();
   const admin = isAdminUser(user);
   const [activeTab, setActiveTab] = useState("benefits");
-  const [featuredLands, setFeaturedLands] = useState([]);
+  const [featuredLands, setFeaturedLands] = useState<FeaturedLand[]>([]);
   const [landsLoading, setLandsLoading] = useState(true);
 
   useEffect(() => {
