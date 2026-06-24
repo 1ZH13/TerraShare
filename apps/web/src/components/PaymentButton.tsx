@@ -1,7 +1,12 @@
 import { useState } from "react";
+import type { RentalRequestDto } from "@terrashare/shared";
 import { createCheckoutSession } from "../services/api";
 
-export default function PaymentButton({ rentalRequest }) {
+interface PaymentButtonProps {
+  rentalRequest?: (Partial<RentalRequestDto> & { id?: string }) | null;
+}
+
+export default function PaymentButton({ rentalRequest }: PaymentButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,7 +34,7 @@ export default function PaymentButton({ rentalRequest }) {
         throw new Error("No se recibió URL de pago");
       }
     } catch (err) {
-      setError(err.message || "Error al iniciar el pago");
+      setError(err instanceof Error ? err.message : "Error al iniciar el pago");
       setLoading(false);
     }
   };

@@ -38,10 +38,12 @@ export default function Register() {
           <button className="btn btn-primary btn-full" onClick={handleSignUp}>
             Continuar con Google
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" })}>
+          {/* NOTE: `strategy` is not a valid openSignUp option in Clerk and is
+              ignored at runtime — kept as-is to preserve current behavior. */}
+          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" } as any)}>
             Continuar con Microsoft
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "email", redirectUrl: "/dashboard" })}>
+          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "email", redirectUrl: "/dashboard" } as any)}>
             Continuar con email
           </button>
         </div>

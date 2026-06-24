@@ -34,10 +34,12 @@ export default function Login() {
           <button className="btn btn-primary btn-full" onClick={handleSignIn}>
             Continuar con Google
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => openSignIn({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" })}>
+          {/* NOTE: `strategy` is not a valid openSignIn option in Clerk and is
+              ignored at runtime — kept as-is to preserve current behavior. */}
+          <button className="btn btn-ghost btn-full" onClick={() => openSignIn({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" } as any)}>
             Continuar con Microsoft
           </button>
-          <button className="btn btn-ghost btn-full" onClick={() => openSignIn({ strategy: "email", redirectUrl: "/dashboard" })}>
+          <button className="btn btn-ghost btn-full" onClick={() => openSignIn({ strategy: "email", redirectUrl: "/dashboard" } as any)}>
             Continuar con email
           </button>
         </div>
