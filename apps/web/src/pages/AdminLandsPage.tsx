@@ -1,10 +1,12 @@
-// @ts-nocheck
-// TODO(ts-migration): tipar este archivo y eliminar @ts-nocheck.
-// Migracion gradual JS->TS: estructura ya en .tsx; falta tipado estricto.
 import { useState, useEffect } from "react";
+import type { LandDto } from "@terrashare/shared";
 import { listAdminLands, updateLandStatus } from "../services/adminApi";
 
-const statusLabels = {
+// Admin view: status is broader than LandStatus (includes "rejected") and the
+// summary adds ownerEmail.
+type AdminLand = Omit<LandDto, "status"> & { status: string; ownerEmail?: string };
+
+const statusLabels: Record<string, string> = {
   draft: "Borrador",
   active: "Activo",
   inactive: "Inactivo",
@@ -12,7 +14,7 @@ const statusLabels = {
 };
 
 export default function AdminLandsPage() {
-  const [lands, setLands] = useState([]);
+  const [lands, setLands] = useState<AdminLand[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
@@ -22,13 +24,13 @@ export default function AdminLandsPage() {
   const loadLands = () => {
     setLoading(true);
     setError("");
-    const filters = {};
+    const filters: { status?: string; search?: string } = {};
     if (filter !== "all") filters.status = filter;
     if (search.trim()) filters.search = search.trim();
 
     listAdminLands(filters)
-      .then((res) => setLands(res.data?.items ?? []))
-      .catch((e) => setError(e.message))
+      .then((res) => setLands(((res.data as any)?.items ?? []) as AdminLand[]))
+      .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
   };
 
@@ -36,13 +38,13 @@ export default function AdminLandsPage() {
     loadLands();
   }, [filter, search]);
 
-  const handleUpdateStatus = async (landId, currentStatus, nextStatus) => {
+  const handleUpdateStatus = async (landId: string, _currentStatus: string, nextStatus: string) => {
     try {
       await updateLandStatus(landId, nextStatus);
-      setLands((prev) => prev.map((l) => l.id === landId ? { ...l, status: nextStatus } : l));
+      setLands((prev) => prev.map((l) => (l.id === landId ? { ...l, status: nextStatus } : l)));
       setActionMsg(`Terreno ${nextStatus === "active" ? "aprobado" : nextStatus === "rejected" ? "rechazado" : "desactivado"}`);
     } catch (e) {
-      setError(e.message);
+      setError(e instanceof Error ? e.message : "Error");
     }
     setTimeout(() => setActionMsg(""), 3000);
   };

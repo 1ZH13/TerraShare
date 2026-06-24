@@ -1,14 +1,12 @@
-// @ts-nocheck
-// TODO(ts-migration): tipar este archivo y eliminar @ts-nocheck.
-// Migracion gradual JS->TS: estructura ya en .tsx; falta tipado estricto.
 import { useState, useEffect } from "react";
+import type { UserSummaryDto } from "@terrashare/shared";
 import { listAdminUsers, updateUserStatus } from "../services/adminApi";
 
-const roleLabel = { user: "Usuario", admin: "Admin" };
-const statusLabel = { active: "Activo", blocked: "Bloqueado" };
+const roleLabel: Record<string, string> = { user: "Usuario", admin: "Admin" };
+const statusLabel: Record<string, string> = { active: "Activo", blocked: "Bloqueado" };
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<UserSummaryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
@@ -18,13 +16,13 @@ export default function AdminUsersPage() {
   const loadUsers = () => {
     setLoading(true);
     setError("");
-    const filters = {};
+    const filters: { status?: string; search?: string } = {};
     if (filter === "active" || filter === "blocked") filters.status = filter;
     if (search.trim()) filters.search = search.trim();
 
     listAdminUsers(filters)
-      .then((res) => setUsers(res.data?.items ?? []))
-      .catch((e) => setError(e.message))
+      .then((res) => setUsers(((res.data as any)?.items ?? []) as UserSummaryDto[]))
+      .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
   };
 
@@ -32,16 +30,16 @@ export default function AdminUsersPage() {
     loadUsers();
   }, [filter, search]);
 
-  const handleToggleStatus = async (userId, currentStatus) => {
+  const handleToggleStatus = async (userId: string, currentStatus: string) => {
     const nextStatus = currentStatus === "active" ? "blocked" : "active";
     try {
       await updateUserStatus(userId, nextStatus);
       setUsers((prev) =>
-        prev.map((u) => u.id === userId ? { ...u, status: nextStatus } : u)
+        prev.map((u) => (u.id === userId ? ({ ...u, status: nextStatus } as UserSummaryDto) : u)),
       );
       setActionMsg(`Usuario ${nextStatus === "blocked" ? "bloqueado" : "activado"}`);
     } catch (e) {
-      setError(e.message);
+      setError(e instanceof Error ? e.message : "Error");
     }
     setTimeout(() => setActionMsg(""), 3000);
   };
