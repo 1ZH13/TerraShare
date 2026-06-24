@@ -2,7 +2,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { getDisplayName } from "./authDisplay";
 
-export default function PublicHeader() {
+interface PublicHeaderProps {
+  showDashboardLink?: boolean;
+}
+
+export default function PublicHeader({ showDashboardLink }: PublicHeaderProps = {}) {
   const { openSignIn, openSignUp, signOut } = useClerk();
   const { isSignedIn, user } = useUser();
   const location = useLocation();
