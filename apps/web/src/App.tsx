@@ -1,9 +1,8 @@
-// @ts-nocheck
-// TODO(ts-migration): tipar este archivo y eliminar @ts-nocheck.
-// Migracion gradual JS->TS: estructura ya en .tsx; falta tipado estricto.
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
+import type { RentalRequestDto } from "@terrashare/shared";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
@@ -26,7 +25,30 @@ import PublicHeader from "./components/PublicHeader";
 import { getAdminSummary, listAdminRentalRequests } from "./services/adminApi";
 import { isAdminUser } from "./components/authDisplay";
 
-function ProtectedRoute({ children }) {
+interface WrapperProps {
+  children?: ReactNode;
+}
+
+interface LayoutProps {
+  children?: ReactNode;
+  onSignOut?: () => void;
+}
+
+interface AdminSummary {
+  users: { total: number };
+  lands: { total: number };
+  requests: { total: number; pendingOwner: number };
+}
+
+interface AdminRequest {
+  id: string;
+  landTitle?: string;
+  tenantEmail?: string;
+  status: string;
+  intendedUse?: string;
+}
+
+function ProtectedRoute({ children }: WrapperProps) {
   const { isSignedIn } = useUser();
   const location = useLocation();
 
@@ -47,7 +69,7 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function AdminRoute({ children }) {
+function AdminRoute({ children }: WrapperProps) {
   const { isSignedIn, user } = useUser();
 
   if (isSignedIn === false) {
@@ -81,7 +103,7 @@ function AdminRoute({ children }) {
   return children;
 }
 
-function DashboardLayout({ children, onSignOut }) {
+function DashboardLayout({ children, onSignOut }: LayoutProps) {
   const location = useLocation();
   const currentPath = location.pathname;
   const { user } = useUser();
@@ -105,7 +127,7 @@ function DashboardLayout({ children, onSignOut }) {
   );
 }
 
-function AdminLayout({ children, onSignOut }) {
+function AdminLayout({ children, onSignOut }: LayoutProps) {
   const { user } = useUser();
   const location = useLocation();
 
@@ -137,7 +159,7 @@ function AdminLayout({ children, onSignOut }) {
     },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path;
   const adminName = user?.firstName || user?.fullName?.split(" ")[0] || "Admin";
 
   return (
@@ -200,19 +222,19 @@ function AdminLayout({ children, onSignOut }) {
 
 function DashboardPage() {
   const { user } = useUser();
-  const [requests, setRequests] = useState([]);
+  const [requests, setRequests] = useState<RentalRequestDto[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const headers = { "Content-Type": "application/json" };
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (import.meta.env.DEV) {
           headers["x-dev-user-id"] = "web_dev_user";
           headers["x-dev-role"] = "user";
-        } else if (user?.getToken) {
-          const token = await user.getToken();
+        } else if ((user as any)?.getToken) {
+          const token = await (user as any).getToken();
           headers["Authorization"] = `Bearer ${token}`;
         }
         const res = await fetch(`${BASE_URL}/api/v1/rental-requests`, { headers });
@@ -232,7 +254,7 @@ function DashboardPage() {
     fetchRequests();
   }, [user]);
 
-  const statusConfig = {
+  const statusConfig: Record<string, { label: string; color: string; bg: string; icon: string }> = {
     draft: { label: "Borrador", color: "#997a00", bg: "rgba(200, 170, 0, 0.15)", icon: "📝" },
     pending_owner: { label: "Pendiente", color: "var(--river-500)", bg: "rgba(13, 111, 147, 0.12)", icon: "⏳" },
     approved: { label: "Aprobada", color: "var(--leaf-700)", bg: "rgba(11, 95, 55, 0.12)", icon: "✅" },
@@ -337,8 +359,8 @@ function DashboardPage() {
 
 function AdminDashboardPage() {
   const { user } = useUser();
-  const [summary, setSummary] = useState(null);
-  const [requests, setRequests] = useState([]);
+  const [summary, setSummary] = useState<AdminSummary | null>(null);
+  const [requests, setRequests] = useState<AdminRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [requestFilter, setRequestFilter] = useState("all");
@@ -354,8 +376,8 @@ function AdminDashboardPage() {
     ])
       .then(([summaryRes, requestsRes]) => {
         if (!active) return;
-        setSummary(summaryRes.data ?? null);
-        setRequests(requestsRes.data?.items ?? []);
+        setSummary((summaryRes.data as AdminSummary) ?? null);
+        setRequests(((requestsRes.data as any)?.items ?? []) as AdminRequest[]);
       })
       .catch((e) => {
         if (active) setError(e.message);
