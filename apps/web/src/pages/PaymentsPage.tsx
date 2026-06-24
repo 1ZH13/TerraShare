@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
+import type { PaymentDto } from "@terrashare/shared";
 import { getMyPayments } from "../services/api";
 
-const statusLabels = {
+type PaymentRow = PaymentDto & { landTitle?: string };
+
+const statusLabels: Record<string, string> = {
   pending: "Pendiente",
   completed: "Completado",
   failed: "Fallido",
   refunded: "Reembolsado",
 };
 
-const statusStyles = {
+const statusStyles: Record<string, { bg: string; color: string }> = {
   pending: { bg: "rgba(13, 111, 147, 0.15)", color: "var(--river-500)" },
   completed: { bg: "rgba(11, 95, 55, 0.15)", color: "var(--leaf-700)" },
   failed: { bg: "rgba(179, 52, 42, 0.15)", color: "var(--danger)" },
@@ -19,9 +22,9 @@ const statusStyles = {
 
 export default function PaymentsPage() {
   const { user } = useUser();
-  const [payments, setPayments] = useState([]);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
@@ -35,7 +38,7 @@ export default function PaymentsPage() {
         setPayments(data || []);
       } catch (err) {
         console.error("Error fetching payments:", err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "Error al cargar pagos");
         setPayments([]);
       } finally {
         setLoading(false);

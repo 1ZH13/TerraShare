@@ -3,11 +3,20 @@ import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { getChats } from "../services/api";
 
+// Enriched chat shape the list renders (server adds these to the base ChatDto).
+interface ChatListItem {
+  id: string;
+  landTitle?: string;
+  participantName?: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+}
+
 export default function ChatsPage() {
   const { user } = useUser();
-  const [chats, setChats] = useState([]);
+  const [chats, setChats] = useState<ChatListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -17,10 +26,10 @@ export default function ChatsPage() {
       }
       try {
         const data = await getChats();
-        setChats(data || []);
+        setChats((data as unknown as ChatListItem[]) || []);
       } catch (err) {
         console.error("Error fetching chats:", err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "Error al cargar chats");
         setChats([]);
       } finally {
         setLoading(false);

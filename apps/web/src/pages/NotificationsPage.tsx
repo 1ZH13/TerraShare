@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 
-const typeLabels = {
+const typeLabels: Record<string, string> = {
   rental_request_status: "Solicitud",
   payment: "Pago",
   message: "Mensaje",
@@ -10,30 +10,41 @@ const typeLabels = {
   system: "Sistema",
 };
 
+interface NotificationItem {
+  id: string;
+  type: string;
+  title?: string;
+  message?: string;
+  read?: boolean;
+  actionUrl?: string;
+  createdAt?: string;
+}
+
 export default function NotificationsPage() {
   const { user } = useUser();
-  const [notifications, setNotifications] = useState([]);
+  const { getToken } = useAuth();
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user || !user.getToken) {
+      if (!user) {
         setLoading(false);
         return;
       }
       try {
         const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const token = await user.getToken();
+        const token = await getToken();
         const res = await fetch(`${BASE_URL}/api/v1/notifications`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to fetch");
         const data = await res.json();
-        setNotifications(data?.data || []);
+        setNotifications((data?.data as NotificationItem[]) || []);
       } catch (err) {
         console.error("Error fetching notifications:", err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "Error al cargar notificaciones");
         setNotifications([]);
       } finally {
         setLoading(false);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -7,13 +8,26 @@ import PublicHeader from "../components/PublicHeader";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-function PaymentForm({ rentalRequestId, amount, currency, onError }) {
+interface PaymentData {
+  amount?: number;
+  currency?: string;
+  clientSecret?: string;
+}
+
+interface PaymentFormProps {
+  rentalRequestId?: string;
+  amount?: number;
+  currency?: string;
+  onError?: (msg?: string) => void;
+}
+
+function PaymentForm({ rentalRequestId, amount, currency, onError }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!stripe || !elements) return;
 
@@ -58,10 +72,10 @@ function PaymentForm({ rentalRequestId, amount, currency, onError }) {
 
 export default function PaymentPage() {
   const { requestId } = useParams();
-  const [clientSecret, setClientSecret] = useState(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [paymentData, setPaymentData] = useState(null);
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [alreadyPaid, setAlreadyPaid] = useState(false);
 
   console.log("PaymentPage requestId:", requestId);
@@ -95,7 +109,7 @@ export default function PaymentPage() {
         }
       } catch (err) {
         console.error("Payment init error:", err);
-        setError(err.message || "Error al inicializar el pago");
+        setError(err instanceof Error ? err.message : "Error al inicializar el pago");
       } finally {
         setLoading(false);
       }
@@ -198,7 +212,7 @@ export default function PaymentPage() {
                 rentalRequestId={requestId}
                 amount={paymentData.amount}
                 currency={paymentData.currency}
-                onError={(err) => setError(err)}
+                onError={(err) => setError(err ?? "")}
               />
             </Elements>
             <p className="payment-secure">

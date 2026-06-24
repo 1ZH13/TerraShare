@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
+import type { LandDto } from "@terrashare/shared";
 import { getMyLands } from "../services/api";
+
+type MyLand = LandDto & { areaHectares?: number };
 
 export default function MyLandsPage() {
   const { user } = useUser();
-  const [lands, setLands] = useState([]);
+  const [lands, setLands] = useState<MyLand[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMyLands = async () => {
@@ -17,7 +20,7 @@ export default function MyLandsPage() {
         setLands(data || []);
       } catch (err) {
         console.error("Error fetching my lands:", err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "Error al cargar terrenos");
       } finally {
         setLoading(false);
       }

@@ -5,12 +5,15 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 import "leaflet-defaulticon-compatibility";
 import { getLandPosition } from "../data/province-centers";
 
-const PANAMA_CENTER = [8.9824, -79.4849];
+type LandLike = Record<string, any>;
+type LatLngTuple = [number, number];
+
+const PANAMA_CENTER: LatLngTuple = [8.9824, -79.4849];
 const DEFAULT_ZOOM = 7;
 
-function MapController({ center, zoom }) {
+function MapController({ center, zoom }: { center: LatLngTuple; zoom: number }) {
   const map = useMap();
-  const prevKey = useRef(null);
+  const prevKey = useRef<string | null>(null);
 
   useEffect(() => {
     if (!center || !center[0] || !center[1]) return;
@@ -24,8 +27,8 @@ function MapController({ center, zoom }) {
   return null;
 }
 
-function ProvinceLayer({ lands, provinces }) {
-  const provinceCounts = {};
+function ProvinceLayer({ lands, provinces }: { lands: LandLike[]; provinces: any }) {
+  const provinceCounts: Record<string, number> = {};
   lands.forEach((land) => {
     const prov = land.location?.province;
     if (prov) provinceCounts[prov] = (provinceCounts[prov] || 0) + 1;
@@ -33,11 +36,11 @@ function ProvinceLayer({ lands, provinces }) {
 
   if (!provinces) return null;
 
-  const style = (feature) => {
+  const style = (feature: any) => {
     const provinceName = feature.properties?.NOMBRE;
     const count = provinceCounts[provinceName] || 0;
     const hasLand = count > 0;
-    
+
     return {
       fillColor: hasLand ? "#0b5f37" : "#e8e4d9",
       fillOpacity: hasLand ? 0.3 : 0.1,
@@ -46,7 +49,7 @@ function ProvinceLayer({ lands, provinces }) {
     };
   };
 
-  const onEachFeature = (feature, layer) => {
+  const onEachFeature = (feature: any, layer: any) => {
     const provinceName = feature.properties?.NOMBRE;
     const count = provinceCounts[provinceName] || 0;
     
@@ -64,7 +67,7 @@ function ProvinceLayer({ lands, provinces }) {
   );
 }
 
-function MapPin({ land, onClick }) {
+function MapPin({ land, onClick }: { land: LandLike; onClick: (land: LandLike) => void }) {
   const position = getLandPosition(land.location);
   if (!position) return null;
 
@@ -87,8 +90,14 @@ function MapPin({ land, onClick }) {
   );
 }
 
-export default function PanamaMap({ lands, selectedLand, onSelectLand }) {
-  const [provinces, setProvinces] = useState(null);
+interface PanamaMapProps {
+  lands: LandLike[];
+  selectedLand?: LandLike | null;
+  onSelectLand: (land: LandLike) => void;
+}
+
+export default function PanamaMap({ lands, selectedLand, onSelectLand }: PanamaMapProps) {
+  const [provinces, setProvinces] = useState<any>(null);
 
   useEffect(() => {
     fetch("/panama-provinces.geojson")

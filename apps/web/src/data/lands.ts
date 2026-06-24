@@ -133,7 +133,7 @@ const LANDS = [
   },
 ];
 
-const DEFAULT_CHAT_MESSAGES = {
+const DEFAULT_CHAT_MESSAGES: Record<string, { id: string; role: string; text: string; createdAt: string }[]> = {
   1: [
     {
       id: "1-seed-1",
@@ -160,7 +160,18 @@ const DEFAULT_CHAT_MESSAGES = {
   ],
 };
 
-export const LAND_USE_LABELS = {
+// Mock/legacy land shape — these helpers handle both the seed data below and
+// API-shaped objects, so the structural type stays intentionally permissive.
+type LandLike = Record<string, any>;
+
+interface LandFilterOptions {
+  query?: string;
+  type?: string;
+  province?: string;
+  maxPrice?: number;
+}
+
+export const LAND_USE_LABELS: Record<string, string> = {
   agricultura: "Agricultura",
   ganaderia: "Ganadería",
   forestal: "Forestal",
@@ -173,23 +184,23 @@ export function getLands() {
   return LANDS;
 }
 
-export function getLandById(id) {
+export function getLandById(id: string) {
   return LANDS.find((land) => land.id === id) ?? null;
 }
 
-export function getLandPrimaryUse(land) {
+export function getLandPrimaryUse(land: LandLike | null | undefined): string {
   return land?.allowedUses?.[0] ?? "otro";
 }
 
-export function formatLandUse(use) {
+export function formatLandUse(use: string): string {
   return LAND_USE_LABELS[use] ?? use;
 }
 
-export function getDistinctValues(keySelector) {
+export function getDistinctValues(keySelector: (land: LandLike) => unknown) {
   return [...new Set(LANDS.map(keySelector).filter(Boolean))];
 }
 
-export function filterLands(lands, filters = {}) {
+export function filterLands(lands: LandLike[], filters: LandFilterOptions = {}) {
   const query = (filters.query ?? "").trim().toLowerCase();
   const typeFilter = filters.type ?? "Todos";
   const provinceFilter = filters.province ?? "Todas";
@@ -219,11 +230,11 @@ export function filterLands(lands, filters = {}) {
   });
 }
 
-export function getChatSeedMessages(landId) {
+export function getChatSeedMessages(landId: string) {
   return DEFAULT_CHAT_MESSAGES[landId] ?? [];
 }
 
-export function normalizeReserveLand(land) {
+export function normalizeReserveLand(land: LandLike | null | undefined) {
   if (!land) return null;
 
   const province = land.province ?? land.location?.province ?? "";

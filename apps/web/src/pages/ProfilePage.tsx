@@ -36,7 +36,7 @@ export default function ProfilePage() {
           <button className="btn btn-primary" onClick={() => openUserProfile()}>
             Editar perfil en Clerk
           </button>
-          <button className="btn btn-ghost" onClick={() => openUserProfile({ mode: "manage" })}>
+          <button className="btn btn-ghost" onClick={() => openUserProfile()}>
             Gestionar mi cuenta
           </button>
           <button className="btn btn-ghost" style={{ borderColor: "var(--danger)", color: "var(--danger)" }} onClick={handleSignOut}>

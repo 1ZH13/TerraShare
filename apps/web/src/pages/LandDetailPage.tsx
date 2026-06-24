@@ -1,21 +1,46 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
+import type { ChatDto, LandDto } from "@terrashare/shared";
 import { getLandPrimaryUse, formatLandUse, getChatSeedMessages } from "../data/lands";
 import { getLandById, getChats, createChat, getMessages, sendMessage, getExternalContact } from "../services/api";
 import PublicHeader from "../components/PublicHeader";
 
-function useChat(landId, isSignedIn, user) {
-  const [messages, setMessages] = useState([]);
+interface ChatMessageVM {
+  id: string;
+  role: string;
+  text: string;
+  createdAt: string;
+}
+
+type DetailLand = LandDto & {
+  features?: string[];
+  areaHectares?: number;
+  water?: string;
+  access?: string;
+};
+
+interface ExternalContactVM {
+  phone: string;
+}
+
+function useChat(
+  landId: string | undefined,
+  isSignedIn: boolean | undefined,
+  user: { id: string } | null | undefined,
+) {
+  const { getToken } = useAuth();
+  const [messages, setMessages] = useState<ChatMessageVM[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chatId, setChatId] = useState(null);
-  const [error, setError] = useState(null);
-  const [externalContact, setExternalContact] = useState(null);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [externalContact, setExternalContact] = useState<ExternalContactVM | null>(null);
 
   useEffect(() => {
     if (!isSignedIn || !user) {
       const stored = sessionStorage.getItem(`terrashare-chat:${landId}`);
-      const seed = getChatSeedMessages(landId);
+      const seed = getChatSeedMessages(landId!);
       setMessages(stored ? JSON.parse(stored) : seed);
       setLoading(false);
       return;
@@ -23,11 +48,11 @@ function useChat(landId, isSignedIn, user) {
 
     const initChat = async () => {
       try {
-        const token = await user.getToken();
+        const token = await getToken();
         if (!token) throw new Error("No token");
 
         const chats = await getChats();
-        let chat = chats.find((c) => c.landId === landId && c.participants.some((p) => p.userId === user.id));
+        let chat: ChatDto | null | undefined = chats.find((c) => c.landId === landId && c.participants.some((p) => p.userId === user.id));
 
         if (!chat) {
           chat = await createChat({
@@ -58,7 +83,7 @@ function useChat(landId, isSignedIn, user) {
       } catch (err) {
         console.error("Error initializing chat:", err);
         const stored = sessionStorage.getItem(`terrashare-chat:${landId}`);
-        const seed = getChatSeedMessages(landId);
+        const seed = getChatSeedMessages(landId!);
         setMessages(stored ? JSON.parse(stored) : seed);
       } finally {
         setLoading(false);
@@ -74,9 +99,9 @@ function useChat(landId, isSignedIn, user) {
     }
   }, [messages, landId, isSignedIn]);
 
-  const addMessage = async (text) => {
+  const addMessage = async (text: string) => {
     if (!isSignedIn || !chatId) {
-      const newMsg = {
+      const newMsg: ChatMessageVM = {
         id: crypto.randomUUID(),
         role: "tenant",
         text,
@@ -89,10 +114,10 @@ function useChat(landId, isSignedIn, user) {
     try {
       const msg = await sendMessage(chatId, text);
       setMessages((prev) => [...prev, {
-        id: msg.id,
+        id: msg!.id,
         role: "tenant",
-        text: msg.text,
-        createdAt: msg.createdAt,
+        text: msg!.text,
+        createdAt: msg!.createdAt,
       }]);
     } catch (err) {
       console.error("Error sending message:", err);
@@ -122,20 +147,20 @@ export default function LandDetailPage() {
   const { openSignIn } = useClerk();
   const { isSignedIn, user } = useUser();
   const [message, setMessage] = useState("");
-  const [land, setLand] = useState(null);
+  const [land, setLand] = useState<DetailLand | null>(null);
   const [landLoading, setLandLoading] = useState(true);
-  const [landError, setLandError] = useState(null);
+  const [landError, setLandError] = useState<string | null>(null);
 
   const { messages, loading: chatLoading, addMessage, clearMessages, externalContact } = useChat(id, isSignedIn, user);
 
   useEffect(() => {
     const fetchLand = async () => {
       try {
-        const data = await getLandById(id);
+        const data = await getLandById(id!);
         setLand(data);
       } catch (err) {
         console.error("Error fetching land:", err);
-        setLandError(err.message);
+        setLandError(err instanceof Error ? err.message : "Error al cargar terreno");
       } finally {
         setLandLoading(false);
       }
@@ -151,7 +176,7 @@ export default function LandDetailPage() {
     navigate(`/reserve/${id}`, { state: { land } });
   };
 
-  const handleSend = async (e) => {
+  const handleSend = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const text = message.trim();
     if (!text) return;

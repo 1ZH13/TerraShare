@@ -3,11 +3,21 @@
  * Always uses dev bypass headers in development.
  * No authentication tokens required.
  */
+import type {
+  ApiSuccess,
+  ChatDto,
+  ChatMessageDto,
+  CreateRentalRequestDto,
+  ExternalContactDto,
+  LandDto,
+  PaymentDto,
+  RentalRequestDto,
+} from "@terrashare/shared";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-const buildHeaders = () => {
-  const headers = { "Content-Type": "application/json" };
+const buildHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (import.meta.env.DEV) {
     headers["x-dev-role"] = "user";
     headers["x-dev-user-id"] = "web_dev_user";
@@ -15,9 +25,9 @@ const buildHeaders = () => {
   return headers;
 };
 
-const handleResponse = async (res) => {
+const handleResponse = async (res: Response): Promise<unknown> => {
   if (!res.ok) {
-    let body;
+    let body: any;
     try { body = await res.json(); } catch { body = {}; }
     const msg = body?.error?.message || body?.message || `HTTP ${res.status}: ${res.statusText}`;
     throw new Error(msg);
@@ -25,17 +35,33 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-const request = async (method, path, body) => {
-  const opts = { method, headers: buildHeaders() };
+const request = async <T = unknown>(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<ApiSuccess<T>> => {
+  const opts: RequestInit = { method, headers: buildHeaders() };
   if (body != null) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE_URL}${path}`, opts);
-  return handleResponse(res);
+  return (await handleResponse(res)) as ApiSuccess<T>;
 };
 
 // ─── Lands ───────────────────────────────────────────────────────────────────
 
+export interface CatalogFilters {
+  type?: string;
+  province?: string;
+  district?: string;
+  priceMax?: number;
+  availableFrom?: string;
+  sort?: string;
+  order?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
+}
+
 /** GET /api/v1/lands — listado con filtros (use, province, district, priceMax, availableFrom, sort, order) */
-export const listLands = async (filters = {}) => {
+export const listLands = async (filters: CatalogFilters = {}): Promise<LandDto[]> => {
   const params = new URLSearchParams();
   if (filters.type) params.set("use", filters.type);
   if (filters.province) params.set("province", filters.province);
@@ -47,38 +73,56 @@ export const listLands = async (filters = {}) => {
   if (filters.page) params.set("page", String(filters.page));
   if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
   const qs = params.toString();
-  const res = await request("GET", `/api/v1/lands${qs ? `?${qs}` : ""}`);
-  return res?.data?.items ?? res?.data ?? [];
+  const res = await request<{ items?: LandDto[] } | LandDto[]>(
+    "GET",
+    `/api/v1/lands${qs ? `?${qs}` : ""}`,
+  );
+  const data = res?.data as any;
+  return data?.items ?? data ?? [];
 };
 
 /** GET /api/v1/lands/me - lista lands del usuario actual */
-export const getMyLands = async () => {
-  const res = await request("GET", "/api/v1/lands/me");
+export const getMyLands = async (): Promise<LandDto[]> => {
+  const res = await request<LandDto[]>("GET", "/api/v1/lands/me");
   return res?.data ?? [];
 };
 
 /** POST /api/v1/rental-requests */
-export const createRentalRequest = async (payload) => {
-  const res = await request("POST", "/api/v1/rental-requests", payload);
+export const createRentalRequest = async (
+  payload: CreateRentalRequestDto,
+): Promise<RentalRequestDto | null> => {
+  const res = await request<RentalRequestDto>("POST", "/api/v1/rental-requests", payload);
   return res?.data ?? null;
 };
 
 /** GET /api/v1/rental-requests */
-export const listRentalRequests = async () => {
-  const res = await request("GET", "/api/v1/rental-requests");
+export const listRentalRequests = async (): Promise<RentalRequestDto[]> => {
+  const res = await request<RentalRequestDto[]>("GET", "/api/v1/rental-requests");
   return res?.data ?? [];
 };
 
 /** GET /api/v1/lands/:landId */
-export const getLandById = async (landId) => {
-  const res = await request("GET", `/api/v1/lands/${landId}`);
+export const getLandById = async (landId: string): Promise<LandDto | null> => {
+  const res = await request<LandDto>("GET", `/api/v1/lands/${landId}`);
   return res?.data ?? null;
 };
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
 
+interface CheckoutSessionInput {
+  rentalRequestId: string;
+  currency?: string;
+  successUrl: string;
+  cancelUrl: string;
+}
+
 /** POST /api/v1/payments/checkout-session */
-export const createCheckoutSession = async ({ rentalRequestId, currency = "USD", successUrl, cancelUrl }) => {
+export const createCheckoutSession = async ({
+  rentalRequestId,
+  currency = "USD",
+  successUrl,
+  cancelUrl,
+}: CheckoutSessionInput): Promise<any> => {
   const res = await request("POST", "/api/v1/payments/checkout-session", {
     rentalRequestId,
     currency,
@@ -89,24 +133,35 @@ export const createCheckoutSession = async ({ rentalRequestId, currency = "USD",
 };
 
 /** POST /api/v1/payments/create-intent */
-export const createPaymentIntent = async ({ rentalRequestId, currency = "USD" }) => {
+export const createPaymentIntent = async ({
+  rentalRequestId,
+  currency = "USD",
+}: {
+  rentalRequestId: string;
+  currency?: string;
+}): Promise<any> => {
   const res = await request("POST", "/api/v1/payments/create-intent", { rentalRequestId, currency });
   return res?.data ?? null;
 };
 
 /** GET /api/v1/payments?rentalRequestId=x */
-export const getPaymentsByRequest = async (rentalRequestId) => {
-  const res = await request("GET", `/api/v1/payments?rentalRequestId=${rentalRequestId}`);
+export const getPaymentsByRequest = async (rentalRequestId: string): Promise<PaymentDto[]> => {
+  const res = await request<PaymentDto[]>(
+    "GET",
+    `/api/v1/payments?rentalRequestId=${rentalRequestId}`,
+  );
   return res?.data ?? [];
 };
 
 /** GET /api/v1/payments - lista todos los pagos del usuario */
-export const getMyPayments = async () => {
-  const res = await request("GET", "/api/v1/payments");
+export const getMyPayments = async (): Promise<PaymentDto[]> => {
+  const res = await request<PaymentDto[]>("GET", "/api/v1/payments");
   return res?.data ?? [];
 };
 
-const adaptLandForCatalog = (land) => {
+type LandLike = Record<string, any>;
+
+const adaptLandForCatalog = (land: LandLike | null | undefined) => {
   if (!land) return null;
   return {
     ...land,
@@ -128,7 +183,7 @@ const adaptLandForCatalog = (land) => {
   };
 };
 
-export const adaptLand = (land) => {
+export const adaptLand = (land: LandLike | null | undefined) => {
   if (!land) return null;
   return {
     ...land,
@@ -142,28 +197,36 @@ export const adaptLand = (land) => {
   };
 };
 
-export const getChats = async () => {
-  const res = await request("GET", "/api/v1/chats");
+export const getChats = async (): Promise<ChatDto[]> => {
+  const res = await request<ChatDto[]>("GET", "/api/v1/chats");
   return res?.data ?? [];
 };
 
-export const createChat = async ({ landId, rentalRequestId, participants }) => {
-  const res = await request("POST", "/api/v1/chats", { landId, rentalRequestId, participants });
+export const createChat = async ({
+  landId,
+  rentalRequestId,
+  participants,
+}: {
+  landId?: string;
+  rentalRequestId?: string;
+  participants?: unknown;
+}): Promise<ChatDto | null> => {
+  const res = await request<ChatDto>("POST", "/api/v1/chats", { landId, rentalRequestId, participants });
   return res?.data ?? null;
 };
 
-export const getMessages = async (chatId) => {
-  const res = await request("GET", `/api/v1/chats/${chatId}/messages`);
+export const getMessages = async (chatId: string): Promise<ChatMessageDto[]> => {
+  const res = await request<ChatMessageDto[]>("GET", `/api/v1/chats/${chatId}/messages`);
   return res?.data ?? [];
 };
 
-export const sendMessage = async (chatId, text) => {
-  const res = await request("POST", `/api/v1/chats/${chatId}/messages`, { text });
+export const sendMessage = async (chatId: string, text: string): Promise<ChatMessageDto | null> => {
+  const res = await request<ChatMessageDto>("POST", `/api/v1/chats/${chatId}/messages`, { text });
   return res?.data ?? null;
 };
 
-export const getExternalContact = async (chatId) => {
-  const res = await request("GET", `/api/v1/chats/${chatId}/external-contact`);
+export const getExternalContact = async (chatId: string): Promise<ExternalContactDto | null> => {
+  const res = await request<ExternalContactDto>("GET", `/api/v1/chats/${chatId}/external-contact`);
   return res?.data ?? null;
 };
 

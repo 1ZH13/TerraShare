@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { getLandById, createRentalRequest, adaptLand } from "../services/api";
@@ -15,19 +16,40 @@ const USO_OPCIONES = [
   { value: "otro", label: "📋 Otro" },
 ];
 
+interface ReserveLand {
+  id?: string;
+  type?: string;
+  title?: string;
+  province?: string;
+  district?: string;
+  areaHectares?: number;
+  monthlyPrice?: number;
+  availableFrom?: string;
+  features?: string[];
+}
+
+interface ReserveForm {
+  startDate: string;
+  endDate: string;
+  intendedUse: string;
+  notes: string;
+}
+
 export default function ReservePage() {
   const { landId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { isSignedIn } = useUser();
 
-  const [land, setLand] = useState(normalizeReserveLand(location.state?.land) ?? null);
+  const [land, setLand] = useState<ReserveLand | null>(
+    (normalizeReserveLand(location.state?.land) as ReserveLand | null) ?? null,
+  );
   const [loading, setLoading] = useState(!land);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ReserveForm>({
     startDate: "",
     endDate: "",
     intendedUse: "",
@@ -42,7 +64,7 @@ export default function ReservePage() {
       setLoading(true);
       getLandById(landId)
         .then((raw) => {
-          if (active) setLand(normalizeReserveLand(adaptLand(raw)));
+          if (active) setLand(normalizeReserveLand(adaptLand(raw)) as ReserveLand | null);
         })
         .catch(() => {
           if (active) setError("No se pudo cargar el terreno.");
@@ -54,12 +76,12 @@ export default function ReservePage() {
     }
   }, [land, landId]);
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: keyof ReserveForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setError("");
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!isSignedIn && !import.meta.env.DEV) {
@@ -84,7 +106,7 @@ export default function ReservePage() {
 
     try {
       const result = await createRentalRequest({
-        landId,
+        landId: landId!,
         period: { startDate: form.startDate, endDate: form.endDate },
         intendedUse: form.intendedUse,
         notes: form.notes || undefined,
@@ -95,7 +117,7 @@ export default function ReservePage() {
         navigate("/dashboard", { replace: true });
       }, 3000);
     } catch (err) {
-      setError(err.message || "Error al enviar la solicitud.");
+      setError(err instanceof Error ? err.message : "Error al enviar la solicitud.");
     } finally {
       setSubmitting(false);
     }
@@ -148,9 +170,9 @@ export default function ReservePage() {
 
               <div className="reserve-price-block">
                 <span className="reserve-price-value">
-                  {land.monthlyPrice > 0 ? `$${land.monthlyPrice}` : "Precio variable"}
+                  {(land.monthlyPrice ?? 0) > 0 ? `$${land.monthlyPrice}` : "Precio variable"}
                 </span>
-                {land.monthlyPrice > 0 && <span className="reserve-price-period">/mes</span>}
+                {(land.monthlyPrice ?? 0) > 0 && <span className="reserve-price-period">/mes</span>}
               </div>
 
               <div className="reserve-stats">
@@ -168,11 +190,11 @@ export default function ReservePage() {
                 </div>
               </div>
 
-              {(land.features || []).length > 0 && (
+              {(land.features ?? []).length > 0 && (
                 <div className="reserve-features">
                   <span className="reserve-features-title">Características</span>
                   <div className="reserve-features-list">
-                    {land.features.map((f) => (
+                    {(land.features ?? []).map((f: string) => (
                       <span key={f} className="reserve-feature">{f}</span>
                     ))}
                   </div>

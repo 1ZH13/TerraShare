@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import type { LandDto } from "@terrashare/shared";
 import { listLands } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
+
+type CatalogLand = LandDto & { type?: string; water?: string; access?: string };
 
 
 
@@ -11,8 +14,8 @@ export default function CatalogPage() {
   const [province, setProvince] = useState("Todas");
   const [maxPrice, setMaxPrice] = useState(1500);
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState(null);
-  const [lands, setLands] = useState([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [lands, setLands] = useState<CatalogLand[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export default function CatalogPage() {
 
   const selectedLand = filteredLands.find((l) => l.id === selectedId) || filteredLands[0];
 
-  const handlePinClick = (land) => setSelectedId(land.id);
+  const handlePinClick = (land: CatalogLand) => setSelectedId(land.id);
 
   return (
     <div className="page-shell">

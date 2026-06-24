@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useClerk } from "@clerk/clerk-react";
 
-export default function Register() {
-  const { openSignUp } = useClerk();
+export default function Login() {
+  const { openSignIn } = useClerk();
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
@@ -14,42 +14,35 @@ export default function Register() {
     }
   }, [searchParams]);
 
-  const handleSignUp = () => {
+  const handleSignIn = () => {
     const fromPath = location.state?.from?.pathname || location.state?.from;
     const hasValidFrom = typeof fromPath === "string" && fromPath.startsWith("/");
     const isAuthRoute = hasValidFrom && (fromPath.startsWith("/login") || fromPath.startsWith("/register"));
     const redirectTarget = hasValidFrom && !isAuthRoute ? fromPath : "/dashboard";
-    const utmSource = sessionStorage.getItem("terrashare_utm_source");
-    openSignUp({
-      redirectUrl: redirectTarget,
-      ...(utmSource && { unsafeMetadata: { utm_source: utmSource } }),
-    });
+    openSignIn({ redirectUrl: redirectTarget });
   };
 
   return (
     <div className="page-shell">
       <div className="glass-panel" style={{ marginTop: "2rem", maxWidth: "400px", margin: "2rem auto" }}>
         <div className="section-header compact">
-          <h1>Crear cuenta</h1>
-          <p>Unete a TerraShare</p>
+          <h1>Iniciar sesion</h1>
+          <p>Accede a tu cuenta TerraShare</p>
         </div>
 
         <div className="btn-stack">
-          <button className="btn btn-primary btn-full" onClick={handleSignUp}>
-            Continuar con Google
-          </button>
-          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "oauth_microsoft", redirectUrl: "/dashboard" })}>
-            Continuar con Microsoft
-          </button>
-          <button className="btn btn-ghost btn-full" onClick={() => openSignUp({ strategy: "email", redirectUrl: "/dashboard" })}>
-            Continuar con email
+          {/* Clerk's modal presents every provider enabled in the dashboard
+              (Google, Microsoft, email). openSignIn has no per-provider option,
+              so a single entry point is the correct flow. */}
+          <button className="btn btn-primary btn-full" onClick={handleSignIn}>
+            Iniciar sesion
           </button>
         </div>
 
         <div className="auth-link">
           <p>
-            ¿Ya tienes cuenta?{" "}
-            <Link to="/login" state={{ from: location.state?.from }} className="auth-link-text">Inicia sesion</Link>
+            ¿No tienes cuenta?{" "}
+            <Link to="/register" state={{ from: location.state?.from }} className="auth-link-text">Registrate</Link>
           </p>
         </div>
 
