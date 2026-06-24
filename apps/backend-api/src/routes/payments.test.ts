@@ -33,6 +33,13 @@ describe("payments routes", () => {
   });
 
   it("updates payment status via webhook", async () => {
+    // The request must be payable before a checkout session can be created.
+    await requestJson("/api/v1/rental-requests/rr_seed_01/status", {
+      method: "PATCH",
+      headers: { "x-dev-user-id": "user_owner_01" },
+      body: { status: "approved" },
+    });
+
     const createResponse = await requestJson("/api/v1/payments/checkout-session", {
       method: "POST",
       headers: {

@@ -77,8 +77,8 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
     }
   }
 
-  const isDev = process.env.NODE_ENV !== "production";
-  const initialStatus = isDev ? "approved" : "pending_owner";
+  // A new request always awaits owner approval; it must not be auto-approved.
+  const initialStatus = "pending_owner";
 
   const record = await RentalRequest.create({
     id: `rr_${crypto.randomUUID()}`,
