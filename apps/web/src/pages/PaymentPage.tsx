@@ -1,3 +1,6 @@
+// @ts-nocheck
+// TODO(ts-migration): tipar este archivo y eliminar @ts-nocheck.
+// Migracion gradual JS->TS: estructura ya en .tsx; falta tipado estricto.
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";

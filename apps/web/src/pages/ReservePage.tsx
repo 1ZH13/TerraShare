@@ -1,3 +1,6 @@
+// @ts-nocheck
+// TODO(ts-migration): tipar este archivo y eliminar @ts-nocheck.
+// Migracion gradual JS->TS: estructura ya en .tsx; falta tipado estricto.
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
