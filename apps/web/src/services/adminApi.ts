@@ -93,3 +93,29 @@ export const listAdminRentalRequests = (filters: AdminLandFilters = {}) => {
 
 /** GET /api/v1/admin/summary */
 export const getAdminSummary = () => request("GET", "/api/v1/admin/summary");
+
+// ─── Leads ───────────────────────────────────────────────────────────────────
+
+export interface AdminLead {
+  id: string;
+  email: string;
+  source: string;
+  createdAt?: string;
+}
+
+interface AdminLeadFilters {
+  source?: string;
+  search?: string;
+}
+
+/** GET /api/v1/admin/leads?source=&search= */
+export const listAdminLeads = (filters: AdminLeadFilters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.source) params.set("source", filters.source);
+  if (filters.search) params.set("search", filters.search);
+  const qs = params.toString();
+  return request<{ leads: AdminLead[]; total: number }>(
+    "GET",
+    `/api/v1/admin/leads${qs ? `?${qs}` : ""}`,
+  );
+};
