@@ -4,7 +4,7 @@ import { failure, success } from "../lib/api-response";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { getStore } from "../store/in-memory-db";
-import { User, Land, RentalRequest } from "../db/schemas";
+import { User, Land, RentalRequest, Lead } from "../db/schemas";
 import type { UserStatus } from "../db/schemas";
 import type { AppEnv } from "../types";
 
@@ -83,6 +83,17 @@ adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, asyn
 
   const updated = (await User.findOne({ clerkUserId: userId }).lean()) ?? store.users.get(userId);
   return success(c, updated);
+});
+
+adminRoutes.get("/admin/leads", requireAuth, requireAdmin, async (c) => {
+  const source = c.req.query("source");
+  const search = c.req.query("search");
+  const query: Record<string, unknown> = {};
+  if (source) query.source = source;
+  if (search) query.email = { $regex: search, $options: "i" };
+
+  const leads = await Lead.find(query).sort({ createdAt: -1 }).lean();
+  return success(c, { leads, total: leads.length });
 });
 
 adminRoutes.get("/admin/lands", requireAuth, requireAdmin, async (c) => {
