@@ -7,7 +7,7 @@ export type ContractStatus = "draft" | "active" | "completed" | "cancelled";
 export type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "cancelled";
 export type ChatStatus = "active" | "archived";
 export type LeadSource = "landing" | "app-web" | "admin-dashboard";
-export type UserStatus = "active" | "inactive";
+export type UserStatus = "active" | "blocked";
 export type AppRole = "user" | "admin";
 
 export interface IUser extends Document {
@@ -138,7 +138,7 @@ const UserSchema = new Schema<IUser>({
   clerkUserId: { type: String, required: true, unique: true },
   email: { type: String, required: true },
   role: { type: String, enum: ["user", "admin"], default: "user" },
-  status: { type: String, enum: ["active", "inactive"], default: "active" },
+  status: { type: String, enum: ["active", "blocked"], default: "active" },
   profile: {
     fullName: { type: String, required: true },
     phone: String,
