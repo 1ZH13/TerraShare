@@ -51,7 +51,7 @@ function randomDateFuture(daysAhead: number): string {
 
 function generateUsers(count: number) {
   const users = [];
-  const statuses = ["active", "inactive"];
+  const statuses = ["active", "blocked"];
   const roles = ["user", "admin"];
   
   for (let i = 0; i < count; i++) {

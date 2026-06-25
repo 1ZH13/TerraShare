@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { failure, success } from "../lib/api-response";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
+import { getStore } from "../store/in-memory-db";
 import { User, Land, RentalRequest } from "../db/schemas";
 import type { UserStatus } from "../db/schemas";
 import type { AppEnv } from "../types";
@@ -44,15 +45,19 @@ adminRoutes.get("/admin/users/:userId", requireAuth, requireAdmin, async (c) => 
 adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, async (c) => {
   const authUser = c.get("authUser");
   const userId = c.req.param("userId");
+  const store = getStore();
 
-  const user = await User.findOne({ clerkUserId: userId }).lean();
-  if (!user) {
+  // A user may live in Mongo (real Clerk users) and/or in the in-memory store
+  // (dev-bypass and the runtime cache require-auth enforces against).
+  const mongoUser = await User.findOne({ clerkUserId: userId }).lean();
+  const memUser = store.users.get(userId);
+  if (!mongoUser && !memUser) {
     return failure(c, 404, "NOT_FOUND", "User not found");
   }
 
   const body = (await c.req.json().catch(() => null)) as { status?: UserStatus } | null;
   const nextStatus = body?.status;
-  if (!nextStatus || !["active", "inactive"].includes(nextStatus)) {
+  if (!nextStatus || !["active", "blocked"].includes(nextStatus)) {
     return failure(c, 400, "VALIDATION_ERROR", "Invalid status value");
   }
 
@@ -60,17 +65,23 @@ adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, asyn
     return failure(c, 400, "BUSINESS_RULE_VIOLATION", "Cannot modify own account status");
   }
 
-  await User.updateOne({ clerkUserId: userId }, { status: nextStatus });
+  if (mongoUser) {
+    await User.updateOne({ clerkUserId: userId }, { status: nextStatus });
+  }
+  // Mirror the change into the in-memory store so require-auth enforces it.
+  if (memUser) {
+    store.users.set(userId, { ...memUser, status: nextStatus });
+  }
 
   createAuditEvent({
     actor: authUser,
     entity: "user",
     action: "status_changed",
     entityId: userId,
-    metadata: { email: user.email },
+    metadata: { email: mongoUser?.email ?? memUser?.email },
   });
 
-  const updated = await User.findOne({ clerkUserId: userId }).lean();
+  const updated = (await User.findOne({ clerkUserId: userId }).lean()) ?? store.users.get(userId);
   return success(c, updated);
 });
 
@@ -149,7 +160,7 @@ adminRoutes.get("/admin/summary", requireAuth, requireAdmin, async (c) => {
     users: {
       total: users.length,
       active: users.filter((u) => u.status === "active").length,
-      blocked: users.filter((u) => u.status === "inactive").length,
+      blocked: users.filter((u) => u.status === "blocked").length,
     },
     lands: {
       total: lands.length,
