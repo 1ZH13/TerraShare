@@ -7,24 +7,20 @@ interface PublicHeaderProps {
 }
 
 export default function PublicHeader({ showDashboardLink }: PublicHeaderProps = {}) {
-  const { openSignIn, openSignUp, signOut } = useClerk();
+  const { signOut } = useClerk();
   const { isSignedIn, user } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
   const userName = getDisplayName(user);
 
+  // Navigate to the full /login and /register pages (which host the Clerk
+  // forms) instead of popping Clerk's modal overlay.
   const handleSignIn = () => {
-    openSignIn({ redirectUrl: "/dashboard" });
+    navigate("/login");
   };
 
   const handleSignUp = () => {
-    if (isSignedIn) {
-      signOut({ redirectUrl: "/" }).then(() => {
-        openSignUp({});
-      });
-    } else {
-      openSignUp({});
-    }
+    navigate("/register");
   };
 
   const handleSignOut = async () => {
