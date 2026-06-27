@@ -8,6 +8,22 @@ describe("Smoke E2E auth y flujo protegido", () => {
   });
 
   describe("auth basico", () => {
+    it("PATCH /auth/profile actualiza el telefono y persiste", async () => {
+      const update = await requestJson("/api/v1/auth/profile", {
+        method: "PATCH",
+        headers: { "x-dev-user-id": "user_profile_01" },
+        body: { phone: "+50761234567" },
+      });
+      expect(update.response.status).toBe(200);
+      expect(update.payload.data.profile.phone).toBe("+50761234567");
+
+      const me = await requestJson("/api/v1/auth/me", {
+        method: "GET",
+        headers: { "x-dev-user-id": "user_profile_01" },
+      });
+      expect(me.payload.data.profile.phone).toBe("+50761234567");
+    });
+
     it("registro/login: /auth/me retorna usuario autenticado", async () => {
       const { response, payload } = await requestJson("/api/v1/auth/me", {
         method: "GET",

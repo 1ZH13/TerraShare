@@ -230,6 +230,32 @@ export const getExternalContact = async (chatId: string): Promise<ExternalContac
   return res?.data ?? null;
 };
 
+// ─── Profile ──────────────────────────────────────────────────────────────────
+
+export interface UserProfile {
+  fullName?: string;
+  phone?: string;
+}
+
+interface MeResponse {
+  id: string;
+  email: string;
+  role: string;
+  profile: UserProfile;
+}
+
+/** GET /api/v1/auth/me */
+export const getMe = async (): Promise<MeResponse | null> => {
+  const res = await request<MeResponse>("GET", "/api/v1/auth/me");
+  return res?.data ?? null;
+};
+
+/** PATCH /api/v1/auth/profile — update fullName / phone */
+export const updateMyProfile = async (payload: UserProfile): Promise<MeResponse | null> => {
+  const res = await request<MeResponse>("PATCH", "/api/v1/auth/profile", payload);
+  return res?.data ?? null;
+};
+
 export const api = {
   listLands,
   getMyLands,

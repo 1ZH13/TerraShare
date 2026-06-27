@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useClerk, useUser } from "@clerk/clerk-react";
+import { getMe, updateMyProfile } from "../services/api";
 
 export default function ProfilePage() {
   const { user } = useUser();
@@ -7,6 +9,37 @@ export default function ProfilePage() {
   const userName = user?.fullName || user?.firstName || user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "Usuario";
   const userEmail = user?.emailAddresses?.[0]?.emailAddress || "No disponible";
   const userImage = user?.imageUrl;
+
+  const [phone, setPhone] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneMsg, setPhoneMsg] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    getMe()
+      .then((me) => {
+        if (active && me?.profile?.phone) setPhone(me.profile.phone);
+      })
+      .catch(() => {
+        /* ignore — phone stays empty */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSavePhone = async () => {
+    setSavingPhone(true);
+    setPhoneMsg("");
+    try {
+      await updateMyProfile({ phone: phone.trim() });
+      setPhoneMsg("Teléfono guardado");
+    } catch (err) {
+      setPhoneMsg(err instanceof Error ? err.message : "Error al guardar");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut({ redirectUrl: "/" });
@@ -43,6 +76,27 @@ export default function ProfilePage() {
             Cerrar sesion
           </button>
         </div>
+      </div>
+
+      <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
+        <h3 style={{ margin: "0 0 0.5rem" }}>Teléfono de contacto (WhatsApp)</h3>
+        <p style={{ margin: "0 0 1rem", opacity: 0.7, fontSize: "0.9rem" }}>
+          Se mostrará a los interesados que quieran contactarte por tus terrenos.
+        </p>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+507 6000-0000"
+            className="admin-input"
+            style={{ flex: 1, minWidth: "200px" }}
+          />
+          <button className="btn btn-primary" onClick={handleSavePhone} disabled={savingPhone}>
+            {savingPhone ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+        {phoneMsg && <p style={{ marginTop: "0.75rem", opacity: 0.8, fontSize: "0.9rem" }}>{phoneMsg}</p>}
       </div>
 
       <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
