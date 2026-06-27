@@ -29,7 +29,16 @@ adminRoutes.get("/admin/users", requireAuth, requireAdmin, async (c) => {
     );
   }
 
-  return success(c, { items: users, total: users.length });
+  const page = Math.max(1, Number(c.req.query("page") ?? 1) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(c.req.query("pageSize") ?? 20) || 20));
+  const total = users.length;
+  const start = (page - 1) * pageSize;
+
+  return success(c, {
+    items: users.slice(start, start + pageSize),
+    total,
+    pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+  });
 });
 
 adminRoutes.get("/admin/users/:userId", requireAuth, requireAdmin, async (c) => {
@@ -128,7 +137,16 @@ adminRoutes.get("/admin/lands", requireAuth, requireAdmin, async (c) => {
     createdAt: l.createdAt,
   }));
 
-  return success(c, { items, total: items.length });
+  const page = Math.max(1, Number(c.req.query("page") ?? 1) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(c.req.query("pageSize") ?? 20) || 20));
+  const total = items.length;
+  const start = (page - 1) * pageSize;
+
+  return success(c, {
+    items: items.slice(start, start + pageSize),
+    total,
+    pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+  });
 });
 
 adminRoutes.patch("/admin/lands/:landId/status", requireAuth, requireAdmin, async (c) => {

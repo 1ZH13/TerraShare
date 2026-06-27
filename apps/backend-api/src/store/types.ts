@@ -20,6 +20,7 @@ export interface LandRecord {
   description?: string;
   area: number;
   allowedUses: LandUse[];
+  photos?: string[];
   location: {
     province: string;
     district: string;
