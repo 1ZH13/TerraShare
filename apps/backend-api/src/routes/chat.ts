@@ -4,7 +4,8 @@ import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
-import { Chat, ChatMessage } from "../db/schemas";
+import { getStore } from "../store/in-memory-db";
+import { Chat, ChatMessage, User } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 function isParticipant(chat: { participants: { userId: string }[] }, userId: string) {
@@ -138,12 +139,23 @@ chatRoutes.get("/chats/:chatId/external-contact", requireAuth, async (c) => {
   }
 
   const ownerParticipant = chat.participants.find((participant) => participant.role === "owner");
+  const ownerId = ownerParticipant?.userId;
+
+  // Resolve the owner's real contact details from the in-memory store (dev /
+  // runtime cache) or Mongo, instead of a hardcoded placeholder.
+  const store = getStore();
+  const ownerInMemory = ownerId ? store.users.get(ownerId) : undefined;
+  const ownerInMongo = ownerId ? await User.findOne({ clerkUserId: ownerId }).lean() : null;
+  const phone = ownerInMemory?.profile?.phone ?? ownerInMongo?.profile?.phone ?? null;
+  const displayName =
+    ownerInMemory?.profile?.fullName ?? ownerInMongo?.profile?.fullName ?? ownerId ?? "Propietario";
 
   return success(c, {
     whatsappEnabled: true,
     contact: {
-      phone: "+50760000000",
-      displayName: ownerParticipant?.userId ?? "Propietario",
+      phone,
+      displayName,
+      available: Boolean(phone),
     },
   });
 });
