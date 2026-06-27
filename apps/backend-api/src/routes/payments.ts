@@ -5,7 +5,7 @@ import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
-import { Payment, RentalRequest, Land } from "../db/schemas";
+import { Payment, RentalRequest, Land, Contract } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 let stripeClient: Stripe | null = null;
@@ -444,6 +444,29 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
       { id: payment.rentalRequestId },
       { status: "paid", updatedAt: new Date() },
     );
+
+    // Auto-create a draft contract for the now-paid rental. Idempotent: a
+    // webhook can be delivered more than once, so skip if one already exists.
+    const existingContract = await Contract.findOne({ rentalRequestId: payment.rentalRequestId }).lean();
+    if (!existingContract) {
+      const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
+      if (request) {
+        const land = await Land.findOne({ id: request.landId }).lean();
+        const nowIso = new Date().toISOString();
+        await Contract.create({
+          id: `contract_${crypto.randomUUID()}`,
+          rentalRequestId: request.id,
+          ownerId: land?.ownerId ?? "",
+          tenantId: request.tenantId,
+          terms: {
+            summary: `Contrato de alquiler para ${land?.title ?? request.landId}`,
+            startsAt: request.period?.startDate ?? nowIso,
+            endsAt: request.period?.endDate ?? nowIso,
+          },
+          status: "draft",
+        });
+      }
+    }
   }
 
   return success(c, {
