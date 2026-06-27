@@ -51,4 +51,23 @@ describe("rental requests routes", () => {
     expect(payload.ok).toBe(true);
     expect(payload.data.status).toBe("approved");
   });
+
+  it("rejects a request whose intended use is not allowed on the land", async () => {
+    // land_seed_02 only allows "ganaderia".
+    const { response, payload } = await requestJson("/api/v1/rental-requests", {
+      method: "POST",
+      headers: { "x-dev-user-id": "user_tenant_99" },
+      body: {
+        landId: "land_seed_02",
+        period: {
+          startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 400).toISOString(),
+          endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 430).toISOString(),
+        },
+        intendedUse: "acuicultura",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(payload.ok).toBe(false);
+  });
 });

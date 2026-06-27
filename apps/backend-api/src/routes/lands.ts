@@ -158,6 +158,7 @@ landRoutes.post("/lands", requireAuth, async (c) => {
     description: body.description,
     area: Number(body.area),
     allowedUses: body.allowedUses,
+    photos: body.photos ?? [],
     location: body.location,
     availability: body.availability ?? {},
     priceRule: body.priceRule,

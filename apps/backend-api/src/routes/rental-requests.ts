@@ -53,6 +53,16 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
     return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Owner cannot create request for own land");
   }
 
+  const allowedUses = (land.allowedUses ?? []) as string[];
+  if (allowedUses.length > 0 && !allowedUses.includes(body.intendedUse)) {
+    return failure(
+      c,
+      422,
+      "BUSINESS_RULE_VIOLATION",
+      `El uso '${body.intendedUse}' no esta permitido en este terreno`,
+    );
+  }
+
   const periodStart = Date.parse(body.period.startDate);
   const periodEnd = Date.parse(body.period.endDate);
   if (Number.isNaN(periodStart) || Number.isNaN(periodEnd) || periodEnd <= periodStart) {

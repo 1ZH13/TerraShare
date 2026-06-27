@@ -27,6 +27,7 @@ export interface ILand extends Document {
   description?: string;
   area: number;
   allowedUses: LandUse[];
+  photos?: string[];
   location: {
     province: string;
     district: string;
@@ -152,6 +153,7 @@ const LandSchema = new Schema<ILand>({
   description: String,
   area: { type: Number, required: true },
   allowedUses: [{ type: String, enum: ["agricultura", "ganaderia", "forestal", "acuicultura", "mixto", "otro"] }],
+  photos: [String],
   location: {
     province: { type: String, required: true },
     district: { type: String, required: true },
