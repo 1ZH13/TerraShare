@@ -7,9 +7,7 @@ test.describe("Smoke E2E auth y flujo protegido", () => {
     await expect(page.getByRole("heading", { name: /Iniciar sesion/i })).toBeVisible();
     await expect(page.getByText(/Accede a tu cuenta TerraShare/)).toBeVisible();
 
-    await expect(page.getByRole("button", { name: /Continuar con Google/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Continuar con Microsoft/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Continuar con email/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Iniciar sesion/i })).toBeVisible();
 
     await expect(page.getByRole("link", { name: /Registrate/ })).toBeVisible();
   });
@@ -20,9 +18,7 @@ test.describe("Smoke E2E auth y flujo protegido", () => {
     await expect(page.getByRole("heading", { name: /Crear cuenta/i })).toBeVisible();
     await expect(page.getByText(/Unete a TerraShare/)).toBeVisible();
 
-    await expect(page.getByRole("button", { name: /Continuar con Google/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Continuar con Microsoft/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Continuar con email/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Crear cuenta/i })).toBeVisible();
 
     await expect(page.getByRole("link", { name: /Inicia sesion/ })).toBeVisible();
   });
