@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraShare — 25 Estados vacíos</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+:root{--surface-0:#f6f5f0;--surface-1:#f0eee7;--surface-2:#ffffff;--border:rgba(0,0,0,.10);--border-strong:rgba(0,0,0,.18);--text-primary:#20201e;--text-secondary:#5f5e59;--text-muted:#8b8a82;--radius:8px;--brand-900:#173404;--brand-800:#27500A;--brand-700:#3B6D11;--brand-50:#EAF3DE;--font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+@media (prefers-color-scheme:dark){:root{--surface-0:#1a1a18;--surface-1:#232320;--surface-2:#2b2b28;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.20);--text-primary:#f2f1ea;--text-secondary:#b8b7ae;--text-muted:#8b8a82;}}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--font-sans);line-height:1.6;}
+.canvas{max-width:760px;margin:0 auto;padding:24px 16px;}
+a{color:inherit;text-decoration:none;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+.rev{animation:fadeUp .6s cubic-bezier(.2,.7,.3,1) both;}
+.empty{background:var(--surface-2);border:.5px solid var(--border);border-radius:12px;padding:36px 20px;text-align:center;}
+.eic{width:56px;height:56px;border-radius:16px;background:var(--brand-50);color:var(--brand-700);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;}
+.btn{display:inline-block;background:var(--brand-800);color:#fff;border:.5px solid var(--brand-800);border-radius:var(--radius);padding:9px 18px;font-size:14px;transition:transform .15s ease;}
+.btn:hover{transform:translateY(-1px);}
+.btn.ghost{background:transparent;color:var(--text-primary);border-color:var(--border-strong);}
+@media (prefers-reduced-motion:reduce){.rev{animation:none;}}
+</style>
+</head>
+<body>
+<h1 class="sr-only">Estados vacíos de referencia</h1>
+<div class="canvas">
+  <div class="rev" style="margin-bottom: 4px; font-size: 22px; font-weight: 500; letter-spacing: -.4px;">Estados vacíos</div>
+  <p class="rev" style="color: var(--text-secondary); margin: 0 0 20px;">Referencia de cómo se ve cada sección cuando aún no hay datos.</p>
+
+  <div class="rev" style="animation-delay: .04s; margin-bottom: 14px;">
+    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Busco · sin solicitudes</div>
+    <div class="empty">
+      <div class="eic"><i class="ti ti-clipboard-list" aria-hidden="true"></i></div>
+      <div style="font-size: 18px; font-weight: 500;">Aún no tienes solicitudes</div>
+      <p style="color: var(--text-secondary); margin: 6px 0 16px;">Cuando solicites un terreno, aparecerá aquí con su estado.</p>
+      <a href="04-catalogo.html" class="btn">Explorar terrenos</a>
+    </div>
+  </div>
+
+  <div class="rev" style="animation-delay: .08s; margin-bottom: 14px;">
+    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Ofrezco · sin publicaciones</div>
+    <div class="empty">
+      <div class="eic"><i class="ti ti-map-2" aria-hidden="true"></i></div>
+      <div style="font-size: 18px; font-weight: 500;">Publica tu primer terreno</div>
+      <p style="color: var(--text-secondary); margin: 6px 0 16px;">Sube fotos, ubicación y precio. Se publica de inmediato.</p>
+      <a href="06-publicar.html" class="btn"><i class="ti ti-plus" aria-hidden="true"></i> Publicar terreno</a>
+    </div>
+  </div>
+
+  <div class="rev" style="animation-delay: .12s;">
+    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Catálogo · sin resultados</div>
+    <div class="empty">
+      <div class="eic"><i class="ti ti-search-off" aria-hidden="true"></i></div>
+      <div style="font-size: 18px; font-weight: 500;">Sin resultados</div>
+      <p style="color: var(--text-secondary); margin: 6px 0 16px;">No encontramos terrenos con esos filtros. Prueba ampliar la búsqueda.</p>
+      <a href="04-catalogo.html" class="btn ghost">Limpiar filtros</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

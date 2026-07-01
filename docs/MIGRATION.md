@@ -190,7 +190,7 @@ git merge origin/main
 
 ```bash
 # Servidores
-cd apps/web && bun run dev      # Puerto 5173
+cd apps/web && bun run dev      # Puerto 5180
 cd apps/backend-api && bun run dev  # Puerto 3000
 
 # Testing

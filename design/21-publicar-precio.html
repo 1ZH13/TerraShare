@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraShare — 21 Publicar · Precio</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+:root{--surface-0:#f6f5f0;--surface-1:#f0eee7;--surface-2:#ffffff;--border:rgba(0,0,0,.10);--border-strong:rgba(0,0,0,.18);--text-primary:#20201e;--text-secondary:#5f5e59;--text-muted:#8b8a82;--radius:8px;--brand-900:#173404;--brand-800:#27500A;--brand-700:#3B6D11;--brand-400:#97C459;--brand-100:#C0DD97;--brand-50:#EAF3DE;--blue-bg:#E6F1FB;--blue-fg:#0C447C;--font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+@media (prefers-color-scheme:dark){:root{--surface-0:#1a1a18;--surface-1:#232320;--surface-2:#2b2b28;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.20);--text-primary:#f2f1ea;--text-secondary:#b8b7ae;--text-muted:#8b8a82;}}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--font-sans);line-height:1.6;}
+.canvas{max-width:760px;margin:0 auto;padding:24px 16px;}
+button{font-family:inherit;cursor:pointer;border:.5px solid var(--border-strong);background:transparent;color:var(--text-primary);border-radius:var(--radius);padding:8px 14px;font-size:14px;transition:transform .15s ease,background .15s ease;}
+button:hover{background:var(--surface-1);}button:active{transform:scale(.98);}
+a{color:inherit;text-decoration:none;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.rev{animation:fadeUp .7s cubic-bezier(.2,.7,.3,1) both;}
+.ctaBtn{transition:transform .15s ease;}.ctaBtn:hover{transform:translateY(-1px);}
+.field{background:var(--surface-1);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:14px;color:var(--text-muted);}
+.lbl{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px;}
+.seg{display:inline-flex;background:var(--surface-1);border-radius:20px;padding:3px;gap:2px;}
+.seg button{border:0;background:transparent;border-radius:18px;padding:6px 16px;font-size:14px;color:var(--text-secondary);}
+.seg button.active{background:var(--brand-800);color:#fff;}
+.step{flex:1;text-align:center;}.step .bar{height:4px;border-radius:4px;background:var(--border);}.step.done .bar,.step.now .bar{background:var(--brand-700);}
+.step .t{font-size:12px;color:var(--text-muted);margin-top:6px;}.step.done .t{color:var(--text-secondary);}.step.now .t{color:var(--brand-800);font-weight:500;}
+@media (prefers-reduced-motion:reduce){.rev{animation:none;}}
+</style>
+</head>
+<body>
+<h1 class="sr-only">Publicar terreno · paso 3 precio</h1>
+<div class="canvas">
+<div style="background: var(--surface-2); border: .5px solid var(--border); border-radius: 12px; overflow: hidden;">
+
+  <div class="rev" style="display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: .5px solid var(--border);">
+    <a href="03-home-ofrezco.html" style="color: var(--text-secondary); font-size: 14px;"><i class="ti ti-x" aria-hidden="true"></i> Cancelar</a>
+    <span style="margin-left: auto; font-size: 14px; font-weight: 500;">Publicar terreno</span>
+    <span style="margin-left: auto; font-size: 13px; color: var(--text-muted);">Paso 3 de 4</span>
+  </div>
+
+  <div class="rev" style="display: flex; gap: 8px; padding: 18px 22px 6px;">
+    <div class="step done"><div class="bar"></div><div class="t">Datos</div></div>
+    <div class="step done"><div class="bar"></div><div class="t">Ubicación</div></div>
+    <div class="step now"><div class="bar"></div><div class="t">Precio</div></div>
+    <div class="step"><div class="bar"></div><div class="t">Fotos</div></div>
+  </div>
+
+  <div class="rev" style="animation-delay: .06s; padding: 18px 22px 8px; max-width: 560px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <span style="font-size: 13px; color: var(--text-secondary);">Operación seleccionada</span>
+      <span style="background: var(--blue-bg); color: var(--blue-fg); font-size: 12px; padding: 4px 10px; border-radius: 20px;">Alquiler y venta</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div>
+        <span class="lbl">Precio de alquiler</span>
+        <div style="display: flex; gap: 8px;">
+          <div class="field" style="flex: 1;">$ 420</div>
+          <div class="seg"><button class="active">USD</button><button>PAB</button></div>
+        </div>
+        <span style="font-size: 12px; color: var(--text-muted);">por mes</span>
+      </div>
+      <div>
+        <span class="lbl">Precio de venta</span>
+        <div class="field">$ 48,000</div>
+        <span style="font-size: 12px; color: var(--text-muted);">precio total</span>
+      </div>
+    </div>
+
+    <div style="font-size: 14px; font-weight: 500; margin: 20px 0 10px;">Disponibilidad <span style="font-size: 12px; color: var(--text-muted); font-weight: 400;">(para alquiler)</span></div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div><span class="lbl">Disponible desde</span><div class="field"><i class="ti ti-calendar" aria-hidden="true"></i> 01/05/2026</div></div>
+      <div><span class="lbl">Hasta <span style="color: var(--text-muted);">(opcional)</span></span><div class="field"><i class="ti ti-calendar" aria-hidden="true"></i> dd/mm/aaaa</div></div>
+    </div>
+    <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;"><i class="ti ti-info-circle" aria-hidden="true"></i> Panamá opera en USD/PAB con paridad 1:1.</p>
+  </div>
+
+  <div class="rev" style="animation-delay: .1s; display: flex; justify-content: space-between; padding: 18px 22px 22px; border-top: .5px solid var(--border); margin-top: 12px;">
+    <a href="20-publicar-ubicacion.html"><button class="ctaBtn" style="color: var(--text-secondary);"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button></a>
+    <a href="22-publicar-fotos.html"><button class="ctaBtn" style="background: var(--brand-800); color: #fff; border-color: var(--brand-800); padding: 10px 20px;">Continuar <i class="ti ti-arrow-right" aria-hidden="true"></i></button></a>
+  </div>
+
+</div>
+</div>
+</body>
+</html>

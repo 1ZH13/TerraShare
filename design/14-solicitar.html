@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraShare — 14 Solicitar</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+:root{--surface-0:#f6f5f0;--surface-1:#f0eee7;--surface-2:#ffffff;--border:rgba(0,0,0,.10);--border-strong:rgba(0,0,0,.18);--text-primary:#20201e;--text-secondary:#5f5e59;--text-muted:#8b8a82;--radius:8px;--brand-900:#173404;--brand-800:#27500A;--brand-700:#3B6D11;--brand-400:#97C459;--brand-100:#C0DD97;--brand-50:#EAF3DE;--font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+@media (prefers-color-scheme:dark){:root{--surface-0:#1a1a18;--surface-1:#232320;--surface-2:#2b2b28;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.20);--text-primary:#f2f1ea;--text-secondary:#b8b7ae;--text-muted:#8b8a82;}}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--font-sans);line-height:1.6;}
+.canvas{max-width:760px;margin:0 auto;padding:24px 16px;}
+button{font-family:inherit;cursor:pointer;border:.5px solid var(--border-strong);background:transparent;color:var(--text-primary);border-radius:var(--radius);padding:8px 14px;font-size:14px;transition:transform .15s ease,background .15s ease;}
+button:hover{background:var(--surface-1);}button:active{transform:scale(.98);}
+a{color:inherit;text-decoration:none;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.rev{animation:fadeUp .7s cubic-bezier(.2,.7,.3,1) both;}
+.ctaBtn{transition:transform .15s ease;}.ctaBtn:hover{transform:translateY(-1px);}
+.field{background:var(--surface-1);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:14px;color:var(--text-muted);}
+.lbl{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px;}
+@media (prefers-reduced-motion:reduce){.rev{animation:none;}}
+</style>
+</head>
+<body>
+<h1 class="sr-only">Solicitar alquiler</h1>
+<div class="canvas">
+<div style="background: var(--surface-2); border: .5px solid var(--border); border-radius: 12px; overflow: hidden;">
+
+  <div class="rev" style="display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: .5px solid var(--border);">
+    <a href="05-detalle-terreno.html" style="color: var(--text-secondary); font-size: 14px;"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver al terreno</a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: .9fr 1.1fr; gap: 18px; padding: 20px 18px 24px;">
+    <aside class="rev">
+      <div style="background: var(--surface-1); border: .5px solid var(--border); border-radius: 12px; padding: 14px;">
+        <span style="background: var(--brand-50); color: var(--brand-800); font-size: 11px; padding: 3px 8px; border-radius: 6px;">Agricultura</span>
+        <div style="font-size: 16px; font-weight: 500; margin: 10px 0 2px;">Finca El Tamarindo</div>
+        <div style="font-size: 13px; color: var(--text-muted);"><i class="ti ti-map-pin" aria-hidden="true"></i> Los Santos · Guararé</div>
+        <div style="display: flex; gap: 16px; margin: 14px 0;">
+          <div><div style="font-weight: 500;">5.2 ha</div><div style="font-size: 12px; color: var(--text-muted);">Área</div></div>
+          <div><div style="font-weight: 500;">May 2026</div><div style="font-size: 12px; color: var(--text-muted);">Disponible</div></div>
+        </div>
+        <div style="font-size: 22px; font-weight: 500;">$420<span style="font-size: 13px; color: var(--text-muted);">/mes</span></div>
+      </div>
+    </aside>
+
+    <section class="rev" style="animation-delay: .08s;">
+      <div style="font-size: 22px; font-weight: 500; letter-spacing: -.4px;">Solicitar alquiler</div>
+      <p style="color: var(--text-secondary); margin: 4px 0 16px;">Completa los datos para enviar tu solicitud al propietario.</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div><span class="lbl">Fecha de inicio</span><div class="field"><i class="ti ti-calendar" aria-hidden="true"></i> dd/mm/aaaa</div></div>
+        <div><span class="lbl">Fecha de fin</span><div class="field"><i class="ti ti-calendar" aria-hidden="true"></i> dd/mm/aaaa</div></div>
+      </div>
+      <div style="margin-top: 12px;"><span class="lbl">Uso del terreno</span><div class="field" style="display: flex; justify-content: space-between;">Agricultura <i class="ti ti-chevron-down" aria-hidden="true"></i></div></div>
+      <div style="margin-top: 12px;"><span class="lbl">Mensaje al propietario</span><div class="field" style="min-height: 72px;">Preséntate y cuéntale sobre tu proyecto…</div></div>
+
+      <div style="display: flex; gap: 8px; margin-top: 16px;">
+        <a href="07-trato.html" class="ctaBtn" style="flex: 1; text-align: center; background: var(--brand-800); color: #fff; border-color: var(--brand-800); padding: 11px;">Enviar solicitud</a>
+        <a href="05-detalle-terreno.html" class="ctaBtn" style="text-align: center; padding: 11px 16px;">Cancelar</a>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;"><i class="ti ti-info-circle" aria-hidden="true"></i> El propietario recibirá tu solicitud y podrá aceptarla o rechazarla. No se cobra nada hasta que sea aprobada.</p>
+    </section>
+  </div>
+
+</div>
+</div>
+</body>
+</html>

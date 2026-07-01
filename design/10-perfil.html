@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraShare — 10 Perfil</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+:root{--surface-0:#f6f5f0;--surface-1:#f0eee7;--surface-2:#ffffff;--border:rgba(0,0,0,.10);--border-strong:rgba(0,0,0,.18);--text-primary:#20201e;--text-secondary:#5f5e59;--text-muted:#8b8a82;--radius:8px;--brand-900:#173404;--brand-800:#27500A;--brand-700:#3B6D11;--brand-600:#639922;--brand-400:#97C459;--brand-100:#C0DD97;--brand-50:#EAF3DE;--amber-bg:#FAEEDA;--amber-fg:#854F0B;--green-bg:#EAF3DE;--green-fg:#27500A;--blue-bg:#E6F1FB;--blue-fg:#0C447C;--red-bg:#FCEBEB;--red-fg:#791F1F;--font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+@media (prefers-color-scheme:dark){:root{--surface-0:#1a1a18;--surface-1:#232320;--surface-2:#2b2b28;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.20);--text-primary:#f2f1ea;--text-secondary:#b8b7ae;--text-muted:#8b8a82;}}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--font-sans);line-height:1.6;-webkit-font-smoothing:antialiased;}
+.canvas{max-width:760px;margin:0 auto;padding:24px 16px;}
+button{font-family:inherit;cursor:pointer;border:.5px solid var(--border-strong);background:transparent;color:var(--text-primary);border-radius:var(--radius);padding:8px 14px;font-size:14px;transition:transform .15s ease,background .15s ease;}
+button:hover{background:var(--surface-1);}button:active{transform:scale(.98);}
+a{color:inherit;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.rev{animation:fadeUp .7s cubic-bezier(.2,.7,.3,1) both;}
+.ctaBtn{transition:transform .15s ease;}.ctaBtn:hover{transform:translateY(-1px);}
+.seg{display:inline-flex;background:var(--surface-1);border-radius:20px;padding:3px;gap:2px;}
+.seg button{border:0;background:transparent;border-radius:18px;padding:6px 16px;font-size:14px;color:var(--text-secondary);}
+.seg button.active{background:var(--brand-800);color:#fff;}
+.field{background:var(--surface-1);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:14px;}
+.lbl{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px;}
+.sw{width:40px;height:22px;border-radius:20px;background:var(--brand-700);position:relative;flex-shrink:0;}
+.sw::after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#fff;}
+.sw.off{background:var(--border-strong);}.sw.off::after{left:2px;right:auto;}
+@media (prefers-reduced-motion:reduce){.rev{animation:none;}}
+</style>
+</head>
+<body>
+<h1 class="sr-only">Mi perfil</h1>
+<div class="canvas">
+<div style="background: var(--surface-2); border: .5px solid var(--border); border-radius: 12px; overflow: hidden;">
+
+  <div class="rev" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: .5px solid var(--border);">
+    <div style="display: flex; align-items: center; gap: 8px;"><i class="ti ti-plant-2" style="font-size: 24px; color: var(--brand-700);" aria-hidden="true"></i><span style="font-size: 18px; font-weight: 500;">TerraShare</span></div>
+    <div class="seg"><a href="02-home-busco.html"><button class="active"><i class="ti ti-search" aria-hidden="true"></i> Busco</button></a><a href="03-home-ofrezco.html"><button><i class="ti ti-map-2" aria-hidden="true"></i> Ofrezco</button></a></div>
+    <div style="display: flex; align-items: center; gap: 8px;"><a href="02-home-busco.html" aria-label="Inicio"><div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand-50); color: var(--brand-800); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500;">ZH</div></a></div>
+  </div>
+
+  <div class="rev" style="padding: 24px 22px 8px;">
+    <div style="font-size: 24px; font-weight: 500; letter-spacing: -.4px;">Mi perfil</div>
+    <p style="color: var(--text-secondary); margin: 4px 0 0;">Administra tus datos y preferencias.</p>
+  </div>
+
+  <div class="rev" style="animation-delay: .06s; margin: 16px 22px; display: flex; align-items: center; gap: 16px; background: var(--surface-1); border: .5px solid var(--border); border-radius: 12px; padding: 16px;">
+    <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--brand-50); color: var(--brand-800); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 500;">ZH</div>
+    <div style="flex: 1;">
+      <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 18px; font-weight: 500;">Zhory Chan</span><span style="background: var(--brand-50); color: var(--brand-800); font-size: 11px; padding: 3px 8px; border-radius: 6px;">Usuario</span></div>
+      <div style="font-size: 13px; color: var(--text-muted);">zhorychan@gmail.com · Miembro desde jun 2026</div>
+    </div>
+    <button class="ctaBtn"><i class="ti ti-camera" aria-hidden="true"></i> Cambiar foto</button>
+  </div>
+
+  <div class="rev" style="animation-delay: .1s; margin: 0 22px 16px; border: .5px solid var(--border); border-radius: 12px; padding: 16px;">
+    <div style="font-size: 16px; font-weight: 500; margin-bottom: 14px;">Datos personales</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div><span class="lbl">Nombre completo</span><div class="field">Zhory Chan</div></div>
+      <div><span class="lbl">Correo <span style="color: var(--text-muted);">(no editable)</span></span><div class="field" style="color: var(--text-muted);">zhorychan@gmail.com</div></div>
+      <div><span class="lbl">Teléfono / WhatsApp</span><div class="field">+507 6123-4567</div></div>
+      <div><span class="lbl">Provincia</span><div class="field" style="display: flex; justify-content: space-between;">Panamá <i class="ti ti-chevron-down" aria-hidden="true"></i></div></div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; margin-top: 14px;"><button class="ctaBtn" style="background: var(--brand-800); color: #fff; border-color: var(--brand-800);">Guardar cambios</button></div>
+  </div>
+
+  <div class="rev" style="animation-delay: .14s; margin: 0 22px 16px; border: .5px solid var(--border); border-radius: 12px; padding: 16px;">
+    <div style="font-size: 16px; font-weight: 500; margin-bottom: 6px;">Preferencias</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: .5px solid var(--border);">
+      <div><div style="font-size: 14px;">Modo al iniciar</div><div style="font-size: 12px; color: var(--text-muted);">Qué vista ves al entrar</div></div>
+      <div class="seg"><button class="active">Busco</button><button>Ofrezco</button></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: .5px solid var(--border);">
+      <div><div style="font-size: 14px;">Notificaciones por correo</div><div style="font-size: 12px; color: var(--text-muted);">Solicitudes, mensajes y estados</div></div>
+      <div class="sw" role="switch" aria-checked="true" aria-label="Notificaciones por correo"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+      <div><div style="font-size: 14px;">Mostrar mi teléfono en el chat</div><div style="font-size: 12px; color: var(--text-muted);">Para contacto por WhatsApp</div></div>
+      <div class="sw off" role="switch" aria-checked="false" aria-label="Mostrar teléfono"></div>
+    </div>
+  </div>
+
+  <div class="rev" style="animation-delay: .18s; margin: 0 22px 22px; border: .5px solid var(--border); border-radius: 12px; padding: 16px;">
+    <div style="font-size: 16px; font-weight: 500; margin-bottom: 12px;">Cuenta</div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="ctaBtn"><i class="ti ti-key" aria-hidden="true"></i> Cambiar contraseña</button>
+      <a href="01-landing.html"><button class="ctaBtn"><i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión</button></a>
+    </div>
+    <div style="margin-top: 14px; padding: 12px; background: var(--red-bg); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <div><div style="font-size: 14px; font-weight: 500; color: var(--red-fg);">Eliminar cuenta</div><div style="font-size: 12px; color: var(--red-fg); opacity: .8;">Esta acción no se puede deshacer.</div></div>
+      <button class="ctaBtn" style="border-color: var(--red-fg); color: var(--red-fg);">Eliminar</button>
+    </div>
+  </div>
+
+</div>
+</div>
+</body>
+</html>

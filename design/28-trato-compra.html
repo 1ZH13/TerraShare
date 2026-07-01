@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraShare — 28 Trato (compra)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+:root{--surface-0:#f6f5f0;--surface-1:#f0eee7;--surface-2:#ffffff;--border:rgba(0,0,0,.10);--border-strong:rgba(0,0,0,.18);--text-primary:#20201e;--text-secondary:#5f5e59;--text-muted:#8b8a82;--radius:8px;--brand-900:#173404;--brand-800:#27500A;--brand-700:#3B6D11;--brand-50:#EAF3DE;--blue-bg:#E6F1FB;--blue-fg:#0C447C;--font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+@media (prefers-color-scheme:dark){:root{--surface-0:#1a1a18;--surface-1:#232320;--surface-2:#2b2b28;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.20);--text-primary:#f2f1ea;--text-secondary:#b8b7ae;--text-muted:#8b8a82;}}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--font-sans);line-height:1.6;}
+.canvas{max-width:760px;margin:0 auto;padding:24px 16px;}
+button{font-family:inherit;cursor:pointer;border:.5px solid var(--border-strong);background:transparent;color:var(--text-primary);border-radius:var(--radius);padding:8px 14px;font-size:14px;}
+a{color:inherit;text-decoration:none;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.rev{animation:fadeUp .7s cubic-bezier(.2,.7,.3,1) both;}
+.ctaBtn{transition:transform .15s ease;}.ctaBtn:hover{transform:translateY(-1px);}
+.dot{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;}
+@media (prefers-reduced-motion:reduce){.rev{animation:none;}}
+</style>
+</head>
+<body>
+<h1 class="sr-only">Trato de compra</h1>
+<div class="canvas">
+<div style="background: var(--surface-2); border: .5px solid var(--border); border-radius: 12px; overflow: hidden;">
+
+  <div class="rev" style="display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: .5px solid var(--border);">
+    <a href="02-home-busco.html" style="color: var(--text-secondary); font-size: 14px;"><i class="ti ti-arrow-left" aria-hidden="true"></i> Mis solicitudes</a>
+    <span style="margin-left: auto; font-size: 13px; color: var(--text-secondary);">Trato #c7d8e9</span>
+  </div>
+
+  <div class="rev" style="padding: 18px 22px; border-bottom: .5px solid var(--border); display: flex; gap: 14px; align-items: center;">
+    <div style="width: 56px; height: 44px; border-radius: 8px; background: var(--brand-100); display: flex; align-items: center; justify-content: center; color: var(--brand-800);"><i class="ti ti-photo" style="font-size: 20px;" aria-hidden="true"></i></div>
+    <div style="flex: 1;"><div style="font-weight: 500;">Parcela Río Indio <span style="background: var(--blue-bg); color: var(--blue-fg); font-size: 11px; padding: 2px 8px; border-radius: 6px;">Compra</span></div><div style="font-size: 13px; color: var(--text-muted);">Coclé · 3.8 ha · Oferta $46,000</div></div>
+    <span style="background: var(--brand-50); color: var(--brand-800); font-size: 12px; padding: 5px 12px; border-radius: 20px;">Oferta aceptada</span>
+  </div>
+
+  <div class="rev" style="animation-delay: .06s; display: flex; align-items: center; padding: 20px 22px; gap: 4px;">
+    <div style="flex: 1; text-align: center;"><div class="dot" style="background: var(--brand-800); color: #fff;"><i class="ti ti-check" aria-hidden="true"></i></div><div style="font-size: 11px; color: var(--brand-800); margin-top: 4px; font-weight: 500;">Oferta</div></div>
+    <div style="flex: 1; height: 2px; background: var(--brand-700);"></div>
+    <div style="flex: 1; text-align: center;"><div class="dot" style="background: var(--brand-800); color: #fff;"><i class="ti ti-check" aria-hidden="true"></i></div><div style="font-size: 11px; color: var(--brand-800); margin-top: 4px; font-weight: 500;">Aceptada</div></div>
+    <div style="flex: 1; height: 2px; background: var(--border-strong);"></div>
+    <div style="flex: 1; text-align: center;"><div class="dot" style="background: var(--brand-50); color: var(--brand-800); border: 1.5px solid var(--brand-700);"><i class="ti ti-cash" aria-hidden="true"></i></div><div style="font-size: 11px; color: var(--brand-800); margin-top: 4px; font-weight: 500;">Reserva</div></div>
+    <div style="flex: 1; height: 2px; background: var(--border);"></div>
+    <div style="flex: 1; text-align: center;"><div class="dot" style="background: var(--surface-1); color: var(--text-muted);"><i class="ti ti-building-bank" aria-hidden="true"></i></div><div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Cierre notaría</div></div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; padding: 4px 22px 22px;">
+    <div class="rev">
+      <div style="font-size: 14px; font-weight: 500; margin-bottom: 10px;">Actividad</div>
+      <div style="border-left: 2px solid var(--border); padding-left: 14px; display: grid; gap: 14px;">
+        <div><div style="font-size: 13px; font-weight: 500;">Oferta enviada</div><div style="font-size: 12px; color: var(--text-muted);">24 jun · Ofreciste $46,000</div></div>
+        <div><div style="font-size: 13px; font-weight: 500;">Oferta aceptada</div><div style="font-size: 12px; color: var(--text-muted);">25 jun · Carlos Vergara aceptó</div></div>
+        <div><div style="font-size: 13px; font-weight: 500; color: var(--brand-800);">Reserva pendiente</div><div style="font-size: 12px; color: var(--text-muted);">Paga la seña para reservar mientras coordinan el cierre</div></div>
+      </div>
+    </div>
+
+    <div class="rev" style="animation-delay: .1s;">
+      <div style="background: var(--surface-1); border: .5px solid var(--border); border-radius: 12px; padding: 16px;">
+        <div style="font-size: 13px; color: var(--text-muted);">Seña de reserva (5%)</div>
+        <div style="font-size: 24px; font-weight: 500; margin: 2px 0;">$2,300</div>
+        <a href="18-checkout-exito.html" class="ctaBtn" style="display: block; text-align: center; width: 100%; margin-top: 8px; background: var(--brand-800); color: #fff; border: .5px solid var(--brand-800); border-radius: var(--radius); padding: 10px;"><i class="ti ti-cash" aria-hidden="true"></i> Pagar reserva</a>
+        <a href="15-chats.html" class="ctaBtn" style="display: block; text-align: center; width: 100%; margin-top: 8px; border: .5px solid var(--border-strong); border-radius: var(--radius); padding: 10px;"><i class="ti ti-message-circle" aria-hidden="true"></i> Coordinar cierre</a>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 12px;"><i class="ti ti-building-bank" aria-hidden="true"></i> El pago total y la escritura se firman ante notaría. TerraShare no procesa la compra completa.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+</body>
+</html>

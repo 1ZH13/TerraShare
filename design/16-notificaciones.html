@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraShare — 16 Notificaciones</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+:root{--surface-0:#f6f5f0;--surface-1:#f0eee7;--surface-2:#ffffff;--border:rgba(0,0,0,.10);--border-strong:rgba(0,0,0,.18);--text-primary:#20201e;--text-secondary:#5f5e59;--text-muted:#8b8a82;--radius:8px;--brand-900:#173404;--brand-800:#27500A;--brand-700:#3B6D11;--brand-50:#EAF3DE;--amber-bg:#FAEEDA;--amber-fg:#854F0B;--green-bg:#EAF3DE;--green-fg:#27500A;--blue-bg:#E6F1FB;--blue-fg:#0C447C;--font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+@media (prefers-color-scheme:dark){:root{--surface-0:#1a1a18;--surface-1:#232320;--surface-2:#2b2b28;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.20);--text-primary:#f2f1ea;--text-secondary:#b8b7ae;--text-muted:#8b8a82;}}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--font-sans);line-height:1.6;}
+.canvas{max-width:760px;margin:0 auto;padding:24px 16px;}
+button{font-family:inherit;cursor:pointer;border:.5px solid var(--border-strong);background:transparent;color:var(--text-primary);border-radius:var(--radius);padding:8px 14px;font-size:14px;}
+a{color:inherit;text-decoration:none;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.rev{animation:fadeUp .7s cubic-bezier(.2,.7,.3,1) both;}
+.seg{display:inline-flex;background:var(--surface-1);border-radius:20px;padding:3px;gap:2px;}
+.seg button{border:0;background:transparent;border-radius:18px;padding:6px 16px;font-size:14px;color:var(--text-secondary);}
+.seg button.active{background:var(--brand-800);color:#fff;}
+.nic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;}
+@media (prefers-reduced-motion:reduce){.rev{animation:none;}}
+</style>
+</head>
+<body>
+<h1 class="sr-only">Notificaciones</h1>
+<div class="canvas">
+<div style="background: var(--surface-2); border: .5px solid var(--border); border-radius: 12px; overflow: hidden;">
+
+  <div class="rev" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: .5px solid var(--border);">
+    <a href="02-home-busco.html" style="display: flex; align-items: center; gap: 8px;"><i class="ti ti-plant-2" style="font-size: 24px; color: var(--brand-700);" aria-hidden="true"></i><span style="font-size: 18px; font-weight: 500;">TerraShare</span></a>
+    <div class="seg"><button class="active"><i class="ti ti-search" aria-hidden="true"></i> Busco</button><a href="03-home-ofrezco.html"><button><i class="ti ti-map-2" aria-hidden="true"></i> Ofrezco</button></a></div>
+    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--brand-50); color: var(--brand-800); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500;">ZH</div>
+  </div>
+
+  <div class="rev" style="display: flex; justify-content: space-between; align-items: center; padding: 22px 22px 12px;">
+    <div style="font-size: 22px; font-weight: 500; letter-spacing: -.4px;">Notificaciones</div>
+    <button style="border: 0; color: var(--brand-700); font-size: 13px;">Marcar todas como leídas</button>
+  </div>
+
+  <div class="rev" style="animation-delay: .06s; padding: 0 22px 22px; display: grid; gap: 8px;">
+    <a href="07-trato.html" style="display: flex; gap: 12px; align-items: center; background: var(--surface-1); border: .5px solid var(--border); border-radius: 12px; padding: 12px 14px;">
+      <div class="nic" style="background: var(--green-bg); color: var(--green-fg);"><i class="ti ti-check" aria-hidden="true"></i></div>
+      <div style="flex: 1;"><div style="font-size: 14px;"><b style="font-weight: 500;">Rosa Aguilar</b> aprobó tu solicitud de <b style="font-weight: 500;">Lote Vista Caisán</b></div><div style="font-size: 12px; color: var(--text-muted);">Hace 10 min</div></div>
+      <span style="width: 8px; height: 8px; background: var(--brand-700); border-radius: 50%;"></span>
+    </a>
+    <a href="15-chats.html" style="display: flex; gap: 12px; align-items: center; background: var(--surface-1); border: .5px solid var(--border); border-radius: 12px; padding: 12px 14px;">
+      <div class="nic" style="background: var(--blue-bg); color: var(--blue-fg);"><i class="ti ti-message-circle" aria-hidden="true"></i></div>
+      <div style="flex: 1;"><div style="font-size: 14px;">Nuevo mensaje de <b style="font-weight: 500;">Manuel Cedeño</b></div><div style="font-size: 12px; color: var(--text-muted);">Hace 1 h</div></div>
+      <span style="width: 8px; height: 8px; background: var(--brand-700); border-radius: 50%;"></span>
+    </a>
+    <div style="display: flex; gap: 12px; align-items: center; background: var(--surface-2); border: .5px solid var(--border); border-radius: 12px; padding: 12px 14px;">
+      <div class="nic" style="background: var(--amber-bg); color: var(--amber-fg);"><i class="ti ti-credit-card" aria-hidden="true"></i></div>
+      <div style="flex: 1;"><div style="font-size: 14px; color: var(--text-secondary);">Tienes un pago pendiente en <b style="font-weight: 500; color: var(--text-primary);">Lote Vista Caisán</b></div><div style="font-size: 12px; color: var(--text-muted);">Ayer</div></div>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center; background: var(--surface-2); border: .5px solid var(--border); border-radius: 12px; padding: 12px 14px;">
+      <div class="nic" style="background: var(--brand-50); color: var(--brand-800);"><i class="ti ti-bell" aria-hidden="true"></i></div>
+      <div style="flex: 1;"><div style="font-size: 14px; color: var(--text-secondary);">Bienvenido a TerraShare. Completa tu perfil para empezar.</div><div style="font-size: 12px; color: var(--text-muted);">Hace 3 días</div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+</body>
+</html>
