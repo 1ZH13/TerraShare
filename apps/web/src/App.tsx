@@ -23,6 +23,7 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import UserDashboardLayout from "./components/UserDashboardLayout";
 import PublicHeader from "./components/PublicHeader";
+import StyleguidePage from "./pages/StyleguidePage";
 import { getAdminSummary, listAdminRentalRequests } from "./services/adminApi";
 import { isAdminUser } from "./components/authDisplay";
 
@@ -499,6 +500,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/styleguide" element={<StyleguidePage />} />
       <Route path="/catalog" element={<UserDashboardLayout><CatalogPage /></UserDashboardLayout>} />
       <Route path="/lands/:id" element={<LandDetailPage />} />
       <Route path="/reserve/:landId" element={<ProtectedRoute><ReservePage /></ProtectedRoute>} />

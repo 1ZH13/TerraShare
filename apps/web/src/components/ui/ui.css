@@ -1,0 +1,506 @@
+/* TerraShare — primitivos del sistema de diseño editorial (issue #134).
+   Clases con prefijo `ds-` para no colisionar con el CSS legacy (styles.css). */
+
+/* ---------- Button ---------- */
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--ts-font-sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1;
+  border-radius: var(--ts-radius);
+  border: 1px solid transparent;
+  padding: 0.7rem 1.15rem;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, color 0.15s ease;
+}
+
+.ds-btn:active {
+  transform: scale(0.98);
+}
+
+.ds-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ts-ring);
+}
+
+.ds-btn:disabled,
+.ds-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ds-btn--primary {
+  background: var(--ts-green);
+  color: var(--ts-on-green);
+  border-color: var(--ts-green);
+}
+
+.ds-btn--primary:hover:not(:disabled) {
+  background: var(--ts-green-ink);
+  border-color: var(--ts-green-ink);
+}
+
+.ds-btn--secondary {
+  background: var(--ts-surface);
+  color: var(--ts-text);
+  border-color: var(--ts-border);
+}
+
+.ds-btn--secondary:hover:not(:disabled) {
+  background: var(--ts-paper-tint);
+  border-color: var(--ts-beige-2);
+}
+
+.ds-btn--ghost {
+  background: transparent;
+  color: var(--ts-text);
+  border-color: transparent;
+}
+
+.ds-btn--ghost:hover:not(:disabled) {
+  background: var(--ts-tint-green);
+}
+
+.ds-btn--danger {
+  background: var(--ts-clay);
+  color: var(--ts-on-green);
+  border-color: var(--ts-clay);
+}
+
+.ds-btn--danger:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.ds-btn--sm {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.ds-btn--lg {
+  padding: 0.9rem 1.6rem;
+  font-size: 1.05rem;
+}
+
+.ds-btn--block {
+  width: 100%;
+}
+
+/* ---------- Card ---------- */
+.ds-card {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--ts-shadow-sm);
+}
+
+.ds-card--flat {
+  box-shadow: none;
+}
+
+.ds-card--interactive {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.ds-card--interactive:hover {
+  transform: translateY(-3px);
+  border-color: var(--ts-sage-3);
+  box-shadow: var(--ts-shadow);
+}
+
+/* ---------- Badge ---------- */
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: var(--ts-radius-pill);
+  font-family: var(--ts-font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+}
+
+.ds-badge--green {
+  background: var(--ts-tint-green);
+  color: var(--ts-green);
+}
+
+.ds-badge--clay {
+  background: var(--ts-clay-tint);
+  color: var(--ts-clay);
+}
+
+.ds-badge--beige {
+  background: var(--ts-beige);
+  color: var(--ts-green-soft);
+}
+
+.ds-badge--neutral {
+  background: var(--ts-paper-tint);
+  color: var(--ts-text-secondary);
+  border-color: var(--ts-border);
+}
+
+.ds-badge__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ---------- Field / Input ---------- */
+.ds-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ds-field__label {
+  font-family: var(--ts-font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ts-text);
+}
+
+.ds-field__required {
+  color: var(--ts-clay);
+  margin-left: 0.15rem;
+}
+
+.ds-field__hint {
+  font-size: 0.8rem;
+  color: var(--ts-text-muted);
+}
+
+.ds-field__error {
+  font-size: 0.8rem;
+  color: var(--ts-clay);
+  font-weight: 500;
+}
+
+.ds-input {
+  width: 100%;
+  font-family: var(--ts-font-sans);
+  font-size: 0.95rem;
+  color: var(--ts-text);
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+  padding: 0.7rem 0.9rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ds-input::placeholder {
+  color: var(--ts-text-muted);
+}
+
+.ds-input:focus {
+  outline: none;
+  border-color: var(--ts-green);
+  box-shadow: var(--ts-ring);
+}
+
+.ds-input--invalid {
+  border-color: var(--ts-clay);
+}
+
+.ds-input--invalid:focus {
+  box-shadow: 0 0 0 3px rgba(184, 98, 63, 0.24);
+}
+
+/* ---------- Navbar ---------- */
+.ds-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  padding: 0.65rem 1.1rem;
+}
+
+.ds-navbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--ts-font-serif);
+  font-size: 1.3rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ts-green);
+  text-decoration: none;
+}
+
+.ds-navbar__center {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ds-navbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* switch Busco / Ofrezco (segmented control) */
+.ds-segment {
+  display: inline-flex;
+  background: var(--ts-tint-green);
+  border-radius: var(--ts-radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+
+.ds-segment__btn {
+  border: 0;
+  background: transparent;
+  border-radius: var(--ts-radius-pill);
+  padding: 0.4rem 1rem;
+  font-family: var(--ts-font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ts-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ds-segment__btn:hover:not(.is-active) {
+  color: var(--ts-text);
+}
+
+.ds-segment__btn.is-active {
+  background: var(--ts-green);
+  color: var(--ts-on-green);
+}
+
+.ds-segment__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ts-ring);
+}
+
+/* menú de usuario */
+.ds-usermenu {
+  position: relative;
+}
+
+.ds-usermenu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--ts-paper-tint);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-pill);
+  padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+  font-family: var(--ts-font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ts-text);
+  cursor: pointer;
+}
+
+.ds-usermenu__trigger:hover {
+  background: var(--ts-tint-green);
+}
+
+.ds-usermenu__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ts-ring);
+}
+
+.ds-usermenu__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--ts-green);
+  color: var(--ts-on-green);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ds-usermenu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  min-width: 200px;
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+  box-shadow: var(--ts-shadow);
+  padding: 0.4rem;
+  z-index: 50;
+}
+
+.ds-usermenu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ts-radius-sm);
+  padding: 0.55rem 0.7rem;
+  font-family: var(--ts-font-sans);
+  font-size: 0.9rem;
+  color: var(--ts-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ds-usermenu__item:hover {
+  background: var(--ts-tint-green);
+}
+
+.ds-usermenu__item--danger {
+  color: var(--ts-clay);
+}
+
+.ds-usermenu__sep {
+  height: 1px;
+  background: var(--ts-border);
+  margin: 0.35rem 0.2rem;
+}
+
+/* ---------- Sidebar (admin) ---------- */
+.ds-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--ts-green-ink);
+  color: var(--ts-on-green);
+  border-radius: var(--ts-radius-lg);
+  padding: 1.1rem 0.85rem;
+  min-width: 232px;
+}
+
+.ds-sidebar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--ts-font-serif);
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--ts-on-green);
+  text-decoration: none;
+  padding: 0.4rem 0.7rem 1rem;
+}
+
+.ds-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--ts-radius);
+  color: var(--ts-sage-3);
+  font-family: var(--ts-font-sans);
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ds-sidebar__item:hover {
+  background: rgba(244, 239, 228, 0.08);
+  color: var(--ts-on-green);
+}
+
+.ds-sidebar__item.is-active {
+  background: var(--ts-surface);
+  color: var(--ts-green-ink);
+  font-weight: 600;
+}
+
+.ds-sidebar__sep {
+  height: 1px;
+  background: rgba(244, 239, 228, 0.12);
+  margin: 0.5rem 0.4rem;
+}
+
+.ds-sidebar__spacer {
+  flex: 1;
+}
+
+/* ---------- Stepper ---------- */
+.ds-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ds-stepper__track {
+  position: relative;
+  height: 4px;
+  background: var(--ts-tint-green-3);
+  border-radius: var(--ts-radius-pill);
+  overflow: hidden;
+}
+
+.ds-stepper__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ts-green);
+  border-radius: var(--ts-radius-pill);
+  transition: width 0.3s ease;
+}
+
+.ds-stepper__labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ds-stepper__label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--ts-font-sans);
+  font-size: 0.82rem;
+  color: var(--ts-text-muted);
+}
+
+.ds-stepper__label.is-active {
+  color: var(--ts-green);
+  font-weight: 600;
+}
+
+.ds-stepper__label.is-done {
+  color: var(--ts-text-secondary);
+}
+
+.ds-stepper__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--ts-tint-green-3);
+  color: var(--ts-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ds-stepper__label.is-active .ds-stepper__index,
+.ds-stepper__label.is-done .ds-stepper__index {
+  background: var(--ts-green);
+  color: var(--ts-on-green);
+}

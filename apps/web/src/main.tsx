@@ -4,6 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
 import App from "./App";
 import "./styles.css";
+import "./styles/tokens.css";
+import "./styles/base.css";
+import "./components/ui/ui.css";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
