@@ -3,6 +3,13 @@
 Maquetas HTML/CSS del rediseño de TerraShare. Son **prototipos visuales**, no la app real
 (esa se implementa luego en React). Sirven para acordar el look y el flujo antes de codear.
 
+## Dirección visual oficial
+El estilo aprobado es **editorial** (papel crema, verde bosque, acento terracota, serif Spectral).
+- Fuente de verdad visual: **`prototipo-editorial.html`** — prototipo navegable de las 26 pantallas en este estilo (hecho con Claude Design).
+- Tokens y guía de implementación: **`DESIGN_SYSTEM.md`**.
+
+Las maquetas estáticas `01`–`28` siguen siendo válidas como referencia de **contenido y flujo** de cada pantalla; el estilo final lo marca el prototipo editorial.
+
 ## Cómo verlas
 **Empieza por `00-index.html`** — es el mapa de todas las pantallas; desde ahí saltas a cualquiera.
 El prototipo es **navegable**: dentro de cada pantalla los botones principales llevan a la
