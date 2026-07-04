@@ -364,7 +364,6 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/styleguide" element={<StyleguidePage />} />
-      <Route path="/catalog" element={<UserDashboardLayout><CatalogPage /></UserDashboardLayout>} />
       <Route path="/lands/:id" element={<LandDetailPage />} />
       <Route path="/reserve/:landId" element={<ProtectedRoute><ReservePage /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
@@ -374,6 +373,7 @@ export default function App() {
       <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<HomePage />} />
+        <Route path="/catalog" element={<CatalogPage />} />
       </Route>
       <Route path="/dashboard/lands" element={<ProtectedRoute><UserDashboardLayout><MyLandsPage /></UserDashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard/chats" element={<ProtectedRoute><UserDashboardLayout><ChatsPage /></UserDashboardLayout></ProtectedRoute>} />
