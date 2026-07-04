@@ -1,7 +1,7 @@
-import { useEffect, useId, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import type { LandDto } from "@terrashare/shared";
-import { Input } from "../components/ui";
+import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon } from "lucide-react";
 import { listLands } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
 import "./catalog.css";
@@ -17,36 +17,21 @@ const USE_LABELS: Record<string, string> = {
   otro: "Otro",
 };
 
+const PRICE_OPTIONS = [
+  { label: "Precio", value: 1_000_000 },
+  { label: "Hasta $500", value: 500 },
+  { label: "Hasta $1,000", value: 1000 },
+  { label: "Hasta $2,000", value: 2000 },
+  { label: "Hasta $5,000", value: 5000 },
+];
+
 function formatUse(use?: string): string {
   if (!use) return "Terreno";
   return USE_LABELS[use] ?? use;
 }
 
-function PinIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
-
-function PhotoIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m21 15-3.5-3.5L9 20" />
-    </svg>
-  );
-}
-
 export default function CatalogPage() {
   const navigate = useNavigate();
-  const searchId = useId();
-  const useId_ = useId();
-  const provinceId = useId();
-  const priceId = useId();
 
   const [lands, setLands] = useState<LandDto[]>([]);
   const [status, setStatus] = useState<LoadState>("loading");
@@ -54,7 +39,7 @@ export default function CatalogPage() {
   const [query, setQuery] = useState("");
   const [use, setUse] = useState("todos");
   const [province, setProvince] = useState("todas");
-  const [maxPrice, setMaxPrice] = useState(3000);
+  const [maxPrice, setMaxPrice] = useState(1_000_000);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,74 +87,100 @@ export default function CatalogPage() {
   const selectedLand = filtered.find((l) => l.id === selectedId) ?? filtered[0] ?? null;
 
   return (
-    <>
-      <div className="cat-head">
-        <h1 className="ts-title">Terrenos disponibles</h1>
-        <p>Explora en el mapa y encuentra el terreno ideal en Panamá.</p>
-      </div>
-
+    <div className="cat">
+      {/* barra de filtros */}
       <div className="cat-filters">
-        <div className="cat-filter">
-          <label htmlFor={searchId}>Buscar</label>
-          <Input
-            id={searchId}
+        <div className="cat-search">
+          <span className="cat-search__icon">
+            <Search size={18} />
+          </span>
+          <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Provincia, uso o palabra clave…"
+            placeholder="Buscar terreno…"
+            aria-label="Buscar terreno"
           />
         </div>
-        <div className="cat-filter">
-          <label htmlFor={useId_}>Uso</label>
-          <select id={useId_} value={use} onChange={(e) => setUse(e.target.value)}>
-            <option value="todos">Todos</option>
+
+        <label className="cat-pill">
+          <span className="cat-pill__icon">
+            <Sprout size={15} />
+          </span>
+          <select value={use} onChange={(e) => setUse(e.target.value)} aria-label="Filtrar por uso">
+            <option value="todos">Uso</option>
             {useOptions.map((opt) => (
               <option key={opt} value={opt}>
                 {formatUse(opt)}
               </option>
             ))}
           </select>
-        </div>
-        <div className="cat-filter">
-          <label htmlFor={provinceId}>Provincia</label>
-          <select id={provinceId} value={province} onChange={(e) => setProvince(e.target.value)}>
-            <option value="todas">Todas</option>
+          <span className="cat-pill__chev">
+            <ChevronDown size={14} />
+          </span>
+        </label>
+
+        <label className="cat-pill">
+          <span className="cat-pill__icon">
+            <MapPin size={15} />
+          </span>
+          <select
+            value={province}
+            onChange={(e) => setProvince(e.target.value)}
+            aria-label="Filtrar por provincia"
+          >
+            <option value="todas">Provincia</option>
             {provinceOptions.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
               </option>
             ))}
           </select>
-        </div>
-        <div className="cat-filter">
-          <label htmlFor={priceId}>Precio máx.</label>
-          <input
-            id={priceId}
-            type="range"
-            min={300}
-            max={3000}
-            step={50}
+          <span className="cat-pill__chev">
+            <ChevronDown size={14} />
+          </span>
+        </label>
+
+        <label className="cat-pill">
+          <span className="cat-pill__icon">
+            <DollarSign size={15} />
+          </span>
+          <select
             value={maxPrice}
             onChange={(e) => setMaxPrice(Number(e.target.value))}
-          />
-          <span className="cat-range__value">${maxPrice.toLocaleString("es-PA")}/mes</span>
-        </div>
-        {/* TODO(#140): el tipo de operación (alquiler/venta) aún no existe en el
-            backend; el filtro se muestra deshabilitado para no simular que filtra. */}
-        <div className="cat-filter">
-          <label aria-hidden="true">&nbsp;</label>
-          <span className="cat-soon" role="note" title="Disponible próximamente">
-            Alquiler / Venta
-            <span className="cat-soon__tag">Próximamente</span>
+            aria-label="Filtrar por precio"
+          >
+            {PRICE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <span className="cat-pill__chev">
+            <ChevronDown size={14} />
           </span>
-        </div>
+        </label>
+
+        {/* TODO(#140): el tipo de operación (alquiler/venta) aún no existe en el
+            backend; el filtro se muestra como "próximamente". */}
+        <span className="cat-pill cat-pill--soon" role="note" title="Disponible próximamente">
+          <span className="cat-pill__icon">
+            <Tag size={15} />
+          </span>
+          Alquiler / Venta
+          <span className="cat-soon__tag">Pronto</span>
+        </span>
       </div>
 
-      <div className="cat-meta">
-        {status === "ready" ? `${filtered.length} terreno${filtered.length === 1 ? "" : "s"}` : " "}
-      </div>
+      {/* lista + mapa */}
+      <div className="cat-body">
+        <div className="cat-listcol">
+          <div className="cat-listhead">
+            {status === "ready"
+              ? `${filtered.length} terreno${filtered.length === 1 ? "" : "s"} · ordenar por `
+              : "Cargando terrenos · "}
+            <strong>Recientes</strong>
+          </div>
 
-      <div className="cat-workspace">
-        <div>
           {status === "loading" ? (
             <div className="cat-list">
               <div className="cat-skeleton" />
@@ -187,31 +198,23 @@ export default function CatalogPage() {
               {filtered.map((land) => {
                 const price = land.priceRule?.pricePerMonth;
                 return (
-                  <div
+                  <button
                     key={land.id}
+                    type="button"
                     className={`cat-card ${selectedLand?.id === land.id ? "is-active" : ""}`}
-                    role="button"
-                    tabIndex={0}
                     onClick={() => setSelectedId(land.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setSelectedId(land.id);
-                      }
-                    }}
                     onDoubleClick={() => navigate(`/lands/${land.id}`)}
                   >
                     <div className="cat-card__thumb" aria-hidden="true">
-                      <PhotoIcon />
+                      <ImageIcon size={24} strokeWidth={1.5} />
                     </div>
                     <div className="cat-card__body">
                       <div className="cat-card__top">
                         <span className="cat-card__title">{land.title}</span>
-                        <span className="ds-badge ds-badge--green">{formatUse(land.allowedUses?.[0])}</span>
+                        <span className="cat-card__badge">{formatUse(land.allowedUses?.[0])}</span>
                       </div>
                       <div className="cat-card__meta">
-                        <PinIcon />
-                        {land.location?.province} · {land.area} ha
+                        <MapPin size={14} /> {land.location?.province} · {land.area} ha
                       </div>
                       <div className="cat-card__price">
                         {typeof price === "number" ? (
@@ -220,36 +223,41 @@ export default function CatalogPage() {
                             <span>/mes</span>
                           </>
                         ) : (
-                          <span>Precio a consultar</span>
+                          <span style={{ fontSize: "14px" }}>Precio a consultar</span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        className="ds-btn ds-btn--ghost ds-btn--sm"
-                        style={{ marginTop: "0.5rem" }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/lands/${land.id}`);
-                        }}
-                      >
-                        Ver detalle
-                      </button>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           )}
         </div>
 
-        <div className="cat-map">
+        <div className="cat-mapcol">
           <PanamaMap
             lands={filtered}
             selectedLand={selectedLand}
             onSelectLand={(land) => setSelectedId(land.id)}
           />
+          {selectedLand && (
+            <div className="cat-mapcard">
+              <div style={{ minWidth: 0 }}>
+                <div className="cat-mapcard__title">{selectedLand.title}</div>
+                <div className="cat-mapcard__sub">
+                  {selectedLand.location?.province}
+                  {typeof selectedLand.priceRule?.pricePerMonth === "number"
+                    ? ` · $${selectedLand.priceRule.pricePerMonth.toLocaleString("es-PA")}/mes`
+                    : ""}
+                </div>
+              </div>
+              <Link to={`/lands/${selectedLand.id}`} className="cat-mapcard__go">
+                Ver
+              </Link>
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

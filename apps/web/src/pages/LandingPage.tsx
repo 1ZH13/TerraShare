@@ -1,114 +1,25 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import type { LandDto } from "@terrashare/shared";
-import { Badge, Button, Card } from "../components/ui";
+import type { LandDto, LandUse } from "@terrashare/shared";
+import {
+  Sprout,
+  ArrowRight,
+  Droplets,
+  ShieldCheck,
+  Waves,
+  Handshake,
+  BadgeCheck,
+  MapPin,
+  Quote,
+  ImageIcon,
+} from "lucide-react";
 import { listLands } from "../services/api";
 import { isAdminUser } from "../components/authDisplay";
 import "./landing.css";
 
-// ─── Iconos inline (el app no carga el webfont Tabler del prototipo) ──────────
-type IconProps = { size?: number };
-
-const stroke = {
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-};
-
-function LeafIcon({ size = 26 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-      <path d="M2 21c0-3 1.85-5.36 5.08-6" />
-    </svg>
-  );
-}
-
-function MapSearchIcon({ size = 24 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <path d="M11 18.5 9 20l-6-3V4l6 3 6-3 6 3v6" />
-      <path d="M9 7v13M15 4v8" />
-      <circle cx="18" cy="18" r="3" />
-      <path d="m20.5 20.5 1.5 1.5" />
-    </svg>
-  );
-}
-
-function UploadIcon({ size = 24 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-      <path d="M7 9l5-5 5 5M12 4v12" />
-    </svg>
-  );
-}
-
-function ShieldIcon({ size = 24 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  );
-}
-
-function CheckIcon({ size = 18 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
-
-function LockIcon({ size = 24 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <rect x="3" y="11" width="18" height="10" rx="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
-function PinIcon({ size = 15 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
-
-function TargetIcon({ size = 22 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="5" />
-      <circle cx="12" cy="12" r="1" />
-    </svg>
-  );
-}
-
-function EyeIcon({ size = 22 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-// ─── Contenido estático ───────────────────────────────────────────────────────
-const HOW = [
-  { icon: <MapSearchIcon />, title: "Explora con mapa", desc: "Filtra por provincia, uso, área y precio." },
-  { icon: <UploadIcon />, title: "Publica en minutos", desc: "Sube fotos, ubicación y condiciones." },
-  { icon: <ShieldIcon />, title: "Cierra seguro", desc: "Chat, acuerdo y pago en un solo lugar." },
-];
-
-const USE_LABELS: Record<string, string> = {
+// ─── Contenido estático (fiel al prototipo) ───────────────────────────────────
+const USE_LABELS: Record<LandUse, string> = {
   agricultura: "Agricultura",
   ganaderia: "Ganadería",
   forestal: "Forestal",
@@ -117,35 +28,87 @@ const USE_LABELS: Record<string, string> = {
   otro: "Otro",
 };
 
-function formatUse(use?: string): string {
-  if (!use) return "Terreno";
-  return USE_LABELS[use] ?? use;
+const BENEFITS = [
+  { icon: ShieldCheck, title: "Información verificada", desc: "Área, uso y linderos revisados." },
+  { icon: Waves, title: "Agua y acceso", desc: "Fuentes y vías confirmadas." },
+  { icon: Handshake, title: "Trato directo", desc: "Hablas con el dueño real." },
+  { icon: BadgeCheck, title: "Sin comisiones", desc: "Explora y solicita gratis." },
+];
+
+const STEPS = [
+  { num: "01", title: "Explora", desc: "Filtra por provincia, uso y presupuesto en el mapa." },
+  { num: "02", title: "Solicita", desc: "Envía tu interés al propietario en un clic." },
+  { num: "03", title: "Acuerda", desc: "Negocia fechas y condiciones por chat." },
+  { num: "04", title: "Produce", desc: "Empieza a trabajar tu nueva tierra." },
+];
+
+// Ejemplos del prototipo — se usan como respaldo si aún no hay terrenos publicados.
+type FeaturedCard = {
+  id: string;
+  title: string;
+  use: string;
+  area: number;
+  province: string;
+  price: number | null;
+  to: string;
+};
+
+const SAMPLE_FEATURED: FeaturedCard[] = [
+  { id: "s1", title: "Finca El Tamarindo", use: "Ganadería", area: 5.2, province: "Los Santos", price: 420, to: "/catalog" },
+  { id: "s2", title: "Lote Vista Caisán", use: "Agricultura", area: 8.0, province: "Chiriquí", price: 560, to: "/catalog" },
+  { id: "s3", title: "Parcela Río Indio", use: "Mixto", area: 6.4, province: "Coclé", price: 390, to: "/catalog" },
+];
+
+function toFeatured(land: LandDto): FeaturedCard {
+  return {
+    id: land.id,
+    title: land.title,
+    use: USE_LABELS[land.allowedUses?.[0]] ?? "Terreno",
+    area: land.area,
+    province: land.location?.province ?? "Panamá",
+    price: land.priceRule?.pricePerMonth ?? null,
+    to: `/lands/${land.id}`,
+  };
 }
 
-function TeaserCard({ land }: { land: LandDto }) {
-  const price = land.priceRule?.pricePerMonth;
+function PhotoPlaceholder({ label, className }: { label: string; className: string }) {
   return (
-    <Link to={`/lands/${land.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-      <Card interactive>
-        <Badge tone="green">{formatUse(land.allowedUses?.[0])}</Badge>
-        <h3 className="ts-title lp-landcard__title">{land.title}</h3>
-        <div className="lp-landcard__meta">
-          <PinIcon />
-          <span>
-            {land.location?.province} · {land.area} ha
+    <div className={className} aria-hidden="true">
+      <ImageIcon size={26} strokeWidth={1.5} />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function LandCard({ card }: { card: FeaturedCard }) {
+  return (
+    <Link to={card.to} className="lp-card">
+      <PhotoPlaceholder label="Foto terreno" className="lp-photo lp-card__photo" />
+      <div className="lp-card__body">
+        <div className="lp-card__top">
+          <span className="lp-card__badge">{card.use}</span>
+          <span className="lp-card__area">{card.area} ha</span>
+        </div>
+        <h3 className="lp-card__title">{card.title}</h3>
+        <div className="lp-card__loc">
+          <MapPin size={14} /> {card.province}
+        </div>
+        <div className="lp-card__foot">
+          <span className="lp-card__price">
+            {typeof card.price === "number" ? (
+              <>
+                ${card.price.toLocaleString("es-PA")}
+                <span>/mes</span>
+              </>
+            ) : (
+              "A consultar"
+            )}
+          </span>
+          <span className="lp-card__go">
+            <ArrowRight size={16} />
           </span>
         </div>
-        <div className="lp-landcard__price">
-          {typeof price === "number" ? (
-            <>
-              ${price.toLocaleString("es-PA")}
-              <span>/mes</span>
-            </>
-          ) : (
-            <span>Precio a consultar</span>
-          )}
-        </div>
-      </Card>
+      </div>
     </Link>
   );
 }
@@ -153,291 +116,213 @@ function TeaserCard({ land }: { land: LandDto }) {
 export default function LandingPage() {
   const { isSignedIn, user } = useUser();
   const admin = isAdminUser(user);
-  const [lands, setLands] = useState<LandDto[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [featured, setFeatured] = useState<FeaturedCard[]>(SAMPLE_FEATURED);
 
   useEffect(() => {
     let active = true;
-    listLands({ sort: "createdAt", order: "desc", pageSize: 2 })
+    listLands({ sort: "createdAt", order: "desc", pageSize: 3 })
       .then((data) => {
-        if (!active) return;
-        setLands(data.slice(0, 2));
-        setStatus("ready");
+        if (!active || data.length === 0) return;
+        setFeatured(data.slice(0, 3).map(toFeatured));
       })
       .catch((err) => {
         console.error("Error cargando terrenos destacados:", err);
-        if (active) setStatus("error");
       });
     return () => {
       active = false;
     };
   }, []);
 
-  const dashboardTo = admin ? "/dashboard/admin" : "/dashboard";
-  const lockedTo = isSignedIn ? "/catalog" : "/register";
-  const lockedCta = isSignedIn ? "Ver catálogo" : "Crear cuenta";
-
-  const scrollToHow = () => {
-    document.getElementById("como-funciona")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const catalogTo = isSignedIn ? "/catalog" : "/register";
+  const publishTo = isSignedIn ? (admin ? "/dashboard/admin" : "/dashboard/lands") : "/register";
 
   return (
     <div className="lp">
-      {/* Header público minimal */}
-      <header className="lp-header">
+      {/* ── 01 · Header ─────────────────────────────────────────────── */}
+      <nav className="lp-nav">
         <Link to="/" className="lp-brand" aria-label="TerraShare, inicio">
-          <LeafIcon size={28} />
-          TerraShare
+          <span className="lp-brand__mark">
+            <Sprout size={30} strokeWidth={1.8} />
+          </span>
+          <span className="lp-brand__name">TerraShare</span>
         </Link>
-        <div className="lp-header-actions">
+        <div className="lp-nav__links">
+          <Link to={catalogTo} className="lp-nav__link">
+            Catálogo
+          </Link>
+          <a href="#como-funciona" className="lp-nav__link">
+            Cómo funciona
+          </a>
           {isSignedIn ? (
-            <Link to={dashboardTo} className="ds-btn ds-btn--primary">
-              {admin ? "Panel de admin" : "Mi panel"}
+            <Link to={admin ? "/dashboard/admin" : "/dashboard"} className="lp-nav__link lp-nav__link--accent">
+              Mi panel
             </Link>
           ) : (
-            <>
-              <Link to="/login" className="ds-btn ds-btn--ghost">
-                Iniciar sesión
-              </Link>
-              <Link to="/register" className="ds-btn ds-btn--primary">
-                Crear cuenta
-              </Link>
-            </>
+            <Link to="/login" className="lp-nav__link lp-nav__link--accent">
+              Iniciar sesión
+            </Link>
           )}
+          <Link to={publishTo} className="lp-nav__cta">
+            Publicar terreno
+          </Link>
+        </div>
+      </nav>
+
+      {/* ── Hero ────────────────────────────────────────────────────── */}
+      <header className="lp-hero">
+        <div>
+          <div className="lp-eyebrow lp-up">
+            <Sprout size={16} strokeWidth={2} /> Tierras productivas en Panamá
+          </div>
+          <h1 className="lp-hero__title lp-up-1">
+            Tierra fértil
+            <br />
+            para quienes la
+            <br />
+            saben <em>trabajar</em>.
+          </h1>
+          <p className="lp-hero__lede lp-up-2">
+            Conectamos a ganaderos y agricultores con dueños de tierra en toda Panamá. Explora, compara
+            agua y acceso, y solicita — sin intermediarios ni comisiones ocultas.
+          </p>
+          <div className="lp-hero__actions lp-up-3">
+            <Link to={catalogTo} className="lp-btn lp-btn--primary">
+              Explorar catálogo <ArrowRight size={18} />
+            </Link>
+            <a href="#como-funciona" className="lp-btn lp-btn--ghost">
+              Ver cómo funciona
+            </a>
+          </div>
+          <div className="lp-herostats lp-up-4">
+            <div>
+              <div className="lp-herostat__value">+120</div>
+              <div className="lp-herostat__label">terrenos activos</div>
+            </div>
+            <div className="lp-herostat__rule" />
+            <div>
+              <div className="lp-herostat__value">6</div>
+              <div className="lp-herostat__label">provincias</div>
+            </div>
+            <div className="lp-herostat__rule" />
+            <div>
+              <div className="lp-herostat__value">2 días</div>
+              <div className="lp-herostat__label">respuesta prom.</div>
+            </div>
+          </div>
+        </div>
+        <div className="lp-heroart">
+          <PhotoPlaceholder
+            label="Foto — potrero / cultivo al amanecer"
+            className="lp-photo lp-photo--hero lp-heroart__photo"
+          />
+          <div className="lp-chip lp-chip--water">
+            <span className="lp-chip--water__icon">
+              <Droplets size={21} />
+            </span>
+            <div>
+              <div className="lp-chip--water__k">Agua confirmada</div>
+              <div className="lp-chip--water__v">Pozo + Río</div>
+            </div>
+          </div>
+          <div className="lp-chip lp-chip--price">
+            <div className="lp-chip--price__k">Desde</div>
+            <div className="lp-chip--price__v">
+              $420<span>/mes</span>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="lp-hero ts-fade-up">
-        <span className="lp-hero__badge">Alquiler y venta de tierra en Panamá</span>
-        <h1 className="ts-display lp-hero__title">Encuentra, publica y alquila tierra productiva</h1>
-        <p className="lp-hero__subtitle">
-          Conectamos a quien tiene tierra con quien la necesita. Claro, seguro y sin intermediarios.
-        </p>
-        <div className="lp-hero__actions">
-          {isSignedIn ? (
-            <Link to="/catalog" className="ds-btn ds-btn--primary ds-btn--lg">
-              Explorar catálogo
-            </Link>
-          ) : (
-            <Link to="/register" className="ds-btn ds-btn--primary ds-btn--lg">
-              Crear cuenta gratis
-            </Link>
-          )}
-          <Button variant="secondary" size="lg" onClick={scrollToHow}>
-            Ver cómo funciona
-          </Button>
-        </div>
+      {/* ── Banda de beneficios ─────────────────────────────────────── */}
+      <section className="lp-band">
+        {BENEFITS.map(({ icon: Icon, title, desc }) => (
+          <div key={title} className="lp-band__cell">
+            <span className="lp-band__icon">
+              <Icon size={27} strokeWidth={1.6} />
+            </span>
+            <div>
+              <div className="lp-band__title">{title}</div>
+              <div className="lp-band__desc">{desc}</div>
+            </div>
+          </div>
+        ))}
       </section>
 
-      {/* Cómo funciona */}
-      <section className="lp-section" id="como-funciona">
-        <div className="lp-how">
-          {HOW.map((item) => (
-            <Card key={item.title}>
-              <div className="lp-how__icon">{item.icon}</div>
-              <h3 className="ts-title">{item.title}</h3>
-              <p>{item.desc}</p>
-            </Card>
+      {/* ── Terrenos destacados ─────────────────────────────────────── */}
+      <section className="lp-featured">
+        <div className="lp-featured__head">
+          <div>
+            <div className="lp-eyebrow">Disponibles ahora</div>
+            <h2 className="lp-featured__title">Terrenos destacados</h2>
+          </div>
+          <Link to={catalogTo} className="lp-seeall">
+            Ver todos <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="lp-grid3">
+          {featured.map((card) => (
+            <LandCard key={card.id} card={card} />
           ))}
         </div>
       </section>
 
-      {/* Para quien ofrece */}
-      <section className="lp-split">
+      {/* ── Cómo funciona ───────────────────────────────────────────── */}
+      <section className="lp-how" id="como-funciona">
+        <h2 className="lp-how__title">Cómo funciona</h2>
+        <div className="lp-how__grid">
+          {STEPS.map((step) => (
+            <div key={step.num}>
+              <div className="lp-step__num">{step.num}</div>
+              <div className="lp-step__rule" />
+              <h4 className="lp-step__title">{step.title}</h4>
+              <p className="lp-step__desc">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA / testimonio ────────────────────────────────────────── */}
+      <section className="lp-cta">
         <div>
-          <span className="lp-eyebrow">Para quien ofrece tierra</span>
-          <h2 className="ts-title lp-split__title">Tu terreno, trabajando por ti</h2>
-          <p className="lp-split__text">
-            Publícalo una vez y recibe solicitudes de productores verificados. Tú decides a quién y cuándo.
+          <Quote size={38} className="lp-cta__quote-icon" />
+          <p className="lp-cta__quote">
+            Encontré 8 hectáreas con agua a 20 minutos de mi casa. Hablé directo con el dueño y en una
+            semana ya tenía el ganado ahí.
           </p>
-          <ul className="lp-checklist">
-            <li>
-              <CheckIcon /> Solicitudes ordenadas por estado
-            </li>
-            <li>
-              <CheckIcon /> Pagos y contrato integrados
-            </li>
-          </ul>
-        </div>
-        <Card className="lp-split__media">
-          <div className="lp-minilist__label">Solicitudes recibidas</div>
-          <div className="lp-minirow">
-            <span>Finca El Tamarindo</span>
-            <Badge tone="beige">Pendiente</Badge>
-          </div>
-          <div className="lp-minirow">
-            <span>Lote Vista Caisán</span>
-            <Badge tone="green">Aprobada</Badge>
-          </div>
-          <div className="lp-minirow">
-            <span>Parcela Río Indio</span>
-            <Badge tone="neutral">Pagada</Badge>
-          </div>
-        </Card>
-      </section>
-
-      {/* Para quien busca */}
-      <section className="lp-split lp-split--reverse">
-        <Card className="lp-split__media">
-          <div className="lp-minilist__label">Explora en el mapa</div>
-          <div className="lp-minirow">
-            <span>
-              <PinIcon /> Hacienda Las Lomas
+          <div className="lp-cta__author">
+            <span className="lp-cta__avatar">
+              <Sprout size={22} strokeWidth={1.8} />
             </span>
-            <span className="lp-teaser__note">$390/mes</span>
-          </div>
-          <div className="lp-minirow">
-            <span>
-              <PinIcon /> Solar El Roble
-            </span>
-            <span className="lp-teaser__note">$420/mes</span>
-          </div>
-        </Card>
-        <div>
-          <span className="lp-eyebrow">Para quien busca tierra</span>
-          <h2 className="ts-title lp-split__title">El terreno ideal, sin dar vueltas</h2>
-          <p className="lp-split__text">
-            Explora en el mapa, compara condiciones reales y solicita cuando estés seguro.
-          </p>
-          <ul className="lp-checklist">
-            <li>
-              <CheckIcon /> Ubicación y área a la vista
-            </li>
-            <li>
-              <CheckIcon /> Contacto directo con el dueño
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="lp-stats ts-fade-up">
-        <div className="lp-stats__caption">Productores y propietarios ya confían en TerraShare</div>
-        <div className="lp-stats__grid">
-          <div>
-            <div className="lp-stat__value">120+</div>
-            <div className="lp-stat__label">Terrenos publicados</div>
-          </div>
-          <div>
-            <div className="lp-stat__value">9</div>
-            <div className="lp-stat__label">Provincias</div>
-          </div>
-          <div>
-            <div className="lp-stat__value">2 días</div>
-            <div className="lp-stat__label">Respuesta promedio</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Teaser de terrenos */}
-      <section className="lp-section">
-        <div className="lp-teaser__head">
-          <h2 className="ts-title">Terrenos destacados</h2>
-          <span className="lp-teaser__note">Muestra pública</span>
-        </div>
-        <div className="lp-teaser__grid">
-          {status === "loading" ? (
-            <>
-              <div className="lp-skeleton" />
-              <div className="lp-skeleton" />
-              <LockedCard to={lockedTo} cta={lockedCta} />
-            </>
-          ) : status === "error" || lands.length === 0 ? (
-            <div className="lp-teaser__state">
-              <p>
-                {status === "error"
-                  ? "No pudimos cargar los terrenos ahora mismo. Vuelve a intentarlo en un momento."
-                  : "Aún no hay terrenos publicados. Sé el primero en publicar el tuyo."}
-              </p>
+            <div>
+              <div className="lp-cta__author-name">Ricardo Him</div>
+              <div className="lp-cta__author-role">Ganadero · Herrera</div>
             </div>
-          ) : (
-            <>
-              {lands.map((land) => (
-                <TeaserCard key={land.id} land={land} />
-              ))}
-              <LockedCard to={lockedTo} cta={lockedCta} />
-            </>
-          )}
+          </div>
         </div>
-      </section>
-
-      {/* Misión / Visión */}
-      <section className="lp-section">
-        <div className="lp-mv">
-          <Card>
-            <div className="lp-mv__icon">
-              <TargetIcon />
-            </div>
-            <h3 className="ts-title">Misión</h3>
-            <p>Facilitar el acceso a tierra productiva de forma simple, segura y transparente.</p>
-          </Card>
-          <Card>
-            <div className="lp-mv__icon">
-              <EyeIcon />
-            </div>
-            <h3 className="ts-title">Visión</h3>
-            <p>Ser la plataforma de referencia para tierra rural en Centroamérica.</p>
-          </Card>
-        </div>
-      </section>
-
-      {/* CTA final */}
-      <section className="lp-cta ts-fade-up">
-        <h2 className="ts-title">¿Listo para empezar?</h2>
-        <p>Únete a propietarios y productores de todo Panamá. Es gratis.</p>
-        {isSignedIn ? (
-          <Link to="/catalog" className="ds-btn ds-btn--primary ds-btn--lg">
-            Explorar catálogo
+        <div className="lp-cta__aside">
+          <h3 className="lp-cta__aside-title">¿Listo para empezar?</h3>
+          <p className="lp-cta__aside-text">Crea tu cuenta gratis y publica o encuentra tierra hoy.</p>
+          <Link to={isSignedIn ? catalogTo : "/register"} className="lp-btn lp-btn--clay">
+            {isSignedIn ? "Explorar catálogo" : "Crear cuenta gratis"} <ArrowRight size={17} />
           </Link>
-        ) : (
-          <Link to="/register" className="ds-btn ds-btn--primary ds-btn--lg">
-            Crear cuenta gratis
-          </Link>
-        )}
+        </div>
       </section>
 
-      {/* Footer */}
-      <footer>
-        <div className="lp-footer">
-          <div>
-            <div className="lp-footer__brand">
-              <LeafIcon size={20} />
-              TerraShare
-            </div>
-            <p className="lp-footer__tag">Tierra productiva para Panamá.</p>
-          </div>
-          <div className="lp-footer__col">
-            <h4>Producto</h4>
-            <Link to={isSignedIn ? "/catalog" : "/login"}>Catálogo</Link>
-            <Link to={isSignedIn ? "/dashboard/lands" : "/login"}>Publicar</Link>
-          </div>
-          <div className="lp-footer__col">
-            <h4>Empresa</h4>
-            <a href="#como-funciona">Quiénes somos</a>
-            <a href="#como-funciona">Contacto</a>
-          </div>
-          <div className="lp-footer__col">
-            <h4>Legal</h4>
-            <a href="#">Términos</a>
-            <a href="#">Privacidad</a>
-          </div>
+      {/* ── Footer ──────────────────────────────────────────────────── */}
+      <footer className="lp-foot">
+        <div className="lp-foot__brand">
+          <span className="lp-brand__mark">
+            <Sprout size={24} strokeWidth={1.8} />
+          </span>
+          <span className="lp-foot__brand-name">TerraShare</span>
         </div>
-        <div className="lp-copy">TerraShare © {new Date().getFullYear()} · Hecho en Panamá</div>
+        <div className="lp-foot__links">
+          <Link to={catalogTo}>Catálogo</Link>
+          <a href="#">Términos</a>
+          <a href="#">Privacidad</a>
+        </div>
+        <div className="lp-foot__copy">© {new Date().getFullYear()} TerraShare · Hecho en Panamá</div>
       </footer>
-    </div>
-  );
-}
-
-function LockedCard({ to, cta }: { to: string; cta: string }) {
-  return (
-    <div className="lp-locked">
-      <LockIcon />
-      <div className="lp-locked__count">Todo el catálogo</div>
-      <div className="lp-locked__hint">Inicia sesión para ver todos los terrenos</div>
-      <Link to={to} className="ds-btn ds-btn--secondary ds-btn--sm">
-        {cta}
-      </Link>
     </div>
   );
 }

@@ -2,22 +2,33 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import type { LandDto } from "@terrashare/shared";
-import { Badge, Button, Card } from "../components/ui";
+import {
+  ArrowLeft,
+  Heart,
+  Share2,
+  MapPin,
+  Ruler,
+  Sprout,
+  Route,
+  Calendar,
+  MessageCircle,
+  ArrowRight,
+  ImageIcon,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 import { createChat, getLandById } from "../services/api";
-import PanamaMap from "../components/PanamaMap";
 import "./detail.css";
 
 type Operation = "alquiler" | "venta" | "ambas";
 
-// Campos que llegarán con #138 (agua/acceso/características/título) y #140
-// (operación y precio de venta). Aún no existen en LandDto; se leen de forma
-// opcional para dejar lista la variante de venta.
+// Campos que llegarán con #138 (agua/acceso/características) y #140 (operación y
+// precio de venta). Aún no existen en LandDto; se leen de forma opcional.
 type DetailLand = LandDto & {
   operation?: Operation;
   salePrice?: number;
   water?: string;
   access?: string;
-  titleStatus?: string;
   features?: string[];
 };
 
@@ -35,11 +46,11 @@ function formatUse(use?: string): string {
   return USE_LABELS[use] ?? use;
 }
 
-function formatMonth(iso?: string): string {
+function formatAvailable(iso?: string): string {
   if (!iso) return "Ahora";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "Ahora";
-  return `Desde ${d.toLocaleDateString("es-PA", { month: "short", year: "numeric" })}`;
+  return d.toLocaleDateString("es-PA", { month: "short", year: "numeric" });
 }
 
 // TODO(#140): sin campo de operación en el backend, el detalle es de alquiler
@@ -48,82 +59,14 @@ function getOperation(land: DetailLand): Operation {
   return land.operation ?? "alquiler";
 }
 
-function PinIcon() {
+function BrandMark() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
-      <circle cx="12" cy="10" r="3" />
-    </svg>
-  );
-}
-
-function PhotoIcon({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m21 15-3.5-3.5L9 20" />
-    </svg>
-  );
-}
-
-function RulerIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 9l6-6 12 12-6 6z" />
-      <path d="M7 9l1.5 1.5M10 6l1.5 1.5M13 9l1.5 1.5M9 13l1.5 1.5" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-
-function DropletIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 2.7 6.3 8.4a8 8 0 1 0 11.4 0Z" />
-    </svg>
-  );
-}
-
-function RoadIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 22 8 2M20 22 16 2M12 6v3M12 13v3M12 20v1" />
-    </svg>
-  );
-}
-
-function CertificateIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="9" r="6" />
-      <path d="m9 14-1 8 4-2 4 2-1-8" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
+    <span className="det-nav__brand">
+      <span className="det-nav__brand-mark">
+        <Sprout size={24} strokeWidth={1.8} />
+      </span>
+      <span className="det-nav__brand-name">TerraShare</span>
+    </span>
   );
 }
 
@@ -177,7 +120,14 @@ export default function LandDetailPage() {
   if (status === "loading") {
     return (
       <div className="det">
-        <p className="det-state">Cargando terreno…</p>
+        <nav className="det-nav">
+          <Link to="/catalog" className="det-nav__back">
+            <ArrowLeft size={17} /> Catálogo
+          </Link>
+          <BrandMark />
+          <span />
+        </nav>
+        <div className="det-state">Cargando terreno…</div>
       </div>
     );
   }
@@ -185,10 +135,17 @@ export default function LandDetailPage() {
   if (status === "error" || !land) {
     return (
       <div className="det">
+        <nav className="det-nav">
+          <Link to="/catalog" className="det-nav__back">
+            <ArrowLeft size={17} /> Catálogo
+          </Link>
+          <BrandMark />
+          <span />
+        </nav>
         <div className="det-state">
-          <h1 className="ts-title">Terreno no encontrado</h1>
+          <h1>Terreno no encontrado</h1>
           <p>El terreno que buscas no existe o no está disponible.</p>
-          <Link to="/catalog" className="ds-btn ds-btn--primary" style={{ marginTop: "1rem" }}>
+          <Link to="/catalog" className="det-btn det-btn--primary" style={{ marginTop: "1.5rem", display: "inline-flex", width: "auto", padding: "13px 22px" }}>
             Volver al catálogo
           </Link>
         </div>
@@ -199,158 +156,157 @@ export default function LandDetailPage() {
   const operation = getOperation(land);
   const isSale = operation === "venta" || operation === "ambas";
   const monthly = land.priceRule?.pricePerMonth;
-  const locationParts = [land.location?.province, land.location?.district, land.location?.corregimiento ?? land.location?.addressLine].filter(Boolean);
+  const loc = land.location;
+
+  // Especificaciones a partir de datos reales (agua/acceso/suelo llegan con #138).
+  const specs = [
+    { icon: Ruler, label: "Área", value: `${land.area} ha` },
+    { icon: Sprout, label: "Uso", value: formatUse(land.allowedUses?.[0]) },
+    { icon: MapPin, label: "Provincia", value: loc?.province ?? "—" },
+    loc?.district ? { icon: Route, label: "Distrito", value: loc.district } : null,
+    loc?.corregimiento ? { icon: MapPin, label: "Corregimiento", value: loc.corregimiento } : null,
+    { icon: Calendar, label: "Disponible", value: formatAvailable(land.availability?.availableFrom) },
+    land.water ? { icon: MapPin, label: "Agua", value: land.water } : null,
+    land.access ? { icon: Route, label: "Acceso", value: land.access } : null,
+  ].filter((s): s is { icon: typeof Ruler; label: string; value: string } => s !== null);
+
+  const locationText = [loc?.province, loc?.district, loc?.corregimiento ?? loc?.addressLine]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <div className="det">
-      <Link to="/catalog" className="det-back">
-        ← Volver al catálogo
-      </Link>
-
-      <div className="det-gallery" aria-hidden="true">
-        <div className="det-gallery__main">
-          <PhotoIcon size={44} />
+      {/* nav propio del detalle */}
+      <nav className="det-nav">
+        <Link to="/catalog" className="det-nav__back">
+          <ArrowLeft size={17} /> Catálogo
+        </Link>
+        <BrandMark />
+        <div className="det-nav__actions">
+          {/* TODO(#137): guardar/favoritos y compartir aún no tienen backend. */}
+          <button type="button" className="det-nav__action" title="Guardar (próximamente)">
+            <Heart size={18} /> Guardar
+          </button>
+          <button
+            type="button"
+            className="det-nav__action"
+            title="Compartir"
+            onClick={() => {
+              if (navigator.share) navigator.share({ title: land.title, url: window.location.href });
+            }}
+          >
+            <Share2 size={17} />
+          </button>
         </div>
-        <div className="det-gallery__side">
-          <div className="det-gallery__tile">
-            <PhotoIcon size={24} />
+      </nav>
+
+      <div className="det-wrap">
+        {/* galería */}
+        <div className="det-gallery" aria-hidden="true">
+          <div className="det-photo det-photo--main">
+            <ImageIcon size={40} strokeWidth={1.4} />
+            <span>Foto principal — vista del terreno</span>
           </div>
-          <div className="det-gallery__tile">
-            <PhotoIcon size={24} />
+          <div className="det-photo">
+            <ImageIcon size={24} strokeWidth={1.4} />
+          </div>
+          <div className="det-photo det-gallery__hide-sm">
+            <ImageIcon size={24} strokeWidth={1.4} />
           </div>
         </div>
-      </div>
 
-      <div className="det-body">
-        <div>
-          <div className="det-badges">
-            <Badge tone="green">{formatUse(land.allowedUses?.[0])}</Badge>
-            <Badge tone={isSale ? "clay" : "beige"}>{isSale ? "En venta" : "Alquiler"}</Badge>
-          </div>
-          <h1 className="ts-title det-title">{land.title}</h1>
-          <p className="det-loc">
-            <PinIcon />
-            {locationParts.join(" · ")}
-          </p>
-
-          <div className="det-specs">
-            <div className="det-spec">
-              <RulerIcon />
-              <div className="det-spec__label">Área</div>
-              <div className="det-spec__value">{land.area} hectáreas</div>
+        <div className="det-body">
+          {/* columna izquierda */}
+          <div>
+            <div className="det-badges">
+              <span className={`det-badge ${isSale ? "det-badge--sale" : ""}`}>
+                {isSale ? "En venta" : formatUse(land.allowedUses?.[0])}
+              </span>
             </div>
-            <div className="det-spec">
-              <CalendarIcon />
-              <div className="det-spec__label">Disponible</div>
-              <div className="det-spec__value">{formatMonth(land.availability?.availableFrom)}</div>
+            <h1 className="det-title">{land.title}</h1>
+            <p className="det-loc">
+              <MapPin size={17} /> {locationText} · {land.area} hectáreas
+            </p>
+
+            <div className="det-specs">
+              {specs.map((spec) => {
+                const Icon = spec.icon;
+                return (
+                  <div key={spec.label} className="det-spec">
+                    <span className="det-spec__icon">
+                      <Icon size={20} />
+                    </span>
+                    <div className="det-spec__label">{spec.label}</div>
+                    <div className="det-spec__value">{spec.value}</div>
+                  </div>
+                );
+              })}
             </div>
-            {/* Agua/Acceso/Título llegan con #138; se muestran solo si existen. */}
-            {land.water ? (
-              <div className="det-spec">
-                <DropletIcon />
-                <div className="det-spec__label">Agua</div>
-                <div className="det-spec__value">{land.water}</div>
-              </div>
-            ) : null}
-            {land.access ? (
-              <div className="det-spec">
-                <RoadIcon />
-                <div className="det-spec__label">Acceso</div>
-                <div className="det-spec__value">{land.access}</div>
-              </div>
-            ) : null}
-            {isSale && land.titleStatus ? (
-              <div className="det-spec">
-                <CertificateIcon />
-                <div className="det-spec__label">Título</div>
-                <div className="det-spec__value">{land.titleStatus}</div>
-              </div>
-            ) : null}
-          </div>
 
-          {land.description ? (
-            <>
-              <h2 className="det-section-title">Descripción</h2>
-              <p className="det-desc">{land.description}</p>
-            </>
-          ) : null}
+            <h2 className="det-section-title">Sobre el terreno</h2>
+            <p className="det-desc">
+              {land.description ?? "El propietario aún no agregó una descripción para este terreno."}
+            </p>
 
-          {land.features && land.features.length > 0 ? (
-            <>
-              <h2 className="det-section-title">Características</h2>
-              <div className="det-features">
+            {land.features && land.features.length > 0 && (
+              <div className="det-tags">
                 {land.features.map((f) => (
-                  <span key={f} className="det-feature">
-                    <CheckIcon />
+                  <span key={f} className="det-tag">
                     {f}
                   </span>
                 ))}
               </div>
-            </>
-          ) : null}
-        </div>
+            )}
+          </div>
 
-        <aside className="det-aside">
-          <Card>
-            {isSale ? (
-              <>
-                <div className="det-price__label">Precio de venta</div>
-                <div className="det-price">
-                  {typeof land.salePrice === "number" ? `$${land.salePrice.toLocaleString("es-PA")}` : "A consultar"}
-                </div>
-              </>
-            ) : (
+          {/* tarjeta de acción sticky */}
+          <aside className="det-aside">
+            <div className="det-card">
+              <div className="det-price__label">{isSale ? "Precio de venta" : "Precio de alquiler"}</div>
               <div className="det-price">
-                {typeof monthly === "number" ? (
+                {isSale ? (
+                  typeof land.salePrice === "number" ? (
+                    `$${land.salePrice.toLocaleString("es-PA")}`
+                  ) : (
+                    "A consultar"
+                  )
+                ) : typeof monthly === "number" ? (
                   <>
                     ${monthly.toLocaleString("es-PA")}
-                    <span> /mes</span>
+                    <span>/mes</span>
                   </>
                 ) : (
                   "A consultar"
                 )}
               </div>
-            )}
 
-            <div className="det-actions">
-              {isSale ? (
-                // TODO(#140): flujo de oferta de compra pendiente; por ahora
-                // deriva al contacto con el propietario.
-                <Button variant="primary" block onClick={handleContact}>
-                  Hacer oferta
-                </Button>
-              ) : (
-                <Button variant="primary" block onClick={handleRent}>
-                  Solicitar alquiler
-                </Button>
-              )}
-              <Button variant="secondary" block onClick={handleContact}>
-                Contactar al dueño
-              </Button>
-            </div>
+              <button type="button" className="det-btn det-btn--primary" onClick={handleRent}>
+                {isSale ? "Hacer oferta" : "Solicitar alquiler"} <ArrowRight size={18} />
+              </button>
+              <button type="button" className="det-btn det-btn--ghost" onClick={handleContact}>
+                <MessageCircle size={17} /> Preguntar al dueño
+              </button>
 
-            <div className="det-owner">
-              <span className="det-owner__avatar" aria-hidden="true">
-                <UserIcon />
-              </span>
-              <div>
-                <div className="det-owner__name">Propietario</div>
-                {/* TODO(#138): perfil del propietario (nombre, tiempo de respuesta). */}
-                <div className="det-owner__role">Publica en TerraShare</div>
+              <div className="det-divider" />
+
+              <div className="det-owner">
+                <span className="det-owner__avatar" aria-hidden="true">
+                  <User size={20} />
+                </span>
+                <div>
+                  <div className="det-owner__name">Propietario</div>
+                  {/* TODO(#138): perfil del propietario (nombre, tiempo de respuesta). */}
+                  <div className="det-owner__role">Publica en TerraShare</div>
+                </div>
+              </div>
+
+              {/* TODO(#138): verificación de identidad/linderos aún no existe en backend. */}
+              <div className="det-note">
+                <ShieldCheck size={15} /> Coordina y acuerda de forma segura dentro de TerraShare
               </div>
             </div>
-
-            <div className="det-map">
-              <PanamaMap lands={[land]} selectedLand={land} onSelectLand={() => {}} />
-            </div>
-
-            {isSale ? (
-              <p className="det-note">
-                La compra se cierra ante notaría. TerraShare conecta a las partes y gestiona la reserva.
-              </p>
-            ) : null}
-          </Card>
-        </aside>
+          </aside>
+        </div>
       </div>
     </div>
   );

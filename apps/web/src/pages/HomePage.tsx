@@ -2,8 +2,18 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import type { ChatDto, LandDto, RentalRequestDto, RentalRequestStatus } from "@terrashare/shared";
-import { Badge, Button, Card } from "../components/ui";
-import type { BadgeTone } from "../components/ui";
+import {
+  Search,
+  Map,
+  Calendar,
+  CreditCard,
+  Check,
+  Plus,
+  LayoutList,
+  Inbox,
+  TrendingUp,
+  Eye,
+} from "lucide-react";
 import { getChats, getMyLands, listRentalRequests } from "../services/api";
 import { getDisplayName } from "../components/authDisplay";
 import { useAppMode } from "../components/AppLayout";
@@ -11,14 +21,18 @@ import "./home.css";
 
 type LoadState = "loading" | "ready" | "error";
 
-const REQUEST_STATUS: Record<RentalRequestStatus, { label: string; tone: BadgeTone }> = {
-  draft: { label: "Borrador", tone: "neutral" },
-  pending_owner: { label: "Pendiente", tone: "beige" },
-  approved: { label: "Aprobada", tone: "green" },
-  rejected: { label: "Rechazada", tone: "clay" },
-  cancelled: { label: "Cancelada", tone: "neutral" },
-  pending_payment: { label: "Pago pendiente", tone: "beige" },
-  paid: { label: "Pagada", tone: "green" },
+// Estado → etiqueta, clase de badge y tratamiento del pie de tarjeta.
+const REQUEST_STATUS: Record<
+  RentalRequestStatus,
+  { label: string; badge: string; foot: "wait" | "pay" | "active" | "none" }
+> = {
+  draft: { label: "Borrador", badge: "hm-badge--neutral", foot: "none" },
+  pending_owner: { label: "Pendiente", badge: "hm-badge--pending", foot: "wait" },
+  approved: { label: "Aprobada", badge: "hm-badge--approved", foot: "pay" },
+  rejected: { label: "Rechazada", badge: "hm-badge--clay", foot: "none" },
+  cancelled: { label: "Cancelada", badge: "hm-badge--neutral", foot: "none" },
+  pending_payment: { label: "Pago pendiente", badge: "hm-badge--pending", foot: "pay" },
+  paid: { label: "Activa", badge: "hm-badge--active", foot: "active" },
 };
 
 const USE_LABELS: Record<string, string> = {
@@ -39,6 +53,10 @@ function formatMonth(iso?: string): string {
 
 function formatPeriod(startDate?: string, endDate?: string): string {
   return `${formatMonth(startDate)} – ${formatMonth(endDate)}`;
+}
+
+function useLabel(use: string): string {
+  return USE_LABELS[use] ?? use;
 }
 
 // ─── Modo Busco ───────────────────────────────────────────────────────────────
@@ -70,105 +88,138 @@ function BuscoHome({ name }: { name: string }) {
   }, []);
 
   return (
-    <>
+    <div className="hm">
       <div className="hm-head">
         <div>
-          <h1 className="ts-title">Hola, {name}</h1>
-          <p>Encuentra el terreno ideal para tu proyecto.</p>
+          <h1 className="hm-head__title">Hola, {name}</h1>
+          <p className="hm-head__sub">Encuentra el terreno ideal para tu proyecto.</p>
         </div>
+        <Link to="/catalog" className="hm-btn">
+          <Map size={17} /> Ver mapa
+        </Link>
       </div>
 
+      {/* buscador */}
       <Link to="/catalog" className="hm-search">
-        <span className="hm-search__box">Buscar por provincia, uso o palabra clave…</span>
-        <Button variant="primary">Ver mapa</Button>
+        <span className="hm-search__icon">
+          <Search size={19} />
+        </span>
+        <span className="hm-search__ph">Buscar por provincia, uso o palabra clave…</span>
+        <span className="hm-search__chips">
+          <span className="hm-chip">Agricultura</span>
+          <span className="hm-chip">Ganadería</span>
+          <span className="hm-chip hm-chip--active">Todos los filtros</span>
+        </span>
       </Link>
 
-      <section className="hm-section">
-        <div className="hm-section__head">
-          <h2 className="ts-title">Mis solicitudes</h2>
+      {/* mis solicitudes */}
+      <section className="hm-sec">
+        <div className="hm-sec__head">
+          <h2 className="hm-sec__title">Mis solicitudes</h2>
+          {requests.length > 0 && (
+            <Link to="/dashboard/payments" className="hm-link">
+              Ver todas
+            </Link>
+          )}
         </div>
         {reqState === "loading" ? (
-          <div className="hm-grid-3">
+          <div className="hm-grid3">
             <div className="hm-skeleton" />
             <div className="hm-skeleton" />
             <div className="hm-skeleton" />
           </div>
         ) : reqState === "error" ? (
-          <Card>
-            <p className="hm-state hm-state--error">
-              No pudimos cargar tus solicitudes. Inténtalo de nuevo en un momento.
-            </p>
-          </Card>
+          <div className="hm-empty hm-empty--error">
+            No pudimos cargar tus solicitudes. Inténtalo de nuevo en un momento.
+          </div>
         ) : requests.length === 0 ? (
-          <Card>
-            <p className="hm-state">
-              Aún no tienes solicitudes. Explora el catálogo y solicita tu primer terreno.
-            </p>
-          </Card>
+          <div className="hm-empty">
+            Aún no tienes solicitudes. Explora el catálogo y solicita tu primer terreno.
+          </div>
         ) : (
-          <div className="hm-grid-3">
+          <div className="hm-grid3">
             {requests.slice(0, 6).map((req) => {
               const status = REQUEST_STATUS[req.status];
               return (
-                <Card key={req.id}>
-                  <div className="hm-item__top">
-                    <span className="hm-item__title">{USE_LABELS[req.intendedUse] ?? req.intendedUse}</span>
-                    <Badge tone={status.tone}>{status.label}</Badge>
+                <div key={req.id} className="hm-req">
+                  <div className="hm-req__top">
+                    <span className="hm-req__title">{useLabel(req.intendedUse)}</span>
+                    <span className={`hm-badge ${status.badge}`}>{status.label}</span>
                   </div>
-                  <div className="hm-item__meta">{formatPeriod(req.period?.startDate, req.period?.endDate)}</div>
-                  <p className="hm-item__note">Solicitud #{req.id.slice(0, 8)}</p>
-                </Card>
+                  <div className="hm-req__meta">
+                    <Calendar size={14} /> {formatPeriod(req.period?.startDate, req.period?.endDate)}
+                  </div>
+                  {status.foot === "pay" ? (
+                    <Link to="/dashboard/payments" className="hm-req__pay">
+                      <CreditCard size={16} /> Completar pago
+                    </Link>
+                  ) : status.foot === "active" ? (
+                    <div className="hm-req__ok">
+                      <Check size={15} /> Alquiler en curso
+                    </div>
+                  ) : status.foot === "wait" ? (
+                    <div className="hm-req__note">Esperando respuesta del propietario</div>
+                  ) : (
+                    <div className="hm-req__note">Solicitud #{req.id.slice(0, 8)}</div>
+                  )}
+                </div>
               );
             })}
           </div>
         )}
       </section>
 
+      {/* guardados + chats */}
       <div className="hm-split">
-        <section className="hm-section">
-          <div className="hm-section__head">
-            <h2 className="ts-title">Guardados</h2>
+        <section>
+          <div className="hm-sec__head">
+            <h2 className="hm-sec__title">Guardados</h2>
           </div>
           {/* TODO(#137): no existe endpoint de favoritos/guardados todavía. */}
-          <Card>
-            <p className="hm-state">Todavía no guardas terrenos. Toca el corazón en un terreno para guardarlo aquí.</p>
-          </Card>
+          <div className="hm-empty">
+            Todavía no guardas terrenos. Toca el corazón en un terreno para guardarlo aquí.
+          </div>
         </section>
 
-        <section className="hm-section">
-          <div className="hm-section__head">
-            <h2 className="ts-title">Chats</h2>
+        <section>
+          <div className="hm-sec__head">
+            <h2 className="hm-sec__title">Chats</h2>
             <Link to="/dashboard/chats" className="hm-link">
               Ver todos
             </Link>
           </div>
-          <Card flat>
-            {chatsState === "loading" ? (
-              <p className="hm-state">Cargando conversaciones…</p>
-            ) : chatsState === "error" ? (
-              <p className="hm-state hm-state--error">No pudimos cargar tus chats.</p>
-            ) : chats.length === 0 ? (
-              <p className="hm-state">Aún no tienes conversaciones.</p>
-            ) : (
-              <div className="hm-rows">
-                {chats.slice(0, 4).map((chat) => (
-                  <Link key={chat.id} to="/dashboard/chats" className="hm-row">
+          {chatsState === "loading" ? (
+            <div className="hm-empty">Cargando conversaciones…</div>
+          ) : chatsState === "error" ? (
+            <div className="hm-empty hm-empty--error">No pudimos cargar tus chats.</div>
+          ) : chats.length === 0 ? (
+            <div className="hm-empty">Aún no tienes conversaciones.</div>
+          ) : (
+            <div className="hm-chatlist">
+              {/* TODO(#137): ChatDto no incluye nombre del interlocutor ni último
+                  mensaje; se muestra lo disponible (rol + fecha). */}
+              {chats.slice(0, 4).map((chat) => {
+                const other = chat.participants?.find((p) => p.role === "owner") ?? chat.participants?.[0];
+                const initials = other ? other.userId.slice(0, 2).toUpperCase() : "TS";
+                const title = other?.role === "owner" ? "Propietario" : "Conversación";
+                return (
+                  <Link key={chat.id} to="/dashboard/chats" className="hm-chatrow">
                     <span className="hm-avatar" aria-hidden="true">
-                      TS
+                      {initials}
                     </span>
-                    <div className="hm-row__body">
-                      <div className="hm-row__title">Conversación</div>
-                      {/* ChatDto no incluye el último mensaje; mostramos la fecha real. */}
-                      <div className="hm-row__sub">Actualizado {formatMonth(chat.updatedAt)}</div>
+                    <div className="hm-chatrow__body">
+                      <div className="hm-chatrow__title">{title}</div>
+                      <div className="hm-chatrow__sub">Actualizado {formatMonth(chat.updatedAt)}</div>
                     </div>
+                    {chat.status === "active" && <span className="hm-dot" aria-hidden="true" />}
                   </Link>
-                ))}
-              </div>
-            )}
-          </Card>
+                );
+              })}
+            </div>
+          )}
         </section>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -180,8 +231,8 @@ function OfrezcoHome() {
 
   useEffect(() => {
     let active = true;
-    // Nota(#136): getMyLands() (GET /lands/me) está roto en el backend; se
-    // maneja el error con estado vacío/error, sin datos falsos.
+    // Nota(#136): getMyLands() (GET /lands/me) puede fallar en backend; se maneja
+    // con estado vacío/error, sin datos falsos.
     getMyLands()
       .then((data) => {
         if (!active) return;
@@ -197,97 +248,118 @@ function OfrezcoHome() {
   const activeCount = landsState === "ready" ? String(lands.length) : "—";
 
   return (
-    <>
+    <div className="hm">
       <div className="hm-head">
         <div>
-          <h1 className="ts-title">Tu tierra, trabajando por ti</h1>
-          <p>Gestiona tus publicaciones y las solicitudes que recibes.</p>
+          <h1 className="hm-head__title">Tu tierra, trabajando por ti</h1>
+          <p className="hm-head__sub">Gestiona tus publicaciones y las solicitudes que recibes.</p>
         </div>
-        <Button variant="primary" onClick={() => navigate("/dashboard/lands")}>
-          Publicar terreno
-        </Button>
+        <Link to="/dashboard/lands" className="hm-btn">
+          <Plus size={17} /> Publicar terreno
+        </Link>
       </div>
 
+      {/* stats */}
       <div className="hm-stats">
-        <Card>
+        <div className="hm-stat">
+          <div className="hm-stat__icon">
+            <LayoutList size={19} />
+          </div>
           <div className="hm-stat__value">{activeCount}</div>
           <div className="hm-stat__label">Publicaciones activas</div>
-        </Card>
-        <Card>
+        </div>
+        <div className="hm-stat">
+          <div className="hm-stat__icon hm-stat__icon--clay">
+            <Inbox size={19} />
+          </div>
           {/* TODO(#136): sin endpoint de solicitudes-por-dueño todavía. */}
           <div className="hm-stat__value">—</div>
           <div className="hm-stat__label">Solicitudes nuevas</div>
-        </Card>
-        <Card>
+        </div>
+        <div className="hm-stat hm-stat--dark">
+          <div className="hm-stat__icon hm-stat__icon--light">
+            <TrendingUp size={19} />
+          </div>
           {/* TODO(#136): analítica de ingresos pendiente en backend. */}
-          <div className="hm-stat__value hm-stat__value--accent">—</div>
+          <div className="hm-stat__value">—</div>
           <div className="hm-stat__label">Ingresos del mes</div>
-        </Card>
+        </div>
       </div>
 
-      <section className="hm-section">
-        <div className="hm-section__head">
-          <h2 className="ts-title">Solicitudes recibidas</h2>
-        </div>
+      {/* solicitudes recibidas */}
+      <section>
+        <h2 className="hm-sec__title" style={{ marginBottom: "16px" }}>
+          Solicitudes recibidas
+        </h2>
         {/* TODO(#136): no existe endpoint de solicitudes recibidas por el dueño. */}
-        <Card>
-          <p className="hm-state">
-            Cuando alguien solicite uno de tus terrenos, aparecerá aquí. (Pendiente de backend, #136.)
-          </p>
-        </Card>
+        <div className="hm-empty" style={{ marginBottom: "44px" }}>
+          Cuando alguien solicite uno de tus terrenos, aparecerá aquí. (Pendiente de backend, #136.)
+        </div>
       </section>
 
-      <section className="hm-section">
-        <div className="hm-section__head">
-          <h2 className="ts-title">Mis publicaciones</h2>
+      {/* mis publicaciones */}
+      <section>
+        <div className="hm-sec__head">
+          <h2 className="hm-sec__title">Mis publicaciones</h2>
           <Link to="/dashboard/lands" className="hm-link">
             Ver todas
           </Link>
         </div>
         {landsState === "loading" ? (
-          <div className="hm-grid-3">
+          <div className="hm-grid3">
             <div className="hm-skeleton" />
             <div className="hm-skeleton" />
             <div className="hm-skeleton" />
           </div>
         ) : landsState === "error" ? (
-          <Card>
-            <p className="hm-state hm-state--error">
-              No pudimos cargar tus terrenos ahora mismo. (Pendiente de backend, #136.)
-            </p>
-          </Card>
+          <div className="hm-empty hm-empty--error">
+            No pudimos cargar tus terrenos ahora mismo. (Pendiente de backend, #136.)
+          </div>
         ) : lands.length === 0 ? (
-          <div className="hm-grid-3">
-            <Link to="/dashboard/lands" className="hm-add">
-              <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>+</span>
-              Publicar tu primer terreno
+          <div className="hm-grid3">
+            <Link to="/dashboard/lands" className="hm-pub__add">
+              <Plus size={26} />
+              <span>Publicar tu primer terreno</span>
             </Link>
           </div>
         ) : (
-          <div className="hm-grid-3">
-            {lands.slice(0, 5).map((land) => (
-              <Card key={land.id} interactive onClick={() => navigate(`/lands/${land.id}`)}>
-                <div className="hm-item__top">
-                  <Badge tone={land.status === "active" ? "green" : "beige"}>
-                    {land.status === "active" ? "Publicada" : land.status === "draft" ? "Borrador" : "Inactiva"}
-                  </Badge>
-                </div>
-                <div className="hm-item__title" style={{ marginTop: "0.6rem" }}>
-                  {land.title}
-                </div>
-                <div className="hm-item__meta">
-                  {USE_LABELS[land.allowedUses?.[0]] ?? "Terreno"} · ${land.priceRule?.pricePerMonth?.toLocaleString("es-PA")}/mes
-                </div>
-              </Card>
-            ))}
-            <Link to="/dashboard/lands" className="hm-add">
-              <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>+</span>
-              Publicar otro terreno
+          <div className="hm-grid3">
+            {lands.slice(0, 5).map((land) => {
+              const active = land.status === "active";
+              return (
+                <Link key={land.id} to={`/lands/${land.id}`} className="hm-pub">
+                  <div className="hm-pub__media">
+                    <div className="hm-pub__photo hm-photo" aria-hidden="true" />
+                    <span className={`hm-pub__badge ${active ? "" : "hm-pub__badge--paused"}`}>
+                      {active ? "Publicada" : land.status === "draft" ? "Borrador" : "Pausada"}
+                    </span>
+                  </div>
+                  <div className="hm-pub__body">
+                    <div className="hm-pub__title">{land.title}</div>
+                    <div className="hm-pub__meta">
+                      {useLabel(land.allowedUses?.[0])} · $
+                      {land.priceRule?.pricePerMonth?.toLocaleString("es-PA")}/mes
+                    </div>
+                    <div className="hm-pub__stats">
+                      <span className="hm-pub__stat">
+                        <Eye size={15} /> —
+                      </span>
+                      <span className="hm-pub__stat">
+                        <Inbox size={15} /> —
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+            <Link to="/dashboard/lands" className="hm-pub__add">
+              <Plus size={26} />
+              <span>Publicar otro terreno</span>
             </Link>
           </div>
         )}
       </section>
-    </>
+    </div>
   );
 }
 
