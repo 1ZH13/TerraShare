@@ -107,30 +107,14 @@ landRoutes.get("/lands", async (c) => {
   });
 });
 
-landRoutes.get("/lands/:landId", async (c) => {
-  const mongoOk = useMongoDB();
-  const landId = c.req.param("landId");
-  
-  let land: LandRecord | undefined;
-  if (mongoOk) {
-    land = await getLandById(landId) as LandRecord | undefined;
-  } else {
-    land = getStore().lands.get(landId);
-  }
-  
-  if (!land || land.status === "inactive") {
-    return failure(c, 404, "NOT_FOUND", "Land not found");
-  }
-
-  return success(c, land);
-});
-
+// Must be registered before "/lands/:landId"; otherwise "me" is captured as a
+// landId and this route becomes unreachable (404).
 landRoutes.get("/lands/me", requireAuth, async (c) => {
   const authUser = c.get("authUser");
   const mongoOk = useMongoDB();
 
   let lands: LandRecord[] = [];
-  
+
   if (mongoOk) {
     lands = await listLands({ ownerId: authUser.id }) as LandRecord[];
   } else {
@@ -138,6 +122,24 @@ landRoutes.get("/lands/me", requireAuth, async (c) => {
   }
 
   return success(c, lands);
+});
+
+landRoutes.get("/lands/:landId", async (c) => {
+  const mongoOk = useMongoDB();
+  const landId = c.req.param("landId");
+
+  let land: LandRecord | undefined;
+  if (mongoOk) {
+    land = await getLandById(landId) as LandRecord | undefined;
+  } else {
+    land = getStore().lands.get(landId);
+  }
+
+  if (!land || land.status === "inactive") {
+    return failure(c, 404, "NOT_FOUND", "Land not found");
+  }
+
+  return success(c, land);
 });
 
 landRoutes.post("/lands", requireAuth, async (c) => {

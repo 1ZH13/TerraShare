@@ -14,6 +14,7 @@ import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
 import { analyticsRoutes } from "./routes/analytics";
+import { notificationRoutes } from "./routes/notifications";
 import type { AppEnv } from "./types";
 
 export function createApp() {
@@ -45,6 +46,7 @@ export function createApp() {
   app.route("/api/v1", paymentRoutes);
   app.route("/api/v1", chatRoutes);
   app.route("/api/v1", analyticsRoutes);
+  app.route("/api/v1", notificationRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 

@@ -9,9 +9,12 @@ import type { AppEnv } from "../types";
 
 export const analyticsRoutes = new Hono<AppEnv>();
 
-analyticsRoutes.use("/*", requireAdmin);
+// Authenticate every analytics route so `authUser` is set before the
+// per-route authorization checks run. Admin-only routes add `requireAdmin`
+// individually; owner analytics uses `isOwnerOrAdmin` instead.
+analyticsRoutes.use("/*", requireAuth);
 
-analyticsRoutes.get("/analytics/overview", async (c) => {
+analyticsRoutes.get("/analytics/overview", requireAdmin, async (c) => {
   const now = Date.now();
   const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
@@ -98,7 +101,7 @@ analyticsRoutes.get("/analytics/overview", async (c) => {
   });
 });
 
-analyticsRoutes.get("/analytics/lands", async (c) => {
+analyticsRoutes.get("/analytics/lands", requireAdmin, async (c) => {
   const lands = await Land.find({ status: "active" }).lean();
 
   const landsByProvince: Record<string, number> = {};
@@ -128,7 +131,7 @@ analyticsRoutes.get("/analytics/lands", async (c) => {
   });
 });
 
-analyticsRoutes.get("/analytics/requests", async (c) => {
+analyticsRoutes.get("/analytics/requests", requireAdmin, async (c) => {
   const requests = await RentalRequest.find().lean();
 
   const now = Date.now();
@@ -171,7 +174,9 @@ analyticsRoutes.get("/analytics/requests", async (c) => {
   });
 });
 
-analyticsRoutes.get("/analytics/owner/:ownerId", requireAuth, async (c) => {
+// Owner analytics: the group-level requireAuth already ran, so `authUser`
+// is set. Authorization is owner-or-admin, per the PRD.
+analyticsRoutes.get("/analytics/owner/:ownerId", async (c) => {
   const authUser = c.get("authUser");
   const ownerId = c.req.param("ownerId");
 

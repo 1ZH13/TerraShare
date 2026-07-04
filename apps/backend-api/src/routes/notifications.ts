@@ -7,6 +7,10 @@ import type { AppEnv } from "../types";
 
 export const notificationRoutes = new Hono<AppEnv>();
 
+// TODO(#136): notifications currently live only in the in-memory store and no
+// flow creates them yet, so this returns an empty list until a later feature
+// generates notifications (e.g. on rental-request status changes). Do not seed
+// fake data here.
 notificationRoutes.get("/notifications", requireAuth, (c) => {
   const authUser = c.get("authUser");
   const store = getStore();

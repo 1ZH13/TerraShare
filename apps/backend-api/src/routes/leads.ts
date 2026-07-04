@@ -6,7 +6,7 @@ import type { AppEnv } from "../types";
 
 export const leadRoutes = new Hono<AppEnv>();
 
-leadRoutes.post("/", async (c) => {
+leadRoutes.post("/leads", async (c) => {
   const body = await c.req.json();
 
   if (!body.email || typeof body.email !== "string") {
@@ -32,7 +32,7 @@ leadRoutes.post("/", async (c) => {
   return success(c, { id: lead.id, email: lead.email, createdAt: lead.createdAt }, 201);
 });
 
-leadRoutes.get("/", async (c) => {
+leadRoutes.get("/leads", async (c) => {
   const leads = await Lead.find().sort({ createdAt: -1 }).lean();
 
   return success(c, {

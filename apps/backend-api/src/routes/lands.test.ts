@@ -36,4 +36,18 @@ describe("lands routes", () => {
     expect(payload.ok).toBe(true);
     expect(payload.data.ownerId).toBe("user_owner_test");
   });
+
+  it("returns the caller's own lands at /lands/me", async () => {
+    const { response, payload } = await requestJson("/api/v1/lands/me", {
+      headers: { "x-dev-user-id": "user_owner_01" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(Array.isArray(payload.data)).toBe(true);
+    expect(payload.data.length).toBeGreaterThan(0);
+    for (const land of payload.data) {
+      expect(land.ownerId).toBe("user_owner_01");
+    }
+  });
 });
