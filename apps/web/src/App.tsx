@@ -21,6 +21,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import OnboardingPage from "./pages/OnboardingPage";
 import UserDashboardLayout from "./components/UserDashboardLayout";
 import PublicHeader from "./components/PublicHeader";
 import StyleguidePage from "./pages/StyleguidePage";
@@ -506,6 +507,7 @@ export default function App() {
       <Route path="/reserve/:landId" element={<ProtectedRoute><ReservePage /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
       <Route path="/checkout/success" element={<PaymentSuccessPage />} />
       <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><UserDashboardLayout><DashboardPage /></UserDashboardLayout></ProtectedRoute>} />

@@ -1,0 +1,170 @@
+/* Login / registro / onboarding editoriales (issue #134, Grupo 1). Prefijo `au-`. */
+
+.au-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 2rem 1rem 3rem;
+}
+
+.au-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+  color: var(--ts-green);
+  font-family: var(--ts-font-serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.au-intro {
+  text-align: center;
+  max-width: 40ch;
+}
+
+.au-intro h1 {
+  margin: 0 0 0.35rem;
+}
+
+.au-intro p {
+  margin: 0;
+  color: var(--ts-text-secondary);
+  font-size: 0.95rem;
+}
+
+/* Contenedor del widget de Clerk: centra y limita el ancho. */
+.au-widget {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  justify-content: center;
+}
+
+.au-note {
+  color: var(--ts-text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.au-back {
+  color: var(--ts-text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.au-back:hover {
+  color: var(--ts-green);
+}
+
+/* ---------- Onboarding ---------- */
+.au-onb {
+  width: min(520px, 92vw);
+}
+
+.au-onb__eyebrow {
+  display: inline-block;
+  background: var(--ts-tint-green);
+  color: var(--ts-green);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--ts-radius-pill);
+  margin-bottom: 0.75rem;
+}
+
+.au-onb__title {
+  margin: 0 0 0.25rem;
+}
+
+.au-onb__sub {
+  color: var(--ts-text-secondary);
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem;
+}
+
+.au-onb__form {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.au-select {
+  width: 100%;
+  font-family: var(--ts-font-sans);
+  font-size: 0.95rem;
+  color: var(--ts-text);
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+  padding: 0.7rem 0.9rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.au-select:focus {
+  outline: none;
+  border-color: var(--ts-green);
+  box-shadow: var(--ts-ring);
+}
+
+/* Selector Busco / Ofrezco (dos tarjetas) */
+.au-pref {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.au-pref__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  padding: 1rem 0.75rem;
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  background: var(--ts-surface);
+  color: var(--ts-text-secondary);
+  font-family: var(--ts-font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.au-pref__opt:hover {
+  border-color: var(--ts-sage-3);
+}
+
+.au-pref__opt.is-active {
+  border-color: var(--ts-green);
+  background: var(--ts-tint-green);
+  color: var(--ts-green);
+}
+
+.au-pref__opt:focus-visible {
+  outline: none;
+  box-shadow: var(--ts-ring);
+}
+
+.au-pref__opt svg {
+  color: currentColor;
+}
+
+.au-onb__hint {
+  color: var(--ts-text-muted);
+  font-size: 0.8rem;
+  margin: 0.1rem 0 0;
+}
+
+.au-fieldlabel {
+  display: block;
+  font-family: var(--ts-font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ts-text);
+  margin-bottom: 0.4rem;
+}
