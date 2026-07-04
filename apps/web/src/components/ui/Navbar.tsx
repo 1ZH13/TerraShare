@@ -22,6 +22,8 @@ export interface NavbarProps {
   userMenuItems?: UserMenuItem[];
   /** Acción de cerrar sesión (se añade al final del menú de usuario). */
   onSignOut?: () => void;
+  /** Contenido opcional (p.ej. íconos de notificaciones/chats) antes del menú de usuario. */
+  actions?: ReactNode;
   className?: string;
 }
 
@@ -37,6 +39,7 @@ export default function Navbar({
   userName,
   userMenuItems = [],
   onSignOut,
+  actions,
   className,
 }: NavbarProps) {
   const [open, setOpen] = useState(false);
@@ -102,6 +105,7 @@ export default function Navbar({
       ) : null}
 
       <div className="ds-navbar__actions">
+        {actions}
         {userName ? (
           <div className="ds-usermenu" ref={menuRef}>
             <button

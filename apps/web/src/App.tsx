@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
-import type { RentalRequestDto } from "@terrashare/shared";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
@@ -10,7 +9,6 @@ import ReservePage from "./pages/ReservePage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentCancelPage from "./pages/PaymentCancelPage";
 import PaymentPage from "./pages/PaymentPage";
-import PaymentButton from "./components/PaymentButton";
 import AdminLandsPage from "./pages/AdminLandsPage";
 import AdminLeadsPage from "./pages/AdminLeadsPage";
 import MyLandsPage from "./pages/MyLandsPage";
@@ -22,6 +20,8 @@ import PaymentsPage from "./pages/PaymentsPage";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import OnboardingPage from "./pages/OnboardingPage";
+import AppLayout from "./components/AppLayout";
+import HomePage from "./pages/HomePage";
 import UserDashboardLayout from "./components/UserDashboardLayout";
 import PublicHeader from "./components/PublicHeader";
 import StyleguidePage from "./pages/StyleguidePage";
@@ -228,144 +228,6 @@ function AdminLayout({ children, onSignOut }: LayoutProps) {
   );
 }
 
-function DashboardPage() {
-  const { user } = useUser();
-  const { getToken } = useAuth();
-  const [requests, setRequests] = useState<RentalRequestDto[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (import.meta.env.DEV) {
-          headers["x-dev-user-id"] = "web_dev_user";
-          headers["x-dev-role"] = "user";
-        } else {
-          const token = await getToken();
-          if (token) headers["Authorization"] = `Bearer ${token}`;
-        }
-        const res = await fetch(`${BASE_URL}/api/v1/rental-requests`, { headers });
-        const data = await res.json();
-        console.log("API response:", data);
-        if (data?.data) {
-          setRequests(data.data);
-        } else if (Array.isArray(data)) {
-          setRequests(data);
-        }
-      } catch (err) {
-        console.error("Error fetching requests:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRequests();
-  }, [user]);
-
-  const statusConfig: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-    draft: { label: "Borrador", color: "#997a00", bg: "rgba(200, 170, 0, 0.15)", icon: "📝" },
-    pending_owner: { label: "Pendiente", color: "var(--river-500)", bg: "rgba(13, 111, 147, 0.12)", icon: "⏳" },
-    approved: { label: "Aprobada", color: "var(--leaf-700)", bg: "rgba(11, 95, 55, 0.12)", icon: "✅" },
-    rejected: { label: "Rechazada", color: "var(--danger)", bg: "rgba(180, 40, 40, 0.12)", icon: "❌" },
-    pending_payment: { label: "Pago pendiente", color: "var(--soil-500)", bg: "rgba(157, 106, 59, 0.15)", icon: "💳" },
-    paid: { label: "Pagada", color: "var(--success)", bg: "rgba(11, 95, 55, 0.12)", icon: "🎉" },
-  };
-
-  if (loading) {
-    return (
-      <div>
-        <div className="section-header">
-          <h1>Mis Solicitudes</h1>
-          <p>Gestiona tus solicitudes de alquiler</p>
-        </div>
-        <div className="panel" style={{ marginTop: "1.5rem", textAlign: "center", padding: "3rem" }}>
-          <div className="dashboard-spinner" />
-          <p style={{ marginTop: "1rem", opacity: 0.7 }}>Cargando solicitudes...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="section-header">
-        <h1>Mis Solicitudes</h1>
-        <p>Gestiona tus solicitudes de alquiler</p>
-      </div>
-
-      {requests.length === 0 ? (
-        <div className="glass-panel dashboard-empty">
-          <div className="dashboard-empty-icon">📋</div>
-          <h2>Sin solicitudes aún</h2>
-          <p>Cuando envíes una solicitud de alquiler, aparecerá aquí.</p>
-          <Link to="/catalog" className="btn btn-primary" style={{ marginTop: "1.5rem" }}>
-            Explorar terrenos
-          </Link>
-        </div>
-      ) : (
-        <div className="dashboard-requests">
-          {requests.map((req) => {
-            const status = statusConfig[req.status] || statusConfig.draft;
-            return (
-              <div key={req.id} className="request-card">
-                <div className="request-header">
-                  <div className="request-id">
-                    <span className="request-icon">{status.icon}</span>
-                    <span>Solicitud #{req.id.slice(0, 8)}</span>
-                  </div>
-                  <span
-                    className="request-status"
-                    style={{ background: status.bg, color: status.color }}
-                  >
-                    {status.label}
-                  </span>
-                </div>
-
-                <div className="request-body">
-                  <div className="request-detail">
-                    <span className="request-detail-label">Terreno</span>
-                    <span className="request-detail-value">{req.landId}</span>
-                  </div>
-                  <div className="request-detail">
-                    <span className="request-detail-label">Uso</span>
-                    <span className="request-detail-value">{req.intendedUse}</span>
-                  </div>
-                  <div className="request-detail">
-                    <span className="request-detail-label">Período</span>
-                    <span className="request-detail-value">
-                      {req.period?.startDate} → {req.period?.endDate}
-                    </span>
-                  </div>
-                </div>
-
-                {req.status === "approved" && (
-                  <div className="request-action">
-                    <p>Tu solicitud fue aprobada. Completa el pago para confirmar el alquiler.</p>
-                    <PaymentButton rentalRequest={req} />
-                  </div>
-                )}
-                {req.status === "pending_payment" && (
-                  <div className="request-action">
-                    <p>Procesando pago...</p>
-                    <PaymentButton rentalRequest={req} />
-                  </div>
-                )}
-                {req.status === "paid" && (
-                  <div className="request-action request-success">
-                    <span className="request-success-icon">✓</span>
-                    <span>Pago confirmado - ¡Alquiler activo!</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function AdminDashboardPage() {
   const { user } = useUser();
   const [summary, setSummary] = useState<AdminSummary | null>(null);
@@ -510,7 +372,9 @@ export default function App() {
       <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
       <Route path="/checkout/success" element={<PaymentSuccessPage />} />
       <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
-      <Route path="/dashboard" element={<ProtectedRoute><UserDashboardLayout><DashboardPage /></UserDashboardLayout></ProtectedRoute>} />
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/dashboard" element={<HomePage />} />
+      </Route>
       <Route path="/dashboard/lands" element={<ProtectedRoute><UserDashboardLayout><MyLandsPage /></UserDashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard/chats" element={<ProtectedRoute><UserDashboardLayout><ChatsPage /></UserDashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard/notifications" element={<ProtectedRoute><UserDashboardLayout><NotificationsPage /></UserDashboardLayout></ProtectedRoute>} />

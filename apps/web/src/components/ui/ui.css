@@ -255,6 +255,43 @@
   gap: 0.6rem;
 }
 
+/* botón de ícono para el slot `actions` (notificaciones, chats) */
+.ds-navbar__icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--ts-radius);
+  background: transparent;
+  color: var(--ts-text-secondary);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ds-navbar__icon:hover {
+  background: var(--ts-tint-green);
+  color: var(--ts-green);
+}
+
+.ds-navbar__icon:focus-visible {
+  outline: none;
+  box-shadow: var(--ts-ring);
+}
+
+.ds-navbar__icon-dot {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.45rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--ts-clay);
+}
+
 /* switch Busco / Ofrezco (segmented control) */
 .ds-segment {
   display: inline-flex;
