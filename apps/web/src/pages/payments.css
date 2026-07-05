@@ -1,0 +1,104 @@
+/* TerraShare — Pagos (paridad con el prototipo · pantalla 17). Prefijo `pay-`. */
+
+.pay { max-width: 960px; margin: 0 auto; padding: 44px 40px 70px; font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+
+@keyframes payUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.pay-title {
+  font-family: var(--ts-font-serif);
+  font-weight: 500;
+  font-size: 38px;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+  color: var(--ts-green-ink);
+  animation: payUp 0.6s ease both;
+}
+.pay-sub { color: var(--ts-sage-2); font-size: 16px; margin: 0 0 28px; animation: payUp 0.6s ease both 0.04s; }
+
+.pay-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 26px; animation: payUp 0.6s ease both 0.08s; }
+.pay-stat {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  padding: 20px;
+}
+.pay-stat__value { font-family: var(--ts-font-serif); font-weight: 600; font-size: 30px; }
+.pay-stat__value--clay { color: var(--ts-clay); }
+.pay-stat__label { font-size: 13px; color: var(--ts-sage); margin-top: 4px; }
+
+.pay-table {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  overflow: hidden;
+  animation: payUp 0.6s ease both 0.12s;
+}
+.pay-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 0.8fr 0.8fr 0.6fr;
+  align-items: center;
+  padding: 16px 22px;
+  border-bottom: 1px solid #f0e8d7;
+  font-size: 14px;
+}
+.pay-row:last-child { border-bottom: 0; }
+.pay-row--head {
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--ts-beige);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ts-sage-3);
+  font-weight: 600;
+}
+.pay-cell--date { color: var(--ts-sage-2); }
+.pay-cell--land { font-weight: 600; }
+.pay-cell--action { text-align: right; }
+
+.pay-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pay-badge--paid { color: var(--ts-green); background: var(--ts-tint-green-2); }
+.pay-badge--pending { color: #9a6b1f; background: #f5e9d0; }
+.pay-badge--failed { color: #a5573a; background: var(--ts-clay-tint); }
+.pay-badge--neutral { color: var(--ts-text-secondary); background: var(--ts-beige); }
+
+.pay-action { color: var(--ts-green); font-weight: 600; font-size: 13px; text-decoration: none; }
+.pay-action--pay { color: var(--ts-clay); font-weight: 700; }
+
+.pay-empty {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  color: var(--ts-sage-2);
+  font-size: 14px;
+}
+.pay-empty--error { color: #a5573a; }
+.pay-empty__cta {
+  display: inline-block;
+  margin-top: 14px;
+  background: var(--ts-green);
+  color: var(--ts-bg);
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .pay { padding: 28px 20px 56px; }
+  .pay-title { font-size: 30px; }
+  .pay-stats { grid-template-columns: 1fr; }
+  .pay-row { grid-template-columns: 1fr 1fr; row-gap: 6px; }
+  .pay-row--head { display: none; }
+  .pay-cell--action { text-align: left; }
+}
