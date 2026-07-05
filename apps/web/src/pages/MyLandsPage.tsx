@@ -2,89 +2,120 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import type { LandDto } from "@terrashare/shared";
+import { Plus, Eye, Inbox, MapPin } from "lucide-react";
 import { getMyLands } from "../services/api";
+import "./mylands.css";
 
-type MyLand = LandDto & { areaHectares?: number };
+type LoadState = "loading" | "ready" | "error";
+
+const USE_LABELS: Record<string, string> = {
+  agricultura: "Agricultura",
+  ganaderia: "Ganadería",
+  forestal: "Forestal",
+  acuicultura: "Acuicultura",
+  mixto: "Mixto",
+  otro: "Otro",
+};
+
+function useLabel(use?: string): string {
+  if (!use) return "Terreno";
+  return USE_LABELS[use] ?? use;
+}
 
 export default function MyLandsPage() {
   const { user } = useUser();
-  const [lands, setLands] = useState<MyLand[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [lands, setLands] = useState<LandDto[]>([]);
+  const [status, setStatus] = useState<LoadState>("loading");
 
   useEffect(() => {
-    const fetchMyLands = async () => {
-      if (!user) return;
-      try {
-        const data = await getMyLands();
+    if (!user) return;
+    let active = true;
+    getMyLands()
+      .then((data) => {
+        if (!active) return;
         setLands(data || []);
-      } catch (err) {
+        setStatus("ready");
+      })
+      .catch((err) => {
         console.error("Error fetching my lands:", err);
-        setError(err instanceof Error ? err.message : "Error al cargar terrenos");
-      } finally {
-        setLoading(false);
-      }
+        if (active) setStatus("error");
+      });
+    return () => {
+      active = false;
     };
-    fetchMyLands();
   }, [user]);
 
-  if (loading) {
-    return (
-      <div>
-        <div className="section-header">
-          <h1>Mis Terrenos</h1>
-          <p>Gestiona tus terrenos publicados</p>
-        </div>
-        <div className="panel" style={{ marginTop: "1.5rem", textAlign: "center", padding: "3rem" }}>
-          <p>Cargando terrenos...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <div className="section-header">
-        <h1>Mis Terrenos</h1>
-        <p>Gestiona tus terrenos publicados</p>
+    <div className="ml">
+      <div className="ml-head">
+        <div>
+          <h1 className="ml-title">Mis terrenos</h1>
+          <p className="ml-sub">Gestiona tus publicaciones y su estado.</p>
+        </div>
+        {/* TODO(#134): el wizard de publicación aún no está rediseñado. */}
+        <Link to="/dashboard/lands/new" className="ml-btn">
+          <Plus size={17} /> Publicar terreno
+        </Link>
       </div>
 
-      {error && (
-        <div className="panel" style={{ marginTop: "1.5rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
-          <p style={{ color: "#fca5a5" }}>Error: {error}</p>
+      {status === "loading" ? (
+        <div className="ml-grid">
+          <div className="ml-skeleton" />
+          <div className="ml-skeleton" />
+          <div className="ml-skeleton" />
         </div>
-      )}
-
-      {lands.length === 0 ? (
-        <div className="panel" style={{ marginTop: "1.5rem" }}>
-          <p>No tienes terrenos publicados.</p>
-          <p style={{ opacity: 0.7, marginTop: "0.5rem" }}>Los terrenos que crees aparecerán aquí.</p>
+      ) : status === "error" ? (
+        <div className="ml-empty ml-empty--error">
+          No pudimos cargar tus terrenos ahora mismo. (Pendiente de backend, #136.)
+        </div>
+      ) : lands.length === 0 ? (
+        <div className="ml-empty">
+          <p>Todavía no tienes terrenos publicados.</p>
+          <Link to="/dashboard/lands/new" className="ml-empty__cta">
+            Publicar tu primer terreno
+          </Link>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginTop: "1.5rem" }}>
-          {lands.map((land) => (
-            <div key={land.id} className="panel">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                <div>
-                  <h3>{land.title}</h3>
-                  <p style={{ opacity: 0.7 }}>
-                    {land.location?.province} · {land.location?.district}
-                  </p>
-                  <p style={{ opacity: 0.7 }}>
-                    {land.areaHectares} ha · ${land.priceRule?.pricePerMonth}/mes
-                  </p>
+        <div className="ml-grid">
+          {lands.map((land) => {
+            const active = land.status === "active";
+            const badgeCls = active
+              ? ""
+              : land.status === "draft"
+                ? "ml-card__badge--draft"
+                : "ml-card__badge--paused";
+            const badgeLabel = active ? "Publicada" : land.status === "draft" ? "Borrador" : "Pausada";
+            return (
+              <Link key={land.id} to={`/lands/${land.id}`} className="ml-card">
+                <div className="ml-card__media">
+                  <div className="ml-card__photo" aria-hidden="true">
+                    <MapPin size={26} strokeWidth={1.4} />
+                  </div>
+                  <span className={`ml-card__badge ${badgeCls}`}>{badgeLabel}</span>
                 </div>
-                <span className={`status-badge ${land.status === "active" ? "status-active" : "status-draft"}`}>
-                  {land.status === "active" ? "Activo" : land.status === "draft" ? "Borrador" : land.status}
-                </span>
-              </div>
-              <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
-                <Link to={`/lands/${land.id}`} className="btn btn-ghost" style={{ fontSize: "0.875rem" }}>
-                  Ver detalle
-                </Link>
-              </div>
-            </div>
-          ))}
+                <div className="ml-card__body">
+                  <div className="ml-card__title">{land.title}</div>
+                  <div className="ml-card__meta">
+                    {useLabel(land.allowedUses?.[0])} · $
+                    {land.priceRule?.pricePerMonth?.toLocaleString("es-PA")}/mes
+                  </div>
+                  {/* TODO(#136): sin métricas de vistas/solicitudes por terreno todavía. */}
+                  <div className="ml-card__stats">
+                    <span className="ml-card__stat">
+                      <Eye size={15} /> —
+                    </span>
+                    <span className="ml-card__stat">
+                      <Inbox size={15} /> —
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+          <Link to="/dashboard/lands/new" className="ml-add">
+            <Plus size={26} />
+            <span>Publicar otro terreno</span>
+          </Link>
         </div>
       )}
     </div>
