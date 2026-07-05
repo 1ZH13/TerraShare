@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { LandDto } from "@terrashare/shared";
-import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon } from "lucide-react";
+import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX } from "lucide-react";
 import { listLands } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
+import EmptyState from "../components/EmptyState";
 import "./catalog.css";
 
 type LoadState = "loading" | "ready" | "error";
@@ -192,7 +193,20 @@ export default function CatalogPage() {
               No pudimos cargar el catálogo ahora mismo. Vuelve a intentarlo en un momento.
             </p>
           ) : filtered.length === 0 ? (
-            <p className="cat-state">No hay terrenos que coincidan con estos filtros.</p>
+            <EmptyState
+              icon={SearchX}
+              title="Sin resultados"
+              description="No encontramos terrenos con esos filtros. Prueba ampliar la búsqueda."
+              action={{
+                label: "Limpiar filtros",
+                onClick: () => {
+                  setQuery("");
+                  setUse("todos");
+                  setProvince("todas");
+                  setMaxPrice(1_000_000);
+                },
+              }}
+            />
           ) : (
             <div className="cat-list">
               {filtered.map((land) => {

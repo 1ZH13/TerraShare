@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import type { LandDto } from "@terrashare/shared";
-import { Plus, Eye, Inbox, MapPin } from "lucide-react";
+import { Plus, Eye, Inbox, MapPin, Map } from "lucide-react";
 import { getMyLands } from "../services/api";
+import EmptyState from "../components/EmptyState";
 import "./mylands.css";
 
 type LoadState = "loading" | "ready" | "error";
@@ -69,12 +70,12 @@ export default function MyLandsPage() {
           No pudimos cargar tus terrenos ahora mismo. (Pendiente de backend, #136.)
         </div>
       ) : lands.length === 0 ? (
-        <div className="ml-empty">
-          <p>Todavía no tienes terrenos publicados.</p>
-          <Link to="/dashboard/lands/new" className="ml-empty__cta">
-            Publicar tu primer terreno
-          </Link>
-        </div>
+        <EmptyState
+          icon={Map}
+          title="Publica tu primer terreno"
+          description="Sube fotos, ubicación y precio. Se publica de inmediato."
+          action={{ label: "Publicar terreno", to: "/dashboard/lands/new" }}
+        />
       ) : (
         <div className="ml-grid">
           {lands.map((land) => {

@@ -13,10 +13,14 @@ import {
   Inbox,
   TrendingUp,
   Eye,
+  ClipboardList,
+  Heart,
+  MessageCircle,
 } from "lucide-react";
 import { getChats, getMyLands, listRentalRequests } from "../services/api";
 import { getDisplayName } from "../components/authDisplay";
 import { useAppMode } from "../components/AppLayout";
+import EmptyState from "../components/EmptyState";
 import "./home.css";
 
 type LoadState = "loading" | "ready" | "error";
@@ -133,9 +137,12 @@ function BuscoHome({ name }: { name: string }) {
             No pudimos cargar tus solicitudes. Inténtalo de nuevo en un momento.
           </div>
         ) : requests.length === 0 ? (
-          <div className="hm-empty">
-            Aún no tienes solicitudes. Explora el catálogo y solicita tu primer terreno.
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            title="Aún no tienes solicitudes"
+            description="Cuando solicites un terreno, aparecerá aquí con su estado."
+            action={{ label: "Explorar terrenos", to: "/catalog" }}
+          />
         ) : (
           <div className="hm-grid3">
             {requests.slice(0, 6).map((req) => {
@@ -176,9 +183,12 @@ function BuscoHome({ name }: { name: string }) {
             <h2 className="hm-sec__title">Guardados</h2>
           </div>
           {/* TODO(#137): no existe endpoint de favoritos/guardados todavía. */}
-          <div className="hm-empty">
-            Todavía no guardas terrenos. Toca el corazón en un terreno para guardarlo aquí.
-          </div>
+          <EmptyState
+            compact
+            icon={Heart}
+            title="Todavía no guardas terrenos"
+            description="Toca el corazón en un terreno para guardarlo aquí."
+          />
         </section>
 
         <section>
@@ -193,7 +203,7 @@ function BuscoHome({ name }: { name: string }) {
           ) : chatsState === "error" ? (
             <div className="hm-empty hm-empty--error">No pudimos cargar tus chats.</div>
           ) : chats.length === 0 ? (
-            <div className="hm-empty">Aún no tienes conversaciones.</div>
+            <EmptyState compact icon={MessageCircle} title="Aún no tienes conversaciones" />
           ) : (
             <div className="hm-chatlist">
               {/* TODO(#137): ChatDto no incluye nombre del interlocutor ni último
@@ -292,8 +302,12 @@ function OfrezcoHome() {
           Solicitudes recibidas
         </h2>
         {/* TODO(#136): no existe endpoint de solicitudes recibidas por el dueño. */}
-        <div className="hm-empty" style={{ marginBottom: "44px" }}>
-          Cuando alguien solicite uno de tus terrenos, aparecerá aquí. (Pendiente de backend, #136.)
+        <div style={{ marginBottom: "44px" }}>
+          <EmptyState
+            icon={Inbox}
+            title="Sin solicitudes por ahora"
+            description="Cuando alguien solicite uno de tus terrenos, aparecerá aquí."
+          />
         </div>
       </section>
 

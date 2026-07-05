@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { Check, MessageCircle, CreditCard, Bell, MapPin } from "lucide-react";
+import EmptyState from "../components/EmptyState";
 import "./notifications.css";
 
 interface NotificationItem {
@@ -94,10 +95,11 @@ export default function NotificationsPage() {
       ) : error ? (
         <div className="ntf-empty ntf-empty--error">No pudimos cargar tus notificaciones.</div>
       ) : notifications.length === 0 ? (
-        <div className="ntf-empty">
-          <p>No tienes notificaciones.</p>
-          <p>Recibirás alertas sobre tus solicitudes, pagos y mensajes.</p>
-        </div>
+        <EmptyState
+          icon={Bell}
+          title="No tienes notificaciones"
+          description="Recibirás alertas sobre tus solicitudes, pagos y mensajes."
+        />
       ) : (
         <div className="ntf-list">
           {notifications.map((n) => {

@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import type { PaymentDto } from "@terrashare/shared";
+import { CreditCard } from "lucide-react";
 import { getMyPayments } from "../services/api";
+import EmptyState from "../components/EmptyState";
 import "./payments.css";
 
 type PaymentRow = PaymentDto & { landTitle?: string; receiptUrl?: string };
@@ -86,12 +88,12 @@ export default function PaymentsPage() {
       ) : error ? (
         <div className="pay-empty pay-empty--error">No pudimos cargar tus pagos.</div>
       ) : payments.length === 0 ? (
-        <div className="pay-empty">
-          <p>Todavía no tienes pagos.</p>
-          <Link to="/dashboard" className="pay-empty__cta">
-            Ver mis solicitudes
-          </Link>
-        </div>
+        <EmptyState
+          icon={CreditCard}
+          title="Todavía no tienes pagos"
+          description="Cuando completes el pago de un alquiler, aparecerá en tu historial."
+          action={{ label: "Ver mis solicitudes", to: "/dashboard" }}
+        />
       ) : (
         <div className="pay-table">
           <div className="pay-row pay-row--head">
