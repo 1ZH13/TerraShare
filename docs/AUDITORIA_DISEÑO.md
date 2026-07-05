@@ -23,28 +23,27 @@ Rama de trabajo: `feature/134-web-editorial-parity` (sobre el stack `feature/134
 | 04 | **Catálogo** | `pages/CatalogPage.tsx`, `catalog.css` | ✅ Paridad. Filtros pill, lista horizontal, **mapa Leaflet real** + tarjeta flotante. |
 | 05 | **Detalle** | `pages/LandDetailPage.tsx`, `detail.css` | ✅ Paridad. Galería 2fr/1fr, 6 specs reales, card de acción sticky. |
 
-### Pendientes de paridad (existen pero hay que rediseñarlas al mockup) — ⏳
+### Transacción, cuenta y admin — ✅ COMPLETO
 
-Sub-tareas de **#134**. Cada una tiene su pantalla en el prototipo (`scr-*.html` extraídos):
+| Pantalla | Archivos | Estado |
+|----------|----------|--------|
+| **Solicitar alquiler** | `ReservePage`, `reserve.css` | ✅ Resumen sticky + formulario, crea la solicitud real. |
+| **Publicar (wizard 4 pasos)** | `PublishLandPage`, `publish.css` | ✅ Datos/Ubicación/Precio/Fotos, validación, `createLand()`. Ruta `/dashboard/lands/new`. |
+| **Trato / Pago** | `PaymentPage`, `deal.css` | ✅ Cabecera + stepper + panel Stripe real. Ruta `/pay/:requestId`. |
+| **Pago confirmado / cancelado** | `PaymentSuccess/CancelPage`, `checkout.css` | ✅ Tarjeta centrada con datos reales del pago. |
+| **Mis terrenos** | `MyLandsPage`, `mylands.css` | ✅ Grid de publicaciones. |
+| **Pagos** | `PaymentsPage`, `payments.css` | ✅ Stats + tabla. |
+| **Notificaciones** | `NotificationsPage`, `notifications.css` | ✅ Lista con icono por tipo + no-leído. |
+| **Perfil** | `ProfilePage`, `profile.css` | ✅ Identidad + datos + preferencias (toggles) + cuenta. |
+| **Chats** | `ChatsPage`, `chats.css` | ✅ **Funcional**: inbox 2 paneles, hilo real, envío, WhatsApp. |
+| **Estados vacíos** | `components/EmptyState.tsx` | ✅ Componente reutilizable aplicado en todas las secciones. |
+| **Admin** (Resumen/Terrenos/Usuarios/Leads) | `AdminDashboardPage`, `Admin*Page`, `AdminLayout`, `admin.css` | ✅ Sidebar oscuro + tablas + stats reales. |
 
-| Pantalla prototipo | Página actual | Notas |
-|--------------------|---------------|-------|
-| Login / onboarding | `components/Login/Register`, `OnboardingPage` | Revisar paridad editorial. |
-| Publicar (wizard 4 pasos) | `MyLandsPage` | Rehacer como wizard `Paso 1..4`. |
-| Solicitar alquiler | `ReservePage` | Form editorial. |
-| Hacer oferta (venta) | — | Depende de #140. |
-| Trato / Trato compra | `PaymentPage` | Flujo de acuerdo + pago. |
-| Checkout éxito | `PaymentSuccessPage` | Pantalla de confirmación. |
-| Pagos (historial) | `PaymentsPage` | Lista + estados. |
-| Chats | `ChatsPage` | Lista + hilo. |
-| Notificaciones | `NotificationsPage` | Lista con no-leídos. |
-| Perfil | `ProfilePage` | Cuenta y ajustes. |
-| Estados vacíos | — | Componentes reutilizables. |
-| Admin: Resumen | `AdminDashboardPage` | Métricas. |
-| Admin: Reportes / moderación | — | Depende de backend. |
-| Admin: Terrenos | `AdminLandsPage` | Tabla. |
-| Admin: Usuarios | `AdminUsersPage` | Tabla + detalle. |
-| Admin: Leads | `AdminLeadsPage` | Tabla. |
+**Layouts:** `UserDashboardLayout` (nav editorial unificado) y `AdminLayout` (sidebar) reescritos.
+
+### Pendiente de paridad (menor) — ⏳
+- **Login / onboarding** (`components/Login/Register`, `OnboardingPage`): revisar paridad fina.
+- **Hacer oferta (venta)** y **Admin: Reportes/moderación**: dependen de backend (#140 / moderación).
 
 ---
 
@@ -57,7 +56,7 @@ Detectadas durante la paridad del flujo público. Donde la UI las requiere, hoy 
 |-----------------------|---------------|----------------|-------|
 | **Fotos de terrenos** (galería, portadas, hero) | Landing, Home, Catálogo, Detalle | `LandDto` sin imágenes → placeholders | **#148** (nuevo) |
 | **Favoritos / Guardados** (corazón) | Home "Guardados", Detalle "Guardar" | Sin endpoint | **#147** (nuevo) |
-| **Chats enriquecidos** (nombre, último msg, no leídos) | Home Chats, Chats | `ChatDto` solo `userId`/`role` | **#149** (nuevo) |
+| ~~**Chats enriquecidos** (nombre, último msg, no leídos)~~ | Home Chats, Chats | ✅ **HECHO** — `GET /chats` enriquecido + inbox funcional | ~~#149~~ (cerrado) |
 | **Verificación + perfil del propietario** | Detalle (chip "Verificado", banner, dueño) | Solo `ownerId`; sin verificación | **#150** (nuevo) |
 | **Agua / acceso / suelo / luz** del terreno | Detalle (specs), Catálogo (features) | No existen en `LandDto` | **#138** |
 | **Operación alquiler/venta + precio de venta** | Detalle, Catálogo (filtro), Hacer oferta | Sin campo de operación | **#140** |
