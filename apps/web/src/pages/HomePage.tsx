@@ -206,22 +206,25 @@ function BuscoHome({ name }: { name: string }) {
             <EmptyState compact icon={MessageCircle} title="Aún no tienes conversaciones" />
           ) : (
             <div className="hm-chatlist">
-              {/* TODO(#137): ChatDto no incluye nombre del interlocutor ni último
-                  mensaje; se muestra lo disponible (rol + fecha). */}
               {chats.slice(0, 4).map((chat) => {
-                const other = chat.participants?.find((p) => p.role === "owner") ?? chat.participants?.[0];
-                const initials = other ? other.userId.slice(0, 2).toUpperCase() : "TS";
-                const title = other?.role === "owner" ? "Propietario" : "Conversación";
+                const name = chat.otherParticipant?.displayName ?? "Conversación";
+                const initials = name
+                  .split(" ")
+                  .map((w) => w.charAt(0))
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase();
+                const preview = chat.lastMessage?.text ?? (chat.landTitle ? `Sobre ${chat.landTitle}` : "Nueva conversación");
                 return (
                   <Link key={chat.id} to="/dashboard/chats" className="hm-chatrow">
                     <span className="hm-avatar" aria-hidden="true">
-                      {initials}
+                      {initials || "TS"}
                     </span>
                     <div className="hm-chatrow__body">
-                      <div className="hm-chatrow__title">{title}</div>
-                      <div className="hm-chatrow__sub">Actualizado {formatMonth(chat.updatedAt)}</div>
+                      <div className="hm-chatrow__title">{name}</div>
+                      <div className="hm-chatrow__sub">{preview}</div>
                     </div>
-                    {chat.status === "active" && <span className="hm-dot" aria-hidden="true" />}
+                    {chat.unread && <span className="hm-dot" aria-hidden="true" />}
                   </Link>
                 );
               })}
