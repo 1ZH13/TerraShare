@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth, useUser } from "@clerk/clerk-react";
-
-const typeLabels: Record<string, string> = {
-  rental_request_status: "Solicitud",
-  payment: "Pago",
-  message: "Mensaje",
-  land_available: "Terreno",
-  system: "Sistema",
-};
+import { Check, MessageCircle, CreditCard, Bell, MapPin } from "lucide-react";
+import "./notifications.css";
 
 interface NotificationItem {
   id: string;
@@ -20,9 +14,35 @@ interface NotificationItem {
   createdAt?: string;
 }
 
+// Tipo → icono + variante de color (fiel al prototipo).
+const TYPE_STYLE: Record<string, { icon: typeof Check; variant: string }> = {
+  rental_request_status: { icon: Check, variant: "green" },
+  message: { icon: MessageCircle, variant: "teal" },
+  payment: { icon: CreditCard, variant: "amber" },
+  land_available: { icon: MapPin, variant: "neutral" },
+  system: { icon: Bell, variant: "neutral" },
+};
+
+function relativeTime(iso?: string): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diff = Date.now() - then;
+  const min = Math.round(diff / 60000);
+  if (min < 1) return "Ahora";
+  if (min < 60) return `Hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `Hace ${h} h`;
+  const d = Math.round(h / 24);
+  if (d === 1) return "Ayer";
+  if (d < 7) return `Hace ${d} días`;
+  return new Date(iso).toLocaleDateString("es-PA", { day: "numeric", month: "short" });
+}
+
 export default function NotificationsPage() {
   const { user } = useUser();
   const { getToken } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,66 +73,65 @@ export default function NotificationsPage() {
     fetchData();
   }, [user]);
 
-  if (loading) {
-    return (
-      <div>
-        <div className="section-header">
-          <h1>Notificaciones</h1>
-          <p>Actualizaciones y alertas</p>
-        </div>
-        <div className="glass-panel" style={{ marginTop: "1.5rem", textAlign: "center", padding: "3rem" }}>
-          <p>Cargando notificaciones...</p>
-        </div>
-      </div>
-    );
-  }
+  // TODO(#136): sin endpoint para marcar como leídas; por ahora es optimista/local.
+  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+
+  const hasUnread = notifications.some((n) => !n.read);
 
   return (
-    <div>
-      <div className="section-header">
-        <h1>Notificaciones</h1>
-        <p>Actualizaciones y alertas</p>
+    <div className="ntf">
+      <div className="ntf-head">
+        <h1 className="ntf-title">Notificaciones</h1>
+        {hasUnread && (
+          <button type="button" className="ntf-markall" onClick={markAllRead}>
+            Marcar todas como leídas
+          </button>
+        )}
       </div>
 
-      {error && (
-        <div className="glass-panel" style={{ marginTop: "1.5rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
-          <p style={{ color: "var(--danger)" }}>Error: {error}</p>
-        </div>
-      )}
-
-      {notifications.length === 0 ? (
-        <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
+      {loading ? (
+        <div className="ntf-empty">Cargando notificaciones…</div>
+      ) : error ? (
+        <div className="ntf-empty ntf-empty--error">No pudimos cargar tus notificaciones.</div>
+      ) : notifications.length === 0 ? (
+        <div className="ntf-empty">
           <p>No tienes notificaciones.</p>
-          <p style={{ opacity: 0.7, marginTop: "0.5rem" }}>Recibiras alertas sobre tus solicitudes, pagos y mensajes.</p>
+          <p>Recibirás alertas sobre tus solicitudes, pagos y mensajes.</p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.5rem" }}>
-          {notifications.map((n) => (
-            <div key={n.id} className="glass-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "1rem" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                    <span className="card-badge" style={{ fontSize: "0.65rem", padding: "0.15rem 0.4rem" }}>
-                      {typeLabels[n.type] || n.type}
-                    </span>
-                    {!n.read && (
-                      <span style={{ width: "8px", height: "8px", borderRadius: "999px", background: "var(--leaf-700)" }} />
-                    )}
-                  </div>
-                  <p style={{ margin: "0 0 0.25rem", fontWeight: n.read ? 400 : 700 }}>{n.title}</p>
-                  <p style={{ margin: 0, opacity: 0.7, fontSize: "0.9rem" }}>{n.message}</p>
-                  {n.actionUrl && (
-                    <Link to={n.actionUrl} className="btn btn-ghost" style={{ marginTop: "0.75rem", fontSize: "0.85rem", padding: "0.5rem 0.75rem" }}>
-                      Ver detalles
-                    </Link>
-                  )}
-                </div>
-                <span style={{ fontSize: "0.75rem", opacity: 0.5, whiteSpace: "nowrap" }}>
-                  {n.createdAt ? new Date(n.createdAt).toLocaleDateString("es-PA") : ""}
+        <div className="ntf-list">
+          {notifications.map((n) => {
+            const style = TYPE_STYLE[n.type] ?? TYPE_STYLE.system;
+            const Icon = style.icon;
+            const text = n.title ?? n.message ?? "Notificación";
+            const clickable = Boolean(n.actionUrl);
+            const content = (
+              <>
+                <span className={`ntf-item__icon ntf-item__icon--${style.variant}`}>
+                  <Icon size={20} />
                 </span>
+                <div className="ntf-item__body">
+                  <div className="ntf-item__text">{text}</div>
+                  <div className="ntf-item__time">{relativeTime(n.createdAt)}</div>
+                </div>
+                {!n.read && <span className="ntf-item__dot" aria-hidden="true" />}
+              </>
+            );
+            return clickable ? (
+              <button
+                key={n.id}
+                type="button"
+                className={`ntf-item ${n.read ? "ntf-item--read" : ""}`}
+                onClick={() => navigate(n.actionUrl!)}
+              >
+                {content}
+              </button>
+            ) : (
+              <div key={n.id} className={`ntf-item ${n.read ? "ntf-item--read" : ""}`}>
+                {content}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
