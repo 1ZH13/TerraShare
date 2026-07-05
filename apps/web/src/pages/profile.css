@@ -1,0 +1,208 @@
+/* TerraShare — Mi perfil (paridad con el prototipo · pantalla 10). Prefijo `pf-`. */
+
+.pf { max-width: 760px; margin: 0 auto; padding: 44px 40px 70px; font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+
+@keyframes pfUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.pf-title {
+  font-family: var(--ts-font-serif);
+  font-weight: 500;
+  font-size: 38px;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+  color: var(--ts-green-ink);
+  animation: pfUp 0.6s ease both;
+}
+.pf-sub { color: var(--ts-sage-2); font-size: 16px; margin: 0 0 26px; animation: pfUp 0.6s ease both 0.04s; }
+
+.pf-card {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 18px;
+  animation: pfUp 0.6s ease both 0.1s;
+}
+.pf-card__title { font-family: var(--ts-font-serif); font-size: 19px; font-weight: 600; margin-bottom: 16px; }
+
+/* cabecera de identidad */
+.pf-identity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 18px;
+  animation: pfUp 0.6s ease both 0.08s;
+}
+.pf-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: var(--ts-tint-green);
+  color: var(--ts-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pf-identity__body { flex: 1; min-width: 0; }
+.pf-identity__name-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.pf-identity__name { font-family: var(--ts-font-serif); font-size: 21px; font-weight: 600; }
+.pf-identity__badge {
+  font-size: 11px;
+  color: var(--ts-green);
+  background: var(--ts-tint-green);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.pf-identity__meta { font-size: 13px; color: var(--ts-sage); margin-top: 2px; }
+
+/* botones outline reutilizables */
+.pf-obtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ts-text-secondary);
+  border: 1px solid #d8cfb8;
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  background: transparent;
+  text-decoration: none;
+  font-family: var(--ts-font-sans);
+}
+.pf-obtn:hover { background: #f1ebdd; }
+
+/* datos personales */
+.pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pf-field { display: block; }
+.pf-label { font-size: 13px; font-weight: 600; color: var(--ts-text-secondary); display: block; margin-bottom: 7px; }
+.pf-label span { color: var(--ts-sage-3); font-weight: 400; }
+.pf-value,
+.pf-input {
+  width: 100%;
+  background: var(--ts-paper-tint);
+  border: 1px solid var(--ts-border);
+  border-radius: 11px;
+  padding: 12px 15px;
+  font-size: 15px;
+  color: var(--ts-green-ink);
+  font-family: var(--ts-font-sans);
+}
+.pf-value--muted { color: var(--ts-sage-3); }
+.pf-input { outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.pf-input:focus { border-color: var(--ts-green); box-shadow: var(--ts-ring); }
+.pf-save-row { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 16px; }
+.pf-save {
+  background: var(--ts-green);
+  color: var(--ts-bg);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 11px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 0;
+  font-family: var(--ts-font-sans);
+}
+.pf-save:hover:not(:disabled) { background: var(--ts-green-ink); }
+.pf-save:disabled { opacity: 0.7; cursor: default; }
+.pf-save-msg { font-size: 13px; color: var(--ts-sage); }
+
+/* preferencias */
+.pf-pref {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0e8d7;
+  gap: 16px;
+}
+.pf-pref:last-child { border-bottom: 0; }
+.pf-pref__label { font-size: 14.5px; }
+.pf-pref__hint { font-size: 12.5px; color: var(--ts-sage); }
+
+/* segmento Busco/Ofrezco */
+.pf-seg { display: inline-flex; background: #efe7d6; border-radius: 999px; padding: 3px; gap: 2px; flex: 0 0 auto; }
+.pf-seg__btn {
+  color: var(--ts-text-secondary);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--ts-font-sans);
+}
+.pf-seg__btn.is-active { background: var(--ts-green); color: var(--ts-bg); }
+
+/* toggle */
+.pf-toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #d8cfb8;
+  position: relative;
+  flex: 0 0 auto;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  padding: 0;
+}
+.pf-toggle.is-on { background: var(--ts-green); }
+.pf-toggle__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s ease;
+}
+.pf-toggle.is-on .pf-toggle__knob { left: 22px; }
+
+/* cuenta */
+.pf-account-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.pf-danger {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: #f7e7e4;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.pf-danger__title { font-size: 14px; font-weight: 700; color: #9a3b2c; }
+.pf-danger__hint { font-size: 12.5px; color: #b06554; }
+.pf-danger__btn {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #9a3b2c;
+  border: 1px solid #d99a8c;
+  border-radius: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  background: transparent;
+  white-space: nowrap;
+  font-family: var(--ts-font-sans);
+}
+.pf-danger__btn:hover { background: #f0d8d2; }
+
+@media (max-width: 560px) {
+  .pf { padding: 28px 20px 56px; }
+  .pf-title { font-size: 30px; }
+  .pf-grid { grid-template-columns: 1fr; }
+  .pf-identity { flex-wrap: wrap; }
+}
