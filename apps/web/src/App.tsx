@@ -12,6 +12,7 @@ import PaymentPage from "./pages/PaymentPage";
 import AdminLandsPage from "./pages/AdminLandsPage";
 import AdminLeadsPage from "./pages/AdminLeadsPage";
 import MyLandsPage from "./pages/MyLandsPage";
+import PublishLandPage from "./pages/PublishLandPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import ProfilePage from "./pages/ProfilePage";
 import ChatsPage from "./pages/ChatsPage";
@@ -140,6 +141,7 @@ export default function App() {
         <Route path="/dashboard" element={<HomePage />} />
         <Route path="/catalog" element={<CatalogPage />} />
       </Route>
+      <Route path="/dashboard/lands/new" element={<ProtectedRoute><PublishLandPage /></ProtectedRoute>} />
       <Route path="/dashboard/lands" element={<ProtectedRoute><UserDashboardLayout><MyLandsPage /></UserDashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard/chats" element={<ProtectedRoute><UserDashboardLayout><ChatsPage /></UserDashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard/notifications" element={<ProtectedRoute><UserDashboardLayout><NotificationsPage /></UserDashboardLayout></ProtectedRoute>} />
