@@ -135,6 +135,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+      <Route path="/pay/:requestId" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
       <Route path="/checkout/success" element={<PaymentSuccessPage />} />
       <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

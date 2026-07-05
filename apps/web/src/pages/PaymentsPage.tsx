@@ -116,7 +116,7 @@ export default function PaymentsPage() {
                 </span>
                 <span className="pay-cell--action">
                   {isPending ? (
-                    <Link to="/dashboard" className="pay-action pay-action--pay">
+                    <Link to={`/pay/${p.rentalRequestId}`} className="pay-action pay-action--pay">
                       Pagar
                     </Link>
                   ) : p.receiptUrl ? (

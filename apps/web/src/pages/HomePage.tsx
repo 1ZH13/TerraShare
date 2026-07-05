@@ -150,7 +150,7 @@ function BuscoHome({ name }: { name: string }) {
                     <Calendar size={14} /> {formatPeriod(req.period?.startDate, req.period?.endDate)}
                   </div>
                   {status.foot === "pay" ? (
-                    <Link to="/dashboard/payments" className="hm-req__pay">
+                    <Link to={`/pay/${req.id}`} className="hm-req__pay">
                       <CreditCard size={16} /> Completar pago
                     </Link>
                   ) : status.foot === "active" ? (
