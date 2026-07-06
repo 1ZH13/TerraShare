@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import type { RentalRequestDto } from "@terrashare/shared";
+import "./i18n";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
