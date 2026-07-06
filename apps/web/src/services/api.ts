@@ -1,7 +1,8 @@
 /**
  * API client para apps/web — conecta con backend-api.
- * Always uses dev bypass headers in development.
- * No authentication tokens required.
+ * Cuando hay sesión de Clerk, envía el JWT real (`Authorization: Bearer`) para
+ * que el backend identifique al usuario. Solo cae al bypass de dev
+ * (`x-dev-*`) si no hay sesión activa (p. ej. flujos públicos en local).
  */
 import type {
   ApiSuccess,
@@ -17,8 +18,31 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-const buildHeaders = (): Record<string, string> => {
+declare global {
+  interface Window {
+    Clerk?: {
+      session?: { getToken: () => Promise<string | null> } | null;
+    };
+  }
+}
+
+const buildHeaders = async (): Promise<Record<string, string>> => {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  // Identidad real: si hay sesión de Clerk, enviamos su JWT. El backend valida
+  // el token y deriva el usuario de `sub`. Importante: NO enviamos los headers
+  // `x-dev-*` en este caso, porque el middleware prioriza el bypass sobre el
+  // token y todos los usuarios colapsarían en uno solo.
+  try {
+    const token = await window.Clerk?.session?.getToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      return headers;
+    }
+  } catch {
+    // Sin token utilizable → caemos al fallback de dev.
+  }
+
   if (import.meta.env.DEV) {
     headers["x-dev-role"] = "user";
     headers["x-dev-user-id"] = "web_dev_user";
@@ -41,7 +65,7 @@ const request = async <T = unknown>(
   path: string,
   body?: unknown,
 ): Promise<ApiSuccess<T>> => {
-  const opts: RequestInit = { method, headers: buildHeaders() };
+  const opts: RequestInit = { method, headers: await buildHeaders() };
   if (body != null) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE_URL}${path}`, opts);
   return (await handleResponse(res)) as ApiSuccess<T>;
@@ -166,6 +190,21 @@ export const getMyPayments = async (): Promise<PaymentDto[]> => {
   return res?.data ?? [];
 };
 
+/**
+ * POST /api/v1/payments/confirm — verifica el estado del pago directamente
+ * contra Stripe (no depende del webhook). Devuelve el estado resultante.
+ */
+export const confirmPayment = async (
+  rentalRequestId: string,
+): Promise<{ status?: string; paymentId?: string } | null> => {
+  const res = await request<{ status?: string; paymentId?: string; rentalRequestId?: string }>(
+    "POST",
+    "/api/v1/payments/confirm",
+    { rentalRequestId },
+  );
+  return res?.data ?? null;
+};
+
 type LandLike = Record<string, any>;
 
 const adaptLandForCatalog = (land: LandLike | null | undefined) => {
@@ -272,6 +311,7 @@ export const api = {
   createCheckoutSession,
   getPaymentsByRequest,
   getMyPayments,
+  confirmPayment,
   adaptLand,
   getChats,
   createChat,
