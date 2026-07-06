@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { ErrorBoundary } from "react-error-boundary";
 import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import type { RentalRequestDto } from "@terrashare/shared";
+import { ErrorFallback } from "./components/ErrorFallback";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
@@ -497,26 +499,28 @@ export default function App() {
   };
 
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/catalog" element={<UserDashboardLayout><CatalogPage /></UserDashboardLayout>} />
-      <Route path="/lands/:id" element={<LandDetailPage />} />
-      <Route path="/reserve/:landId" element={<ProtectedRoute><ReservePage /></ProtectedRoute>} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/checkout/success" element={<PaymentSuccessPage />} />
-      <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
-      <Route path="/dashboard" element={<ProtectedRoute><UserDashboardLayout><DashboardPage /></UserDashboardLayout></ProtectedRoute>} />
-      <Route path="/dashboard/lands" element={<ProtectedRoute><UserDashboardLayout><MyLandsPage /></UserDashboardLayout></ProtectedRoute>} />
-      <Route path="/dashboard/chats" element={<ProtectedRoute><UserDashboardLayout><ChatsPage /></UserDashboardLayout></ProtectedRoute>} />
-      <Route path="/dashboard/notifications" element={<ProtectedRoute><UserDashboardLayout><NotificationsPage /></UserDashboardLayout></ProtectedRoute>} />
-      <Route path="/dashboard/payments" element={<ProtectedRoute><UserDashboardLayout><PaymentsPage /></UserDashboardLayout></ProtectedRoute>} />
-      <Route path="/dashboard/profile" element={<ProtectedRoute><UserDashboardLayout><ProfilePage /></UserDashboardLayout></ProtectedRoute>} />
-      <Route path="/dashboard/admin" element={<AdminRoute><AdminLayout><AdminDashboardPage /></AdminLayout></AdminRoute>} />
-      <Route path="/dashboard/admin/users" element={<AdminRoute><AdminLayout><AdminUsersPage /></AdminLayout></AdminRoute>} />
-      <Route path="/dashboard/admin/lands" element={<AdminRoute><AdminLayout><AdminLandsPage /></AdminLayout></AdminRoute>} />
-      <Route path="/dashboard/admin/leads" element={<AdminRoute><AdminLayout><AdminLeadsPage /></AdminLayout></AdminRoute>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => window.location.href = "/"}>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/catalog" element={<UserDashboardLayout><CatalogPage /></UserDashboardLayout>} />
+        <Route path="/lands/:id" element={<LandDetailPage />} />
+        <Route path="/reserve/:landId" element={<ProtectedRoute><ReservePage /></ProtectedRoute>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/checkout/success" element={<PaymentSuccessPage />} />
+        <Route path="/checkout/cancel" element={<PaymentCancelPage />} />
+        <Route path="/dashboard" element={<ProtectedRoute><UserDashboardLayout><DashboardPage /></UserDashboardLayout></ProtectedRoute>} />
+        <Route path="/dashboard/lands" element={<ProtectedRoute><UserDashboardLayout><MyLandsPage /></UserDashboardLayout></ProtectedRoute>} />
+        <Route path="/dashboard/chats" element={<ProtectedRoute><UserDashboardLayout><ChatsPage /></UserDashboardLayout></ProtectedRoute>} />
+        <Route path="/dashboard/notifications" element={<ProtectedRoute><UserDashboardLayout><NotificationsPage /></UserDashboardLayout></ProtectedRoute>} />
+        <Route path="/dashboard/payments" element={<ProtectedRoute><UserDashboardLayout><PaymentsPage /></UserDashboardLayout></ProtectedRoute>} />
+        <Route path="/dashboard/profile" element={<ProtectedRoute><UserDashboardLayout><ProfilePage /></UserDashboardLayout></ProtectedRoute>} />
+        <Route path="/dashboard/admin" element={<AdminRoute><AdminLayout><AdminDashboardPage /></AdminLayout></AdminRoute>} />
+        <Route path="/dashboard/admin/users" element={<AdminRoute><AdminLayout><AdminUsersPage /></AdminLayout></AdminRoute>} />
+        <Route path="/dashboard/admin/lands" element={<AdminRoute><AdminLayout><AdminLandsPage /></AdminLayout></AdminRoute>} />
+        <Route path="/dashboard/admin/leads" element={<AdminRoute><AdminLayout><AdminLeadsPage /></AdminLayout></AdminRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
