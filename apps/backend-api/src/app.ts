@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { failure } from "./lib/api-response";
+import { securityHeaders } from "./middleware/security-headers";
 import { requestIdMiddleware } from "./middleware/request-id";
 import { rateLimitByIP } from "./middleware/rate-limit";
 import { authRoutes } from "./routes/auth";
@@ -19,6 +20,7 @@ import type { AppEnv } from "./types";
 export function createApp() {
   const app = new Hono<AppEnv>();
 
+  app.use("*", securityHeaders);
   app.use("*", cors({
     origin: "*",
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
