@@ -16,15 +16,24 @@ import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
 import { analyticsRoutes } from "./routes/analytics";
 import type { AppEnv } from "./types";
+import { corsAllowHeaders, resolveCorsOrigin } from "./config/env";
 
 export function createApp() {
   const app = new Hono<AppEnv>();
 
   app.use("*", securityHeaders);
   app.use("*", cors({
-    origin: "*",
+    origin: resolveCorsOrigin,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "x-dev-role", "x-dev-user-id", "stripe-signature"],
+    allowHeaders: corsAllowHeaders(),
+    exposeHeaders: [
+      "x-request-id",
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
+      "X-RateLimit-Reset",
+    ],
+    credentials: false,
+    maxAge: 86400,
   }));
   app.use("*", requestIdMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));
