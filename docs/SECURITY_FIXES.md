@@ -104,3 +104,61 @@ query = { tenantId: authUser.id };
 |--------|-------------|
 | `df38974` | fix: secure payment and rental request endpoints |
 | `aade959` | feat: add Stripe Elements payment flow and improve dashboard UI |
+
+## Cabeceras de seguridad y CORS estricto (HU-39, #157)
+
+Fecha: 2026-07-06
+
+### Problema
+
+- CORS con `origin: "*"` permitía cualquier origen en todos los entornos, incluyendo producción.
+- No se enviaban cabeceras de seguridad estándar (HSTS, CSP, X-Content-Type-Options, etc.).
+- Los headers `x-dev-role` y `x-dev-user-id` (mecanismos de bypass de auth) estaban en `allowHeaders` de CORS para todos los entornos.
+
+### Cambios aplicados
+
+### 1. `apps/backend-api/src/config/env.ts`
+
+Nuevos getters y helpers:
+- `env.isProduction`: detecta `NODE_ENV === "production"`.
+- `env.corsAllowedOrigins`: parsea `CORS_ALLOWED_ORIGINS` (comma-separated).
+- `resolveCorsOrigin(origin)`: refleja el origen si está en la allowlist (o es localhost en dev); `null` si se deniega. Fail-closed en prod sin la var.
+- `corsAllowHeaders()`: headers base + `x-dev-*` solo cuando `env.allowDevAuthBypass`.
+
+### 2. `apps/backend-api/src/middleware/security-headers.ts` (nuevo)
+
+Middleware que setea en todas las respuestas:
+- `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: no-referrer`
+- `Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()`
+- `X-Frame-Options: DENY`
+- `Cross-Origin-Resource-Policy: same-origin`
+- `Cross-Origin-Opener-Policy: same-origin`
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains` (solo en prod + HTTPS)
+
+### 3. `apps/backend-api/src/app.ts`
+
+- `securityHeaders` se registra antes de `cors` para que las cabeceras apliquen también a respuestas preflight 204.
+- CORS pasa de `origin: "*"` a `origin: resolveCorsOrigin` (allowlist por entorno).
+- `allowHeaders` pasa a `corsAllowHeaders()` (headers dev gated por `allowDevAuthBypass`).
+- `exposeHeaders`: `x-request-id` + cabeceras de rate limit.
+- `allowCredentials: false`, `maxAge: 86400`.
+
+### Comportamiento esperado
+
+| Entorno | Origen | Resultado |
+|---------|--------|-----------|
+| Dev | `http://localhost:*` | Permitido (auto) |
+| Dev | otro dominio | Denegado |
+| Prod | en `CORS_ALLOWED_ORIGINS` | Permitido |
+| Prod | no en allowlist | Denegado |
+| Prod | var vacía/ausente | Denegado (fail-closed) |
+
+### Archivos modificados
+
+- `apps/backend-api/src/types.ts` — añadido `CORS_ALLOWED_ORIGINS` a `Env`
+- `apps/backend-api/src/config/env.ts` — getters + helpers CORS
+- `apps/backend-api/src/middleware/security-headers.ts` — nuevo middleware
+- `apps/backend-api/src/app.ts` — wiring de middlewares
+- `apps/backend-api/.env.example` — documentación de la var
