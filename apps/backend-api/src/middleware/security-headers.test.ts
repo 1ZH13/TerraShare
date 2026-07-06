@@ -1,6 +1,8 @@
+import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 import { createApp } from "../app";
+import { securityHeaders } from "./security-headers";
 
 describe("securityHeaders middleware", () => {
   const originalNodeEnv = process.env.NODE_ENV;
@@ -57,6 +59,23 @@ describe("securityHeaders middleware", () => {
     const app = createApp();
     const res = await app.request("/no-existe", { method: "GET" });
     expect(res.status).toBe(404);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("content-security-policy")).toBe(
+      "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+    );
+  });
+
+  it("setea cabeceras en respuestas de error 500 (onError)", async () => {
+    const app = new Hono();
+    app.use("*", securityHeaders);
+    app.get("/throw", () => {
+      throw new Error("test explosion");
+    });
+    app.onError((_err, c) => {
+      return c.text("internal error", 500);
+    });
+    const res = await app.request("/throw", { method: "GET" });
+    expect(res.status).toBe(500);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
     expect(res.headers.get("content-security-policy")).toBe(
       "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",

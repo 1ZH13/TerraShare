@@ -143,7 +143,7 @@ Middleware que setea en todas las respuestas:
 - CORS pasa de `origin: "*"` a `origin: resolveCorsOrigin` (allowlist por entorno).
 - `allowHeaders` pasa a `corsAllowHeaders()` (headers dev gated por `allowDevAuthBypass`).
 - `exposeHeaders`: `x-request-id` + cabeceras de rate limit.
-- `allowCredentials: false`, `maxAge: 86400`.
+- `credentials: false`, `maxAge: 86400`.
 
 ### Comportamiento esperado
 
