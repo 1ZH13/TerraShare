@@ -3,6 +3,9 @@ import { cors } from "hono/cors";
 
 import { failure } from "./lib/api-response";
 import { requestIdMiddleware } from "./middleware/request-id";
+import { loggerMiddleware } from "./middleware/logger";
+import { errorHandler } from "./middleware/error-handler";
+import { metricsMiddleware } from "./middleware/metrics";
 import { rateLimitByIP } from "./middleware/rate-limit";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
@@ -14,6 +17,7 @@ import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
 import { analyticsRoutes } from "./routes/analytics";
+import { metricsRoutes } from "./routes/metrics";
 import type { AppEnv } from "./types";
 
 export function createApp() {
@@ -25,6 +29,8 @@ export function createApp() {
     allowHeaders: ["Content-Type", "Authorization", "x-dev-role", "x-dev-user-id", "stripe-signature"],
   }));
   app.use("*", requestIdMiddleware);
+  app.use("*", loggerMiddleware);
+  app.use("*", metricsMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));
 
   app.get("/", (c) => {
@@ -45,13 +51,11 @@ export function createApp() {
   app.route("/api/v1", paymentRoutes);
   app.route("/api/v1", chatRoutes);
   app.route("/api/v1", analyticsRoutes);
+  app.route("/api/v1", metricsRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 
-  app.onError((error, c) => {
-    console.error("[backend-api] unhandled error", error);
-    return failure(c, 500, "INTERNAL_ERROR", "Unexpected server error");
-  });
+  app.onError(errorHandler);
 
   return app;
 }
