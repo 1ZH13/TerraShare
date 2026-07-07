@@ -5,6 +5,7 @@ import { failure } from "./lib/api-response";
 import { requestIdMiddleware } from "./middleware/request-id";
 import { loggerMiddleware } from "./middleware/logger";
 import { errorHandler } from "./middleware/error-handler";
+import { metricsMiddleware } from "./middleware/metrics";
 import { rateLimitByIP } from "./middleware/rate-limit";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
@@ -16,6 +17,7 @@ import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
 import { analyticsRoutes } from "./routes/analytics";
+import { metricsRoutes } from "./routes/metrics";
 import { privacyRoutes } from "./routes/privacy";
 import type { AppEnv } from "./types";
 
@@ -29,6 +31,7 @@ export function createApp() {
   }));
   app.use("*", requestIdMiddleware);
   app.use("*", loggerMiddleware);
+  app.use("*", metricsMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));
 
   app.get("/", (c) => {
@@ -49,6 +52,7 @@ export function createApp() {
   app.route("/api/v1", paymentRoutes);
   app.route("/api/v1", chatRoutes);
   app.route("/api/v1", analyticsRoutes);
+  app.route("/api/v1", metricsRoutes);
   app.route("/api/v1", privacyRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
