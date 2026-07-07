@@ -12,6 +12,17 @@ function requireEnv(name: keyof Env): string {
   return value;
 }
 
+const BASE_CORS_ALLOW_HEADERS = [
+  "Content-Type",
+  "Authorization",
+  "x-request-id",
+  "stripe-signature",
+];
+
+const DEV_CORS_ALLOW_HEADERS = ["x-dev-role", "x-dev-user-id"];
+
+const LOCALHOST_PATTERN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
 export const env = {
   apiPort: Number(getEnv("API_PORT") ?? 3000),
   get clerkJwksUrl() {
@@ -36,4 +47,32 @@ export const env = {
   get whatsappContactEnabled() {
     return (getEnv("WHATSAPP_CONTACT_ENABLED") ?? "false") === "true";
   },
+  get isProduction() {
+    return process.env.NODE_ENV === "production";
+  },
+  get corsAllowedOrigins(): string[] {
+    const raw = getEnv("CORS_ALLOWED_ORIGINS") ?? "";
+    return raw
+      .split(",")
+      .map((o) => o.trim())
+      .filter((o) => o.length > 0);
+  },
+  get stripeConfigured() {
+    return !!getEnv("STRIPE_SECRET_KEY");
+  },
 };
+
+export function resolveCorsOrigin(origin: string): string | null {
+  if (!origin) return null;
+  if (env.corsAllowedOrigins.includes(origin)) return origin;
+  if (!env.isProduction && LOCALHOST_PATTERN.test(origin)) return origin;
+  return null;
+}
+
+export function corsAllowHeaders(): string[] {
+  const headers = [...BASE_CORS_ALLOW_HEADERS];
+  if (env.allowDevAuthBypass) {
+    headers.push(...DEV_CORS_ALLOW_HEADERS);
+  }
+  return headers;
+}

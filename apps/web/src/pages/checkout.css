@@ -1,0 +1,98 @@
+/* TerraShare — Checkout éxito (paridad con el prototipo · pantalla 28). Prefijo `co-`. */
+
+.co {
+  min-height: 100vh;
+  background: var(--ts-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ts-font-sans);
+  color: var(--ts-green-ink);
+  padding: 40px;
+}
+
+@keyframes coPop {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes coUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.co-card {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 22px;
+  padding: 52px 40px;
+  text-align: center;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 40px 80px -50px rgba(36, 49, 42, 0.55);
+}
+.co-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--ts-tint-green);
+  color: var(--ts-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 22px;
+  animation: coPop 0.5s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+.co-icon--wait { background: #f5e9d0; color: #9a6b1f; }
+.co-title {
+  font-family: var(--ts-font-serif);
+  font-weight: 500;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+  animation: coUp 0.6s ease both 0.08s;
+}
+.co-text {
+  font-size: 16px;
+  color: var(--ts-sage-2);
+  line-height: 1.6;
+  margin: 0 0 24px;
+  animation: coUp 0.6s ease both 0.12s;
+}
+.co-text b { color: var(--ts-green-ink); font-weight: 700; }
+
+.co-details {
+  background: var(--ts-paper-tint);
+  border-radius: 14px;
+  padding: 18px;
+  text-align: left;
+  margin-bottom: 24px;
+  animation: coUp 0.6s ease both 0.16s;
+}
+.co-detail { display: flex; justify-content: space-between; padding: 5px 0; gap: 12px; }
+.co-detail__k { color: var(--ts-sage-2); font-size: 14px; }
+.co-detail__v { font-weight: 700; }
+.co-detail__v--mono { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 600; }
+
+.co-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; animation: coUp 0.6s ease both 0.2s; }
+.co-btn {
+  font-weight: 600;
+  font-size: 15px;
+  padding: 13px 22px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.co-btn--primary { background: var(--ts-green); color: var(--ts-bg); }
+.co-btn--primary:hover { transform: translateY(-2px); background: var(--ts-green-ink); }
+.co-btn--ghost { color: var(--ts-text-secondary); border: 1px solid #d8cfb8; }
+.co-btn--ghost:hover { background: #f1ebdd; }
+
+.co-secure {
+  font-size: 11.5px;
+  color: var(--ts-sage-3);
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}

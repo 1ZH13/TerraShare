@@ -110,6 +110,67 @@ async function computePaymentAmount(rentalRequestId: string, fallback = 1000) {
   return land?.priceRule?.pricePerMonth ?? fallback;
 }
 
+type PaymentLean = {
+  id: string;
+  rentalRequestId: string;
+  status: string;
+};
+
+/**
+ * Aplica una transición de estado del pago de forma idempotente. Al pasar a
+ * "paid" (y solo si no lo estaba ya) marca la solicitud como pagada y crea el
+ * contrato en borrador. Reutilizado por el webhook de Stripe y por el endpoint
+ * de confirmación (que verifica el estado directamente contra Stripe).
+ */
+async function applyPaidTransition(
+  payment: PaymentLean,
+  newStatus: string,
+  extras: { paymentIntentId?: string; stripeSessionId?: string } = {},
+): Promise<void> {
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (newStatus !== payment.status) {
+    updateData.status = newStatus;
+  }
+  if (extras.paymentIntentId) {
+    updateData.stripePaymentIntentId = extras.paymentIntentId;
+  }
+  if (extras.stripeSessionId) {
+    updateData.stripeSessionId = extras.stripeSessionId;
+  }
+
+  await Payment.updateOne({ id: payment.id }, updateData);
+
+  if (newStatus === "paid" && payment.status !== "paid") {
+    await RentalRequest.updateOne(
+      { id: payment.rentalRequestId },
+      { status: "paid", updatedAt: new Date() },
+    );
+
+    // Auto-create a draft contract for the now-paid rental. Idempotent: a
+    // webhook can be delivered more than once, so skip if one already exists.
+    const existingContract = await Contract.findOne({ rentalRequestId: payment.rentalRequestId }).lean();
+    if (!existingContract) {
+      const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
+      if (request) {
+        const land = await Land.findOne({ id: request.landId }).lean();
+        const nowIso = new Date().toISOString();
+        await Contract.create({
+          id: `contract_${crypto.randomUUID()}`,
+          rentalRequestId: request.id,
+          ownerId: land?.ownerId ?? "",
+          tenantId: request.tenantId,
+          terms: {
+            summary: `Contrato de alquiler para ${land?.title ?? request.landId}`,
+            startsAt: request.period?.startDate ?? nowIso,
+            endsAt: request.period?.endDate ?? nowIso,
+          },
+          status: "draft",
+        });
+      }
+    }
+  }
+}
+
 export const paymentRoutes = new Hono<AppEnv>();
 
 paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
@@ -357,6 +418,89 @@ paymentRoutes.get("/payments/:paymentId", requireAuth, async (c) => {
   return success(c, payment);
 });
 
+/**
+ * Confirma un pago consultando su estado directamente en Stripe, sin depender
+ * de que el webhook llegue (clave en local, donde Stripe no alcanza a
+ * `localhost` sin `stripe listen`). Idempotente y reutiliza la misma transición
+ * que el webhook.
+ */
+paymentRoutes.post("/payments/confirm", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  const body = (await c.req.json().catch(() => null)) as
+    | { rentalRequestId?: string; paymentId?: string }
+    | null;
+
+  if (!body?.rentalRequestId && !body?.paymentId) {
+    return failure(c, 400, "VALIDATION_ERROR", "Missing rentalRequestId or paymentId");
+  }
+
+  const payment = body.paymentId
+    ? await Payment.findOne({ id: body.paymentId }).lean()
+    : await Payment.findOne({ rentalRequestId: body.rentalRequestId }).sort({ createdAt: -1 }).lean();
+
+  if (!payment) {
+    return failure(c, 404, "NOT_FOUND", "Payment not found");
+  }
+
+  const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
+  if (request && request.tenantId !== authUser.id && authUser.role !== "admin") {
+    return failure(c, 403, "FORBIDDEN", "Not allowed to confirm this payment");
+  }
+
+  if (payment.status === "paid") {
+    return success(c, {
+      paymentId: payment.id,
+      rentalRequestId: payment.rentalRequestId,
+      status: "paid",
+    });
+  }
+
+  const stripe = getStripeClient();
+  if (!stripe) {
+    return success(c, {
+      paymentId: payment.id,
+      rentalRequestId: payment.rentalRequestId,
+      status: payment.status,
+      stripeConfigured: false,
+    });
+  }
+
+  let paidAtStripe = false;
+  let resolvedIntentId = payment.stripePaymentIntentId;
+
+  try {
+    const sessionId = payment.stripeSessionId;
+    if (sessionId && sessionId.startsWith("cs_") && !sessionId.startsWith("cs_dev_")) {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      paidAtStripe = session.payment_status === "paid";
+      resolvedIntentId = extractPaymentIntentId(session.payment_intent) ?? resolvedIntentId;
+    } else if (payment.stripePaymentIntentId) {
+      const intent = await stripe.paymentIntents.retrieve(payment.stripePaymentIntentId);
+      paidAtStripe = intent.status === "succeeded";
+    }
+  } catch (err) {
+    console.error("Stripe confirm retrieval failed:", err);
+    return failure(c, 503, "INTERNAL_ERROR", "No se pudo verificar el pago con Stripe");
+  }
+
+  if (paidAtStripe) {
+    await applyPaidTransition(payment, "paid", { paymentIntentId: resolvedIntentId });
+    createAuditEvent({
+      actor: authUser,
+      entity: "payment",
+      action: "paid",
+      entityId: payment.id,
+      metadata: { rentalRequestId: payment.rentalRequestId, via: "confirm" },
+    });
+  }
+
+  return success(c, {
+    paymentId: payment.id,
+    rentalRequestId: payment.rentalRequestId,
+    status: paidAtStripe ? "paid" : payment.status,
+  });
+});
+
 paymentRoutes.post("/webhooks/stripe", async (c) => {
   const signature = c.req.header("stripe-signature");
   const webhookSecret = env.stripeWebhookSecret;
@@ -431,51 +575,7 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
 
   const stripeSessionId = eventType.startsWith("checkout.session") ? event.data?.object?.id : undefined;
 
-  const updateData: Record<string, unknown> = { updatedAt: new Date() };
-  if (newStatus !== payment.status) {
-    updateData.status = newStatus;
-  }
-  if (paymentIntentId) {
-    updateData.stripePaymentIntentId = paymentIntentId;
-  }
-  if (stripeSessionId) {
-    updateData.stripeSessionId = stripeSessionId;
-  }
-
-  await Payment.updateOne(
-    { id: payment.id },
-    updateData,
-  );
-
-  if (newStatus === "paid" && payment.status !== "paid") {
-    await RentalRequest.updateOne(
-      { id: payment.rentalRequestId },
-      { status: "paid", updatedAt: new Date() },
-    );
-
-    // Auto-create a draft contract for the now-paid rental. Idempotent: a
-    // webhook can be delivered more than once, so skip if one already exists.
-    const existingContract = await Contract.findOne({ rentalRequestId: payment.rentalRequestId }).lean();
-    if (!existingContract) {
-      const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
-      if (request) {
-        const land = await Land.findOne({ id: request.landId }).lean();
-        const nowIso = new Date().toISOString();
-        await Contract.create({
-          id: `contract_${crypto.randomUUID()}`,
-          rentalRequestId: request.id,
-          ownerId: land?.ownerId ?? "",
-          tenantId: request.tenantId,
-          terms: {
-            summary: `Contrato de alquiler para ${land?.title ?? request.landId}`,
-            startsAt: request.period?.startDate ?? nowIso,
-            endsAt: request.period?.endDate ?? nowIso,
-          },
-          status: "draft",
-        });
-      }
-    }
-  }
+  await applyPaidTransition(payment, newStatus, { paymentIntentId, stripeSessionId });
 
   return success(c, {
     received: true,
