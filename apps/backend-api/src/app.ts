@@ -7,7 +7,8 @@ import { requestIdMiddleware } from "./middleware/request-id";
 import { loggerMiddleware } from "./middleware/logger";
 import { errorHandler } from "./middleware/error-handler";
 import { metricsMiddleware } from "./middleware/metrics";
-import { rateLimitByIP } from "./middleware/rate-limit";
+import { rateLimitByIP, rateLimitByUser } from "./middleware/rate-limit";
+import { requireAuth } from "./middleware/require-auth";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
 import { adminRoutes } from "./routes/admin";
@@ -45,6 +46,12 @@ export function createApp() {
   app.use("*", loggerMiddleware);
   app.use("*", metricsMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));
+  app.use("/api/v1/rental-requests*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/contracts*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/payments*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/chats*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/admin*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/analytics*", requireAuth, rateLimitByUser(200));
 
   app.get("/", (c) => {
     return c.json({
