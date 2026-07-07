@@ -1,151 +1,277 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { LandDto } from "@terrashare/shared";
+import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX } from "lucide-react";
 import { listLands } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
+import EmptyState from "../components/EmptyState";
+import "./catalog.css";
 
-type CatalogLand = LandDto & { type?: string; water?: string; access?: string };
+type LoadState = "loading" | "ready" | "error";
 
+const USE_LABELS: Record<string, string> = {
+  agricultura: "Agricultura",
+  ganaderia: "Ganadería",
+  forestal: "Forestal",
+  acuicultura: "Acuicultura",
+  mixto: "Mixto",
+  otro: "Otro",
+};
 
+const PRICE_OPTIONS = [
+  { label: "Precio", value: 1_000_000 },
+  { label: "Hasta $500", value: 500 },
+  { label: "Hasta $1,000", value: 1000 },
+  { label: "Hasta $2,000", value: 2000 },
+  { label: "Hasta $5,000", value: 5000 },
+];
+
+function formatUse(use?: string): string {
+  if (!use) return "Terreno";
+  return USE_LABELS[use] ?? use;
+}
 
 export default function CatalogPage() {
   const navigate = useNavigate();
-  const [type, setType] = useState("Todos");
-  const [province, setProvince] = useState("Todas");
-  const [maxPrice, setMaxPrice] = useState(1500);
+
+  const [lands, setLands] = useState<LandDto[]>([]);
+  const [status, setStatus] = useState<LoadState>("loading");
+
   const [query, setQuery] = useState("");
+  const [use, setUse] = useState("todos");
+  const [province, setProvince] = useState("todas");
+  const [maxPrice, setMaxPrice] = useState(1_000_000);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [lands, setLands] = useState<CatalogLand[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLands = async () => {
-      try {
-        const data = await listLands();
-        setLands(data || []);
-      } catch (err) {
-        console.error("Error fetching lands:", err);
-      }
-      setLoading(false);
+    let active = true;
+    listLands()
+      .then((data) => {
+        if (!active) return;
+        setLands(data);
+        setStatus("ready");
+      })
+      .catch((err) => {
+        console.error("Error cargando catálogo:", err);
+        if (active) setStatus("error");
+      });
+    return () => {
+      active = false;
     };
-    fetchLands();
   }, []);
 
-  const filteredLands = useMemo(() => {
+  const useOptions = useMemo(
+    () => [...new Set(lands.map((l) => l.allowedUses?.[0]).filter((v): v is NonNullable<typeof v> => Boolean(v)))],
+    [lands],
+  );
+  const provinceOptions = useMemo(
+    () => [...new Set(lands.map((l) => l.location?.province).filter((v): v is string => Boolean(v)))],
+    [lands],
+  );
+
+  const filtered = useMemo(() => {
     return lands.filter((land) => {
-      const landType = land.allowedUses?.[0] || land.type || "otro";
-      const price = land.priceRule?.pricePerMonth || 0;
-      const matchesType = type === "Todos" || landType === type;
-      const matchesProvince = province === "Todas" || land.location?.province === province;
+      const landUse = land.allowedUses?.[0] ?? "otro";
+      const price = land.priceRule?.pricePerMonth ?? 0;
+      const matchesUse = use === "todos" || landUse === use;
+      const matchesProvince = province === "todas" || land.location?.province === province;
       const matchesPrice = price <= maxPrice;
       const haystack = [land.title, land.location?.province, land.location?.district, land.description]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       const matchesQuery = !query || haystack.includes(query.toLowerCase());
-      return matchesType && matchesProvince && matchesPrice && matchesQuery;
+      return matchesUse && matchesProvince && matchesPrice && matchesQuery;
     });
-  }, [lands, type, province, maxPrice, query]);
+  }, [lands, use, province, maxPrice, query]);
 
-  const USE_FILTERS = useMemo(() => ["Todos", ...new Set(lands.map((l) => l.allowedUses?.[0] || l.type).filter(Boolean))], [lands]);
-  const PROVINCE_FILTERS = useMemo(() => ["Todas", ...new Set(lands.map((l) => l.location?.province).filter(Boolean))], [lands]);
-
-  const selectedLand = filteredLands.find((l) => l.id === selectedId) || filteredLands[0];
-
-  const handlePinClick = (land: CatalogLand) => setSelectedId(land.id);
+  const selectedLand = filtered.find((l) => l.id === selectedId) ?? filtered[0] ?? null;
 
   return (
-    <div className="page-shell">
-      <main>
-        <div className="section-header">
-          <p className="kicker">Catálogo</p>
-          <h1>Terrenos Disponibles</h1>
-          <p>Explora y encuentra el terreno perfecto en Panama.</p>
+    <div className="cat">
+      {/* barra de filtros */}
+      <div className="cat-filters">
+        <div className="cat-search">
+          <span className="cat-search__icon">
+            <Search size={18} />
+          </span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar terreno…"
+            aria-label="Buscar terreno"
+          />
         </div>
 
-        <section className="catalog-workspace glass-panel">
-          <aside className="catalog-map-panel">
-            <div className="section-header compact">
-              <h1>Mapa</h1>
-              <p>Vista geográfica</p>
+        <label className="cat-pill">
+          <span className="cat-pill__icon">
+            <Sprout size={15} />
+          </span>
+          <select value={use} onChange={(e) => setUse(e.target.value)} aria-label="Filtrar por uso">
+            <option value="todos">Uso</option>
+            {useOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {formatUse(opt)}
+              </option>
+            ))}
+          </select>
+          <span className="cat-pill__chev">
+            <ChevronDown size={14} />
+          </span>
+        </label>
+
+        <label className="cat-pill">
+          <span className="cat-pill__icon">
+            <MapPin size={15} />
+          </span>
+          <select
+            value={province}
+            onChange={(e) => setProvince(e.target.value)}
+            aria-label="Filtrar por provincia"
+          >
+            <option value="todas">Provincia</option>
+            {provinceOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+          <span className="cat-pill__chev">
+            <ChevronDown size={14} />
+          </span>
+        </label>
+
+        <label className="cat-pill">
+          <span className="cat-pill__icon">
+            <DollarSign size={15} />
+          </span>
+          <select
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(Number(e.target.value))}
+            aria-label="Filtrar por precio"
+          >
+            {PRICE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <span className="cat-pill__chev">
+            <ChevronDown size={14} />
+          </span>
+        </label>
+
+        {/* TODO(#140): el tipo de operación (alquiler/venta) aún no existe en el
+            backend; el filtro se muestra como "próximamente". */}
+        <span className="cat-pill cat-pill--soon" role="note" title="Disponible próximamente">
+          <span className="cat-pill__icon">
+            <Tag size={15} />
+          </span>
+          Alquiler / Venta
+          <span className="cat-soon__tag">Pronto</span>
+        </span>
+      </div>
+
+      {/* lista + mapa */}
+      <div className="cat-body">
+        <div className="cat-listcol">
+          <div className="cat-listhead">
+            {status === "ready"
+              ? `${filtered.length} terreno${filtered.length === 1 ? "" : "s"} · ordenar por `
+              : "Cargando terrenos · "}
+            <strong>Recientes</strong>
+          </div>
+
+          {status === "loading" ? (
+            <div className="cat-list">
+              <div className="cat-skeleton" />
+              <div className="cat-skeleton" />
+              <div className="cat-skeleton" />
             </div>
-            <PanamaMap
-              lands={filteredLands}
-              selectedLand={selectedLand}
-              onSelectLand={(land) => setSelectedId(land.id)}
+          ) : status === "error" ? (
+            <p className="cat-state cat-state--error">
+              No pudimos cargar el catálogo ahora mismo. Vuelve a intentarlo en un momento.
+            </p>
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              icon={SearchX}
+              title="Sin resultados"
+              description="No encontramos terrenos con esos filtros. Prueba ampliar la búsqueda."
+              action={{
+                label: "Limpiar filtros",
+                onClick: () => {
+                  setQuery("");
+                  setUse("todos");
+                  setProvince("todas");
+                  setMaxPrice(1_000_000);
+                },
+              }}
             />
-          </aside>
-
-          <section className="catalog-list-panel">
-            <div className="catalog-filters glass-card">
-              <div className="filters-grid">
-                <label>
-                  Buscar
-                  <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Provincia, uso..." />
-                </label>
-                <label>
-                  Uso
-                  <select value={type} onChange={(e) => setType(e.target.value)}>
-                    {USE_FILTERS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </label>
-                <label>
-                  Provincia
-                  <select value={province} onChange={(e) => setProvince(e.target.value)}>
-                    {PROVINCE_FILTERS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </label>
-                <label>
-                  Precio máximo
-                  <input type="range" min="300" max="1500" step="50" value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} />
-                  <span className="range-value">${maxPrice}</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="catalog-meta">
-              <span>{filteredLands.length} resultados</span>
-              {selectedLand && <span>Seleccionado: {selectedLand.title}</span>}
-            </div>
-
-            <div className="cards-grid catalog-results-grid">
-              {filteredLands.map((land) => {
-                const active = selectedLand?.id === land.id;
+          ) : (
+            <div className="cat-list">
+              {filtered.map((land) => {
+                const price = land.priceRule?.pricePerMonth;
                 return (
-                  <article
+                  <button
                     key={land.id}
-                    className={`land-card ${active ? "active" : ""}`}
+                    type="button"
+                    className={`cat-card ${selectedLand?.id === land.id ? "is-active" : ""}`}
                     onClick={() => setSelectedId(land.id)}
-                    role="button"
-                    tabIndex={0}
+                    onDoubleClick={() => navigate(`/lands/${land.id}`)}
                   >
-                    <div className="land-card-top">
-                      <span className="card-badge">{land.allowedUses?.[0]}</span>
-                      <span className="land-pill">{land.area} ha</span>
+                    <div className="cat-card__thumb" aria-hidden="true">
+                      <ImageIcon size={24} strokeWidth={1.5} />
                     </div>
-                    <h2>{land.title}</h2>
-                    <p>{land.location?.province} · {land.location?.district}</p>
-                    <p className="land-muted">Agua: {land.water || "No especificado"}</p>
-                    <p className="land-muted">Acceso: {land.access || "No especificado"}</p>
-                    <p className="card-price">${land.priceRule?.pricePerMonth}/mes</p>
-                    <div className="card-actions">
-                      <button className="btn btn-ghost" onClick={(e) => { e.stopPropagation(); navigate(`/lands/${land.id}`); }}>
-                        Ver detalle
-                      </button>
+                    <div className="cat-card__body">
+                      <div className="cat-card__top">
+                        <span className="cat-card__title">{land.title}</span>
+                        <span className="cat-card__badge">{formatUse(land.allowedUses?.[0])}</span>
+                      </div>
+                      <div className="cat-card__meta">
+                        <MapPin size={14} /> {land.location?.province} · {land.area} ha
+                      </div>
+                      <div className="cat-card__price">
+                        {typeof price === "number" ? (
+                          <>
+                            ${price.toLocaleString("es-PA")}
+                            <span>/mes</span>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: "14px" }}>Precio a consultar</span>
+                        )}
+                      </div>
                     </div>
-                  </article>
+                  </button>
                 );
               })}
             </div>
+          )}
+        </div>
 
-            {loading ? (
-              <div className="glass-panel empty-state"><p>Cargando...</p></div>
-            ) : filteredLands.length === 0 ? (
-              <div className="glass-panel empty-state"><p>No hay terrenos para esos filtros.</p></div>
-            ) : null}
-          </section>
-        </section>
-      </main>
+        <div className="cat-mapcol">
+          <PanamaMap
+            lands={filtered}
+            selectedLand={selectedLand}
+            onSelectLand={(land) => setSelectedId(land.id)}
+          />
+          {selectedLand && (
+            <div className="cat-mapcard">
+              <div style={{ minWidth: 0 }}>
+                <div className="cat-mapcard__title">{selectedLand.title}</div>
+                <div className="cat-mapcard__sub">
+                  {selectedLand.location?.province}
+                  {typeof selectedLand.priceRule?.pricePerMonth === "number"
+                    ? ` · $${selectedLand.priceRule.pricePerMonth.toLocaleString("es-PA")}/mes`
+                    : ""}
+                </div>
+              </div>
+              <Link to={`/lands/${selectedLand.id}`} className="cat-mapcard__go">
+                Ver
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

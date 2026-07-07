@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "catalog": "Catalogo",
+    "dashboard": "Dashboard",
+    "login": "Iniciar sesion",
+    "register": "Registrarse"
+  },
+  "land": {
+    "title": "Titulo",
+    "area": "Area",
+    "price": "Precio/mes",
+    "search": "Buscar terrenos..."
+  }
+}

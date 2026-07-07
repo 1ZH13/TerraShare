@@ -15,6 +15,8 @@ export type {
   AuditAction,
   BusinessCurrency,
   EntityStatus,
+  PermissionAction,
+  Resource,
 } from "./types/domain";
 
 export type {

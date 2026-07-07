@@ -1,12 +1,17 @@
 import { Hono } from "hono";
 
 import { failure, success } from "../lib/api-response";
+import { canReadNotification } from "../lib/auth-helpers";
 import { requireAuth } from "../middleware/require-auth";
 import { getStore } from "../store/in-memory-db";
 import type { AppEnv } from "../types";
 
 export const notificationRoutes = new Hono<AppEnv>();
 
+// TODO(#136): notifications currently live only in the in-memory store and no
+// flow creates them yet, so this returns an empty list until a later feature
+// generates notifications (e.g. on rental-request status changes). Do not seed
+// fake data here.
 notificationRoutes.get("/notifications", requireAuth, (c) => {
   const authUser = c.get("authUser");
   const store = getStore();
@@ -27,7 +32,7 @@ notificationRoutes.get("/notifications/:notificationId", requireAuth, (c) => {
     return failure(c, 404, "NOT_FOUND", "Notification not found");
   }
 
-  if (notification.userId !== authUser.id && authUser.role !== "admin") {
+  if (!canReadNotification(authUser, notification)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this notification");
   }
 
@@ -43,7 +48,7 @@ notificationRoutes.patch("/notifications/:notificationId/read", requireAuth, (c)
     return failure(c, 404, "NOT_FOUND", "Notification not found");
   }
 
-  if (notification.userId !== authUser.id && authUser.role !== "admin") {
+  if (!canReadNotification(authUser, notification)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this notification");
   }
 
