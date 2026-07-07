@@ -1,0 +1,96 @@
+/* TerraShare — Notificaciones (paridad con el prototipo · pantalla 19). Prefijo `ntf-`. */
+
+.ntf { max-width: 760px; margin: 0 auto; padding: 44px 40px 70px; font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+
+@keyframes ntfUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ntf-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+  gap: 16px;
+  animation: ntfUp 0.6s ease both;
+}
+.ntf-title {
+  font-family: var(--ts-font-serif);
+  font-weight: 500;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--ts-green-ink);
+}
+.ntf-markall {
+  color: var(--ts-green);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  font-family: var(--ts-font-sans);
+  white-space: nowrap;
+}
+.ntf-markall:hover { color: var(--ts-green-ink); }
+
+.ntf-list { display: grid; gap: 10px; animation: ntfUp 0.6s ease both 0.06s; }
+
+.ntf-item {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 14px;
+  padding: 15px 18px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  cursor: pointer;
+}
+.ntf-item:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -30px rgba(36, 49, 42, 0.4); }
+.ntf-item--read { background: #faf5ea; }
+
+.ntf-item__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.ntf-item__icon--green { background: var(--ts-tint-green-2); color: var(--ts-green); }
+.ntf-item__icon--teal { background: #e3ecec; color: #2f6b63; }
+.ntf-item__icon--amber { background: #f5e9d0; color: #9a6b1f; }
+.ntf-item__icon--neutral { background: var(--ts-tint-green); color: var(--ts-green); }
+
+.ntf-item__body { flex: 1; min-width: 0; }
+.ntf-item__text { font-size: 14.5px; color: var(--ts-green-ink); }
+.ntf-item--read .ntf-item__text { color: var(--ts-text-secondary); }
+.ntf-item__text b { font-weight: 700; }
+.ntf-item__time { font-size: 12.5px; color: var(--ts-sage); margin-top: 2px; }
+.ntf-item__dot { width: 9px; height: 9px; background: var(--ts-clay); border-radius: 50%; flex: 0 0 auto; }
+
+.ntf-empty {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 14px;
+  padding: 30px;
+  text-align: center;
+  color: var(--ts-sage-2);
+  font-size: 14px;
+}
+.ntf-empty p { margin: 0; }
+.ntf-empty p + p { margin-top: 6px; font-size: 13px; }
+.ntf-empty--error { color: #a5573a; }
+
+@media (max-width: 520px) {
+  .ntf { padding: 28px 20px 56px; }
+  .ntf-title { font-size: 28px; }
+}
