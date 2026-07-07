@@ -16,6 +16,7 @@ export interface IUser extends Document {
   role: AppRole;
   status: UserStatus;
   profile: { fullName: string; phone?: string };
+  deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -144,6 +145,7 @@ const UserSchema = new Schema<IUser>({
     fullName: { type: String, required: true },
     phone: String,
   },
+  deletedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 const LandSchema = new Schema<ILand>({
