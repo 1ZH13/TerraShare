@@ -57,6 +57,9 @@ export const env = {
       .map((o) => o.trim())
       .filter((o) => o.length > 0);
   },
+  get stripeConfigured() {
+    return !!getEnv("STRIPE_SECRET_KEY");
+  },
 };
 
 export function resolveCorsOrigin(origin: string): string | null {

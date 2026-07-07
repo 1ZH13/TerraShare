@@ -1,0 +1,15 @@
+{
+  "nav": {
+    "home": "Home",
+    "catalog": "Catalog",
+    "dashboard": "Dashboard",
+    "login": "Login",
+    "register": "Register"
+  },
+  "land": {
+    "title": "Title",
+    "area": "Area",
+    "price": "Price/month",
+    "search": "Search lands..."
+  }
+}

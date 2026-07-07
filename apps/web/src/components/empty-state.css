@@ -1,0 +1,58 @@
+/* TerraShare — EmptyState reutilizable (paridad con el prototipo · pantalla 25). Prefijo `es`. */
+
+.es {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 18px;
+  padding: 42px 24px;
+  text-align: center;
+  font-family: var(--ts-font-sans);
+}
+.es--compact { padding: 30px 20px; border-radius: 16px; }
+
+.es__icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: var(--ts-tint-green);
+  color: var(--ts-green);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.es--compact .es__icon { width: 48px; height: 48px; border-radius: 13px; margin-bottom: 12px; }
+.es--error .es__icon { background: var(--ts-clay-tint); color: #a5573a; }
+
+.es__title {
+  font-family: var(--ts-font-serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ts-green-ink);
+}
+.es--compact .es__title { font-size: 18px; }
+
+.es__desc {
+  color: var(--ts-sage-2);
+  font-size: 14.5px;
+  line-height: 1.55;
+  margin: 8px auto 18px;
+  max-width: 42ch;
+}
+.es--compact .es__desc { font-size: 13.5px; margin-bottom: 0; }
+
+.es__cta {
+  display: inline-block;
+  background: var(--ts-green);
+  color: var(--ts-bg);
+  font-weight: 600;
+  font-size: 14.5px;
+  padding: 12px 22px;
+  border-radius: 11px;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--ts-font-sans);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.es__cta:hover { transform: translateY(-2px); background: var(--ts-green-ink); }
