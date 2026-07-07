@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { failure, success } from "../lib/api-response";
 import {
   canCreateRentalRequest,
+  canListRentalRequests,
   canReadRentalRequest,
   canTransitionRentalRequest,
 } from "../lib/auth-helpers";
@@ -124,13 +125,11 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
 rentalRequestRoutes.get("/rental-requests", requireAuth, async (c) => {
   const authUser = c.get("authUser");
 
-  let query: Record<string, any> = {};
+  const ownerLandIds = authUser.role === "admin"
+    ? []
+    : (await Land.find({ ownerId: authUser.id }).lean()).map((l) => l.id);
 
-  if (authUser.role === "admin") {
-    query = {};
-  } else {
-    query = { tenantId: authUser.id };
-  }
+  const query = canListRentalRequests(authUser, ownerLandIds);
 
   const items = await RentalRequest.find(query).lean();
 
