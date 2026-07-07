@@ -7,6 +7,7 @@ import type {
   ApiSuccess,
   ChatDto,
   ChatMessageDto,
+  CreateLandDto,
   CreateRentalRequestDto,
   ExternalContactDto,
   LandDto,
@@ -105,6 +106,12 @@ export const listRentalRequests = async (): Promise<RentalRequestDto[]> => {
 export const getLandById = async (landId: string): Promise<LandDto | null> => {
   const res = await request<LandDto>("GET", `/api/v1/lands/${landId}`);
   return res?.data ?? null;
+};
+
+/** POST /api/v1/lands — publica un terreno nuevo. */
+export const createLand = async (dto: CreateLandDto): Promise<LandDto> => {
+  const res = await request<LandDto>("POST", "/api/v1/lands", dto);
+  return res.data;
 };
 
 // ─── Payments ─────────────────────────────────────────────────────────────────

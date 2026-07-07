@@ -133,33 +133,6 @@ const LANDS = [
   },
 ];
 
-const DEFAULT_CHAT_MESSAGES: Record<string, { id: string; role: string; text: string; createdAt: string }[]> = {
-  1: [
-    {
-      id: "1-seed-1",
-      role: "owner",
-      text: "Hola, soy Manuel. El terreno está disponible de inmediato y puedo compartir más fotos si las necesitas.",
-      createdAt: "2026-04-22T09:00:00.000Z",
-    },
-  ],
-  2: [
-    {
-      id: "2-seed-1",
-      role: "owner",
-      text: "Hola, Rosa por aquí. El lote tiene agua permanente y cercas recientes.",
-      createdAt: "2026-04-22T09:10:00.000Z",
-    },
-  ],
-  3: [
-    {
-      id: "3-seed-1",
-      role: "owner",
-      text: "Te puedo confirmar disponibilidad para este mes y coordinar una visita.",
-      createdAt: "2026-04-22T09:20:00.000Z",
-    },
-  ],
-};
-
 // Mock/legacy land shape — these helpers handle both the seed data below and
 // API-shaped objects, so the structural type stays intentionally permissive.
 type LandLike = Record<string, any>;
@@ -228,10 +201,6 @@ export function filterLands(lands: LandLike[], filters: LandFilterOptions = {}) 
 
     return matchesType && matchesProvince && matchesPrice && matchesQuery;
   });
-}
-
-export function getChatSeedMessages(landId: string) {
-  return DEFAULT_CHAT_MESSAGES[landId] ?? [];
 }
 
 export function normalizeReserveLand(land: LandLike | null | undefined) {
