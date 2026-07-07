@@ -5,7 +5,7 @@ import { requestJson } from "../lib/http-test-utils";
 describe("analytics routes", () => {
   it("returns overview for an admin (no longer 403)", async () => {
     const { response, payload } = await requestJson("/api/v1/analytics/overview", {
-      headers: { "x-dev-role": "admin" },
+      headers: { "x-dev-user-id": "admin_analytics", "x-dev-role": "admin" },
     });
 
     expect(response.status).toBe(200);

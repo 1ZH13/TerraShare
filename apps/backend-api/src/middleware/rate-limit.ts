@@ -49,6 +49,8 @@ export function rateLimitByIP(limit: number = MAX_REQUESTS_IP): MiddlewareHandle
     c.header("X-RateLimit-Reset", String(Math.ceil(entry.resetAt / 1000)));
 
     if (entry.count > limit) {
+      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+      c.header("Retry-After", String(retryAfter));
       return c.json(
         { error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests. Please try again later." } },
         429,
@@ -86,6 +88,8 @@ export function rateLimitByUser(limit: number = MAX_REQUESTS_USER): MiddlewareHa
     c.header("X-RateLimit-Reset", String(Math.ceil(entry.resetAt / 1000)));
 
     if (entry.count > limit) {
+      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+      c.header("Retry-After", String(retryAfter));
       return c.json(
         { error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests. Please try again later." } },
         429,
@@ -119,6 +123,8 @@ export function rateLimitByIPAndUser(limit: number = MAX_REQUESTS_USER): Middlew
     c.header("X-RateLimit-Reset", String(Math.ceil(ipEntry.resetAt / 1000)));
 
     if (ipEntry.count > MAX_REQUESTS_IP) {
+      const retryAfter = Math.ceil((ipEntry.resetAt - now) / 1000);
+      c.header("Retry-After", String(retryAfter));
       return c.json(
         { error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests. Please try again later." } },
         429,
@@ -135,6 +141,8 @@ export function rateLimitByIPAndUser(limit: number = MAX_REQUESTS_USER): Middlew
       inMemoryStore.set(userKey, userEntry);
 
       if (userEntry.count > limit) {
+        const retryAfter = Math.ceil((userEntry.resetAt - now) / 1000);
+        c.header("Retry-After", String(retryAfter));
         return c.json(
           { error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests. Please try again later." } },
           429,
@@ -144,6 +152,48 @@ export function rateLimitByIPAndUser(limit: number = MAX_REQUESTS_USER): Middlew
 
     await next();
   };
+}
+
+export function rateLimitByApiKey(toolName: string, limit: number = MAX_REQUESTS_USER): MiddlewareHandler {
+  return async (c, next) => {
+    cleanExpiredEntries();
+
+    const apiKey = c.req.header("x-api-key");
+    if (!apiKey) {
+      await next();
+      return;
+    }
+
+    const key = `apikey:${toolName}:${apiKey}`;
+    const now = Date.now();
+
+    let entry = inMemoryStore.get(key);
+    if (!entry || entry.resetAt < now) {
+      entry = { count: 0, resetAt: now + WINDOW_MS };
+    }
+
+    entry.count++;
+    inMemoryStore.set(key, entry);
+
+    c.header("X-RateLimit-Limit", String(limit));
+    c.header("X-RateLimit-Remaining", String(Math.max(0, limit - entry.count)));
+    c.header("X-RateLimit-Reset", String(Math.ceil(entry.resetAt / 1000)));
+
+    if (entry.count > limit) {
+      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+      c.header("Retry-After", String(retryAfter));
+      return c.json(
+        { error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests. Please try again later." } },
+        429,
+      );
+    }
+
+    await next();
+  };
+}
+
+export function resetRateLimitStore() {
+  inMemoryStore.clear();
 }
 
 setInterval(cleanExpiredEntries, WINDOW_MS);

@@ -1,7 +1,12 @@
 import { Hono } from "hono";
 
 import { failure, success } from "../lib/api-response";
-import { isOwnerOrAdmin } from "../lib/auth-helpers";
+import {
+  canCreateRentalRequest,
+  canListRentalRequests,
+  canReadRentalRequest,
+  canTransitionRentalRequest,
+} from "../lib/auth-helpers";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { Land, RentalRequest } from "../db/schemas";
@@ -49,7 +54,7 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
 
-  if (land.ownerId === authUser.id) {
+  if (!canCreateRentalRequest(authUser, land)) {
     return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Owner cannot create request for own land");
   }
 
@@ -135,7 +140,11 @@ rentalRequestRoutes.get("/rental-requests", requireAuth, async (c) => {
     return success(c, items);
   }
 
-  const query: Record<string, unknown> = authUser.role === "admin" ? {} : { tenantId: authUser.id };
+  const ownerLandIds = authUser.role === "admin"
+    ? []
+    : (await Land.find({ ownerId: authUser.id }).lean()).map((l) => l.id);
+
+  const query = canListRentalRequests(authUser, ownerLandIds);
   const items = await RentalRequest.find(query).lean();
 
   return success(c, items);
@@ -151,12 +160,8 @@ rentalRequestRoutes.get("/rental-requests/:requestId", requireAuth, async (c) =>
   }
 
   const land = await Land.findOne({ id: record.landId }).lean();
-  const canAccess =
-    authUser.role === "admin" ||
-    record.tenantId === authUser.id ||
-    Boolean(land && land.ownerId === authUser.id);
 
-  if (!canAccess) {
+  if (!canReadRentalRequest(authUser, record, land ?? { ownerId: "" })) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this rental request");
   }
 
@@ -177,9 +182,6 @@ rentalRequestRoutes.patch("/rental-requests/:requestId/status", requireAuth, asy
     return failure(c, 404, "NOT_FOUND", "Related land not found");
   }
 
-  const isOwner = isOwnerOrAdmin(authUser, land.ownerId);
-  const isTenant = current.tenantId === authUser.id;
-
   const body = (await c.req.json().catch(() => null)) as
     | { status?: RentalRequestStatus; reason?: string }
     | null;
@@ -193,13 +195,11 @@ rentalRequestRoutes.patch("/rental-requests/:requestId/status", requireAuth, asy
     return failure(c, 409, "CONFLICT", `Invalid status transition ${current.status} -> ${nextStatus}`);
   }
 
-  const ownerOnlyStatuses: RentalRequestStatus[] = ["approved", "rejected"];
-  if (ownerOnlyStatuses.includes(nextStatus) && !isOwner) {
+  if (!canTransitionRentalRequest(authUser, current, land, nextStatus)) {
+    if (nextStatus === "cancelled") {
+      return failure(c, 403, "FORBIDDEN", "Not allowed to cancel this request");
+    }
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can approve/reject requests");
-  }
-
-  if (nextStatus === "cancelled" && !(isOwner || isTenant || authUser.role === "admin")) {
-    return failure(c, 403, "FORBIDDEN", "Not allowed to cancel this request");
   }
 
   await RentalRequest.updateOne(

@@ -12,7 +12,7 @@ export const analyticsRoutes = new Hono<AppEnv>();
 // Authenticate every analytics route so `authUser` is set before the
 // per-route authorization checks run. Admin-only routes add `requireAdmin`
 // individually; owner analytics uses `isOwnerOrAdmin` instead.
-analyticsRoutes.use("/*", requireAuth);
+analyticsRoutes.use("/analytics/*", requireAuth);
 
 analyticsRoutes.get("/analytics/overview", requireAdmin, async (c) => {
   const now = Date.now();

@@ -15,7 +15,8 @@
     "hono": "^4.7.2",
     "jose": "^5.9.6",
     "mongodb": "^7.2.0",
-    "mongoose": "^9.5.0"
+    "mongoose": "^9.5.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bun": "latest",

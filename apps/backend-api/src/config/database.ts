@@ -67,6 +67,10 @@ export function getDatabase(): Db | null {
   return db;
 }
 
+export function isDatabaseConnected(): boolean {
+  return db !== null && client !== null;
+}
+
 export async function closeDatabase(): Promise<void> {
   if (client) {
     await client.close();

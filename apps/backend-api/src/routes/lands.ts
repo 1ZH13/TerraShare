@@ -1,12 +1,14 @@
 import { Hono } from "hono";
 
 import { failure, success } from "../lib/api-response";
-import { isOwnerOrAdmin } from "../lib/auth-helpers";
+import { canMutateLand } from "../lib/auth-helpers";
 import { getNumericQuery, getOptionalNumericQuery } from "../lib/request-utils";
 import { requireAuth } from "../middleware/require-auth";
+import { rateLimitByUser } from "../middleware/rate-limit";
 import { createAuditEvent as createAudit } from "../store/audit";
 import { listLands, getLandById, createLand, updateLand, deleteLand } from "../db/collections";
 import { getStore } from "../store/in-memory-db";
+import { Land } from "../db/schemas";
 import type { LandRecord, LandUse } from "../store/types";
 import type { AppEnv } from "../types";
 
@@ -36,6 +38,10 @@ landRoutes.get("/lands", async (c) => {
   const priceMax = getOptionalNumericQuery(c, "priceMax");
   const availableFrom = c.req.query("availableFrom");
   const availableTo = c.req.query("availableTo");
+  const q = c.req.query("q");
+  const lat = getOptionalNumericQuery(c, "lat");
+  const lng = getOptionalNumericQuery(c, "lng");
+  const radius = getOptionalNumericQuery(c, "radius") ?? 10;
 
   if (!allowedSortFields.has(sort)) {
     return failure(c, 400, "VALIDATION_ERROR", "Invalid sort field", [
@@ -46,9 +52,23 @@ landRoutes.get("/lands", async (c) => {
   let lands: LandRecord[];
   
   if (mongoOk) {
-    const filters: Record<string, string> = {};
-    if (use) filters.status = "active";
-    lands = await listLands({ status: "active" }) as LandRecord[];
+    if (q) {
+      lands = await Land.find({ $text: { $search: q }, status: "active" }).lean() as unknown as LandRecord[];
+    } else if (lat !== undefined && lng !== undefined) {
+      const allLands = await Land.find({ status: "active" }).lean() as unknown as LandRecord[];
+      const maxRadiusKm = radius;
+      lands = allLands.filter((land) => {
+        if (land.location.lat === undefined || land.location.lng === undefined) return false;
+        const R = 6371;
+        const dLat = ((land.location.lat ?? 0) - lat) * Math.PI / 180;
+        const dLng = ((land.location.lng ?? 0) - lng) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat * Math.PI / 180) * Math.cos((land.location.lat ?? 0) * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+        const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return dist <= maxRadiusKm;
+      });
+    } else {
+      lands = await listLands({ status: "active" }) as LandRecord[];
+    }
   } else {
     lands = Array.from(getStore().lands.values()).filter((land) => land.status === "active");
   }
@@ -109,7 +129,7 @@ landRoutes.get("/lands", async (c) => {
 
 // Must be registered before "/lands/:landId"; otherwise "me" is captured as a
 // landId and this route becomes unreachable (404).
-landRoutes.get("/lands/me", requireAuth, async (c) => {
+landRoutes.get("/lands/me", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const mongoOk = useMongoDB();
 
@@ -142,7 +162,7 @@ landRoutes.get("/lands/:landId", async (c) => {
   return success(c, land);
 });
 
-landRoutes.post("/lands", requireAuth, async (c) => {
+landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const body = (await c.req.json().catch(() => null)) as Partial<LandRecord> | null;
 
@@ -186,7 +206,7 @@ landRoutes.post("/lands", requireAuth, async (c) => {
   return success(c, land, 201);
 });
 
-landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
+landRoutes.patch("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
   const mongoOk = useMongoDB();
@@ -202,7 +222,7 @@ landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+  if (!canMutateLand(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can update this land");
   }
 
@@ -235,7 +255,7 @@ landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
   return success(c, updated);
 });
 
-landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
+landRoutes.patch("/lands/:landId/status", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
   const mongoOk = useMongoDB();
@@ -251,7 +271,7 @@ landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+  if (!canMutateLand(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can update status");
   }
 
@@ -285,7 +305,7 @@ landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
   return success(c, updated);
 });
 
-landRoutes.delete("/lands/:landId", requireAuth, async (c) => {
+landRoutes.delete("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
   const mongoOk = useMongoDB();
@@ -301,7 +321,7 @@ landRoutes.delete("/lands/:landId", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+  if (!canMutateLand(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can delete this land");
   }
 

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import { failure, success } from "../lib/api-response";
+import { canReadNotification } from "../lib/auth-helpers";
 import { requireAuth } from "../middleware/require-auth";
 import { getStore } from "../store/in-memory-db";
 import type { AppEnv } from "../types";
@@ -31,7 +32,7 @@ notificationRoutes.get("/notifications/:notificationId", requireAuth, (c) => {
     return failure(c, 404, "NOT_FOUND", "Notification not found");
   }
 
-  if (notification.userId !== authUser.id && authUser.role !== "admin") {
+  if (!canReadNotification(authUser, notification)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this notification");
   }
 
@@ -47,7 +48,7 @@ notificationRoutes.patch("/notifications/:notificationId/read", requireAuth, (c)
     return failure(c, 404, "NOT_FOUND", "Notification not found");
   }
 
-  if (notification.userId !== authUser.id && authUser.role !== "admin") {
+  if (!canReadNotification(authUser, notification)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this notification");
   }
 

@@ -86,6 +86,7 @@ export function mapClerkClaimsToAuthUser(payload: JWTPayload): AuthContextUser {
   const explicitRole = readClaim(claims, "role") ?? readPublicMetadata(claims, "role");
   const role = email === env.adminSeedEmail ? "admin" : mapRole(explicitRole);
   const status = mapStatus(readPublicMetadata(claims, "status"));
+  const mfaVerified = readClaim(claims, "mfa_verified") === true;
 
   return {
     id: clerkUserId,
@@ -93,6 +94,7 @@ export function mapClerkClaimsToAuthUser(payload: JWTPayload): AuthContextUser {
     email,
     role,
     status,
+    mfaVerified,
     profile: {
       fullName: mapFullName(claims),
       phone: mapPhone(claims),

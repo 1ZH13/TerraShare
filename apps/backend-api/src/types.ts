@@ -8,6 +8,7 @@ export interface AuthContextUser {
   email: string;
   role: AppRole;
   status: UserStatus;
+  mfaVerified?: boolean;
   profile: {
     fullName: string;
     phone?: string;
@@ -16,6 +17,7 @@ export interface AuthContextUser {
 
 export interface AppVariables {
   requestId: string;
+  traceId: string;
   authUser: AuthContextUser;
 }
 
@@ -32,4 +34,5 @@ export interface Env {
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   WHATSAPP_CONTACT_ENABLED?: string;
+  CORS_ALLOWED_ORIGINS?: string;
 }

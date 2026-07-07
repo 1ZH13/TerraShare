@@ -22,3 +22,23 @@ export type AuditAction =
   | "cancelled"
   | "paid"
   | "status_changed";
+
+export type Resource =
+  | "land"
+  | "rental_request"
+  | "contract"
+  | "payment"
+  | "chat"
+  | "notification"
+  | "audit_event"
+  | "lead";
+
+export type PermissionAction =
+  | "read"
+  | "create"
+  | "update"
+  | "delete"
+  | "transition"
+  | "sign"
+  | "complete"
+  | "initiate";

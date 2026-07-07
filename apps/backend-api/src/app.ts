@@ -2,8 +2,13 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { failure } from "./lib/api-response";
+import { securityHeaders } from "./middleware/security-headers";
 import { requestIdMiddleware } from "./middleware/request-id";
-import { rateLimitByIP } from "./middleware/rate-limit";
+import { loggerMiddleware } from "./middleware/logger";
+import { errorHandler } from "./middleware/error-handler";
+import { metricsMiddleware } from "./middleware/metrics";
+import { rateLimitByIP, rateLimitByUser } from "./middleware/rate-limit";
+import { requireAuth } from "./middleware/require-auth";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
 import { adminRoutes } from "./routes/admin";
@@ -15,18 +20,38 @@ import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
 import { analyticsRoutes } from "./routes/analytics";
 import { notificationRoutes } from "./routes/notifications";
+import { metricsRoutes } from "./routes/metrics";
+import { privacyRoutes } from "./routes/privacy";
 import type { AppEnv } from "./types";
+import { corsAllowHeaders, resolveCorsOrigin } from "./config/env";
 
 export function createApp() {
   const app = new Hono<AppEnv>();
 
+  app.use("*", securityHeaders);
   app.use("*", cors({
-    origin: "*",
+    origin: resolveCorsOrigin,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "x-dev-role", "x-dev-user-id", "stripe-signature"],
+    allowHeaders: corsAllowHeaders(),
+    exposeHeaders: [
+      "x-request-id",
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
+      "X-RateLimit-Reset",
+    ],
+    credentials: false,
+    maxAge: 86400,
   }));
   app.use("*", requestIdMiddleware);
+  app.use("*", loggerMiddleware);
+  app.use("*", metricsMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));
+  app.use("/api/v1/rental-requests*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/contracts*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/payments*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/chats*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/admin*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/analytics*", requireAuth, rateLimitByUser(200));
 
   app.get("/", (c) => {
     return c.json({
@@ -47,13 +72,12 @@ export function createApp() {
   app.route("/api/v1", chatRoutes);
   app.route("/api/v1", analyticsRoutes);
   app.route("/api/v1", notificationRoutes);
+  app.route("/api/v1", metricsRoutes);
+  app.route("/api/v1", privacyRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 
-  app.onError((error, c) => {
-    console.error("[backend-api] unhandled error", error);
-    return failure(c, 500, "INTERNAL_ERROR", "Unexpected server error");
-  });
+  app.onError(errorHandler);
 
   return app;
 }

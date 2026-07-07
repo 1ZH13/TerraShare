@@ -1,31 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import type { PaymentDto } from "@terrashare/shared";
+import { CreditCard } from "lucide-react";
 import { getMyPayments } from "../services/api";
+import EmptyState from "../components/EmptyState";
+import "./payments.css";
 
-type PaymentRow = PaymentDto & { landTitle?: string };
+type PaymentRow = PaymentDto & { landTitle?: string; receiptUrl?: string };
 
-const statusLabels: Record<string, string> = {
-  pending: "Pendiente",
-  completed: "Completado",
-  failed: "Fallido",
-  refunded: "Reembolsado",
+const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  pending: { label: "Pendiente", cls: "pay-badge--pending" },
+  processing: { label: "Procesando", cls: "pay-badge--neutral" },
+  paid: { label: "Pagado", cls: "pay-badge--paid" },
+  failed: { label: "Fallido", cls: "pay-badge--failed" },
+  cancelled: { label: "Cancelado", cls: "pay-badge--neutral" },
 };
 
-const statusStyles: Record<string, { bg: string; color: string }> = {
-  pending: { bg: "rgba(13, 111, 147, 0.15)", color: "var(--river-500)" },
-  completed: { bg: "rgba(11, 95, 55, 0.15)", color: "var(--leaf-700)" },
-  failed: { bg: "rgba(179, 52, 42, 0.15)", color: "var(--danger)" },
-  refunded: { bg: "rgba(157, 106, 59, 0.15)", color: "var(--soil-500)" },
-};
+function formatDate(iso?: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("es-PA", { day: "2-digit", month: "short", year: "numeric" });
+}
 
 export default function PaymentsPage() {
   const { user } = useUser();
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -47,101 +50,88 @@ export default function PaymentsPage() {
     fetchPayments();
   }, [user]);
 
-  const filteredPayments = filter === "all" ? payments : payments.filter((p) => p.status === filter);
-
-  if (loading) {
-    return (
-      <div>
-        <div className="section-header">
-          <h1>Mis Pagos</h1>
-          <p>Historial de transacciones</p>
-        </div>
-        <div className="glass-panel" style={{ marginTop: "1.5rem", textAlign: "center", padding: "3rem" }}>
-          <p>Cargando pagos...</p>
-        </div>
-      </div>
-    );
-  }
+  const stats = useMemo(() => {
+    const thisYear = new Date().getFullYear();
+    const paidYear = payments
+      .filter((p) => p.status === "paid" && new Date(p.createdAt ?? 0).getFullYear() === thisYear)
+      .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+    const pending = payments
+      .filter((p) => p.status === "pending")
+      .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+    return { paidYear, pending, count: payments.length };
+  }, [payments]);
 
   return (
-    <div>
-      <div className="section-header">
-        <h1>Mis Pagos</h1>
-        <p>Historial de transacciones</p>
-      </div>
+    <div className="pay">
+      <h1 className="pay-title">Pagos</h1>
+      <p className="pay-sub">Historial de tus pagos de alquiler.</p>
 
-      <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1rem" }}>
-          {["all", "pending", "completed", "failed"].map((f) => (
-            <button
-              key={f}
-              className={`filter-chip ${filter === f ? "active" : ""}`}
-              onClick={() => setFilter(f)}
-            >
-              {f === "all" ? "Todos" : statusLabels[f] || f}
-            </button>
-          ))}
+      <div className="pay-stats">
+        <div className="pay-stat">
+          <div className="pay-stat__value">${stats.paidYear.toLocaleString("es-PA")}</div>
+          <div className="pay-stat__label">Pagado este año</div>
+        </div>
+        <div className="pay-stat">
+          <div className="pay-stat__value pay-stat__value--clay">
+            ${stats.pending.toLocaleString("es-PA")}
+          </div>
+          <div className="pay-stat__label">Pendiente</div>
+        </div>
+        <div className="pay-stat">
+          <div className="pay-stat__value">{stats.count}</div>
+          <div className="pay-stat__label">Transacciones</div>
         </div>
       </div>
 
-      {error && (
-        <div className="glass-panel" style={{ marginTop: "1rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
-          <p style={{ color: "var(--danger)" }}>Error: {error}</p>
-        </div>
-      )}
-
-      {filteredPayments.length === 0 ? (
-        <div className="glass-panel" style={{ marginTop: "1rem" }}>
-          <p>No tienes pagos{filter !== "all" ? ` ${filter === "pending" ? "pendientes" : filter === "completed" ? "completados" : "fallidos"}` : ""}.</p>
-          <Link to="/dashboard" className="btn btn-primary" style={{ marginTop: "1rem" }}>
-            Ver mis solicitudes
-          </Link>
-        </div>
+      {loading ? (
+        <div className="pay-empty">Cargando pagos…</div>
+      ) : error ? (
+        <div className="pay-empty pay-empty--error">No pudimos cargar tus pagos.</div>
+      ) : payments.length === 0 ? (
+        <EmptyState
+          icon={CreditCard}
+          title="Todavía no tienes pagos"
+          description="Cuando completes el pago de un alquiler, aparecerá en tu historial."
+          action={{ label: "Ver mis solicitudes", to: "/dashboard" }}
+        />
       ) : (
-        <div className="glass-panel" style={{ marginTop: "1rem" }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Terreno</th>
-                <th>Monto</th>
-                <th>Estado</th>
-                <th>Referencia</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPayments.map((payment) => {
-                const styles = statusStyles[payment.status] || statusStyles.pending;
-                return (
-                  <tr key={payment.id}>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("es-PA") : "—"}
-                    </td>
-                    <td>{payment.landTitle || payment.rentalRequestId?.slice(0, 8)}</td>
-                    <td style={{ fontWeight: 700 }}>
-                      ${payment.amount} {payment.currency || "USD"}
-                    </td>
-                    <td>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          padding: "0.2rem 0.5rem",
-                          borderRadius: "999px",
-                          fontSize: "0.7rem",
-                          fontWeight: 700,
-                          background: styles.bg,
-                          color: styles.color,
-                        }}
-                      >
-                        {statusLabels[payment.status] || payment.status}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: "0.75rem", opacity: 0.6 }}>{payment.id}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="pay-table">
+          <div className="pay-row pay-row--head">
+            <span>Fecha</span>
+            <span>Terreno</span>
+            <span>Monto</span>
+            <span>Estado</span>
+            <span />
+          </div>
+          {payments.map((p) => {
+            const badge = STATUS_BADGE[p.status] ?? STATUS_BADGE.pending;
+            const isPending = p.status === "pending";
+            return (
+              <div key={p.id} className="pay-row">
+                <span className="pay-cell--date">{isPending ? "Pendiente" : formatDate(p.createdAt)}</span>
+                <span className="pay-cell--land">
+                  {p.landTitle || `Solicitud #${p.rentalRequestId?.slice(0, 8) ?? "—"}`}
+                </span>
+                <span>${(p.amount ?? 0).toLocaleString("es-PA")}</span>
+                <span>
+                  <span className={`pay-badge ${badge.cls}`}>{badge.label}</span>
+                </span>
+                <span className="pay-cell--action">
+                  {isPending ? (
+                    <Link to={`/pay/${p.rentalRequestId}`} className="pay-action pay-action--pay">
+                      Pagar
+                    </Link>
+                  ) : p.receiptUrl ? (
+                    <a href={p.receiptUrl} className="pay-action" target="_blank" rel="noreferrer">
+                      Recibo
+                    </a>
+                  ) : (
+                    <span />
+                  )}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
