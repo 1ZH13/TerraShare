@@ -1,0 +1,75 @@
+/* TerraShare — tema base editorial (issue #134).
+   Aplica fondo crema + tipografía a toda la app. NO reescribe las páginas
+   legacy: styles.css sigue vigente y muchas reglas legacy fijan sus propias
+   fuentes/fondos, por lo que conviven durante la transición. */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--ts-bg);
+  color: var(--ts-text);
+  font-family: var(--ts-font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Títulos en serif con tracking negativo (fuera de las páginas legacy, que
+   fijan sus propios estilos). */
+.ts-title,
+.ts-display {
+  font-family: var(--ts-font-serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ts-text);
+  margin: 0;
+}
+
+.ts-display {
+  font-size: clamp(2.5rem, 6vw, 4.6rem);
+  font-weight: 400;
+}
+
+h1.ts-title {
+  font-size: clamp(2.5rem, 5vw, 3.25rem);
+}
+
+h2.ts-title {
+  font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+}
+
+h3.ts-title {
+  font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+}
+
+.ts-mono {
+  font-family: var(--ts-font-mono);
+}
+
+/* Entrada suave reutilizable. */
+@keyframes ts-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ts-fade-up {
+  animation: ts-fade-up 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-fade-up {
+    animation: none;
+  }
+}

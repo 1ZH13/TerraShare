@@ -63,6 +63,21 @@ Reglas de negocio para solicitudes:
 - Proveedor: Stripe Checkout Session.
 - Fuente de verdad: webhook `POST /api/v1/webhooks/stripe`.
 - No usar `success_url` como confirmacion final.
+- `POST /api/v1/payments/confirm` (`{rentalRequestId}` o `{paymentId}`): verifica el
+  estado del pago consultando Stripe directamente (retrieve de la session/intent) y,
+  si esta pagado, aplica la misma transicion que el webhook (idempotente). Sirve como
+  respaldo cuando el webhook no llega (tipico en local).
+
+### Webhooks en local
+
+Stripe no alcanza `localhost`. Para recibir el webhook en desarrollo, reenvialo con la CLI:
+
+```bash
+stripe listen --forward-to localhost:3000/api/v1/payments/webhooks/stripe
+```
+
+El `whsec_...` que imprime va en `STRIPE_WEBHOOK_SECRET`. Sin esto, usar `/payments/confirm`
+para reflejar el pago en la UI.
 
 ## Variables de entorno
 
