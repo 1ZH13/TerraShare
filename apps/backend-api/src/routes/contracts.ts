@@ -1,7 +1,11 @@
 import { Hono } from "hono";
 
 import { failure, success } from "../lib/api-response";
-import { isOwnerOrAdmin } from "../lib/auth-helpers";
+import {
+  canCreateContract,
+  canMutateContract,
+  canReadContract,
+} from "../lib/auth-helpers";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { Contract, AuditEvent, RentalRequest, Land } from "../db/schemas";
@@ -34,7 +38,7 @@ contractRoutes.post("/contracts", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Related land not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, land.ownerId)) {
+  if (!canCreateContract(authUser, land)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can create contracts");
   }
 
@@ -85,11 +89,7 @@ contractRoutes.get("/contracts/:contractId", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Contract not found");
   }
 
-  if (
-    authUser.role !== "admin" &&
-    contract.ownerId !== authUser.id &&
-    contract.tenantId !== authUser.id
-  ) {
+  if (!canReadContract(authUser, contract)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this contract");
   }
 
@@ -105,7 +105,7 @@ contractRoutes.patch("/contracts/:contractId/status", requireAuth, async (c) => 
     return failure(c, 404, "NOT_FOUND", "Contract not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+  if (!canMutateContract(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can update contract status");
   }
 
@@ -142,11 +142,7 @@ contractRoutes.post("/contracts/:contractId/sign", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Contract not found");
   }
 
-  if (
-    authUser.role !== "admin" &&
-    current.ownerId !== authUser.id &&
-    current.tenantId !== authUser.id
-  ) {
+  if (!canReadContract(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to sign this contract");
   }
 
@@ -184,7 +180,7 @@ contractRoutes.post("/contracts/:contractId/complete", requireAuth, async (c) =>
     return failure(c, 404, "NOT_FOUND", "Contract not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+  if (!canMutateContract(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can complete this contract");
   }
 

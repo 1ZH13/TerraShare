@@ -1,0 +1,222 @@
+openapi: "3.0.3"
+info:
+  title: TerraShare API
+  version: "1.0.0"
+  description: API para plataforma de alquiler de terrenos
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        "200":
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      service:
+                        type: string
+                      version:
+                        type: string
+                      uptime:
+                        type: number
+
+  /health/live:
+    get:
+      summary: Liveness probe
+      tags: [System]
+      responses:
+        "200":
+          description: Service is alive
+
+  /health/ready:
+    get:
+      summary: Readiness probe
+      tags: [System]
+      responses:
+        "200":
+          description: Service readiness status
+
+  /lands:
+    get:
+      summary: List lands
+      tags: [Lands]
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Full-text search query
+        - name: lat
+          in: query
+          schema:
+            type: number
+          description: Latitude for geospatial search
+        - name: lng
+          in: query
+          schema:
+            type: number
+          description: Longitude for geospatial search
+        - name: radius
+          in: query
+          schema:
+            type: number
+            default: 10
+          description: Search radius in km
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Lands listed
+    post:
+      summary: Create a land
+      tags: [Lands]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, area, location, priceRule, allowedUses]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                area:
+                  type: number
+                allowedUses:
+                  type: array
+                  items:
+                    type: string
+                location:
+                  type: object
+                  properties:
+                    province:
+                      type: string
+                    district:
+                      type: string
+                priceRule:
+                  type: object
+                  properties:
+                    currency:
+                      type: string
+                      enum: [USD, PAB]
+                    pricePerMonth:
+                      type: number
+      responses:
+        "201":
+          description: Land created
+
+  /rental-requests:
+    get:
+      summary: List rental requests
+      tags: [Rental Requests]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Rental requests listed
+    post:
+      summary: Create rental request
+      tags: [Rental Requests]
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Rental request created
+
+  /contracts:
+    get:
+      summary: List contracts
+      tags: [Contracts]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Contracts listed
+
+  /payments/checkout-session:
+    post:
+      summary: Create checkout session
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Checkout session created
+
+  /me:
+    get:
+      summary: Get current user profile
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+    delete:
+      summary: Delete account (GDPR)
+      tags: [Privacy]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Account deleted
+
+  /me/data-export:
+    get:
+      summary: Export user data (GDPR)
+      tags: [Privacy]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User data exported
+
+  /notifications:
+    get:
+      summary: List notifications
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notifications listed
+
+  /metrics:
+    get:
+      summary: Get API metrics (admin only)
+      tags: [Observability]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Metrics returned
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

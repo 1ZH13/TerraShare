@@ -1,281 +1,328 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import type { LandDto } from "@terrashare/shared";
-import PublicHeader from "../components/PublicHeader";
+import type { LandDto, LandUse } from "@terrashare/shared";
+import {
+  Sprout,
+  ArrowRight,
+  Droplets,
+  ShieldCheck,
+  Waves,
+  Handshake,
+  BadgeCheck,
+  MapPin,
+  Quote,
+  ImageIcon,
+} from "lucide-react";
 import { listLands } from "../services/api";
 import { isAdminUser } from "../components/authDisplay";
+import "./landing.css";
 
-type FeaturedLand = LandDto & {
-  type?: string;
-  areaHectares?: number;
-  water?: string;
-  access?: string;
-  monthlyPrice?: number;
+// ─── Contenido estático (fiel al prototipo) ───────────────────────────────────
+const USE_LABELS: Record<LandUse, string> = {
+  agricultura: "Agricultura",
+  ganaderia: "Ganadería",
+  forestal: "Forestal",
+  acuicultura: "Acuicultura",
+  mixto: "Mixto",
+  otro: "Otro",
 };
 
-const metrics = [
-  { value: "+120", label: "Terrenos disponibles" },
-  { value: "2 días", label: "Tiempo promedio de respuesta" },
-  { value: "6", label: "Provincias en Panamá" },
+const BENEFITS = [
+  { icon: ShieldCheck, title: "Información verificada", desc: "Área, uso y linderos revisados." },
+  { icon: Waves, title: "Agua y acceso", desc: "Fuentes y vías confirmadas." },
+  { icon: Handshake, title: "Trato directo", desc: "Hablas con el dueño real." },
+  { icon: BadgeCheck, title: "Sin comisiones", desc: "Explora y solicita gratis." },
 ];
 
-const benefits = [
-  {
-    icon: "📊",
-    title: "Información completa",
-    desc: "Tamaño exacto, fuentes de agua, acceso y precio mensual.",
-  },
-  {
-    icon: "🔍",
-    title: "Explora sin registro",
-    desc: "Navega el catálogo completo antes de registrarte.",
-  },
-  {
-    icon: "⚡",
-    title: "Respuesta rápida",
-    desc: "Te notificamos por email cuando el propietario responda.",
-  },
-  {
-    icon: "📋",
-    title: "Historial guardado",
-    desc: "Solicitudes, mensajes y acuerdos en un solo lugar.",
-  },
+const STEPS = [
+  { num: "01", title: "Explora", desc: "Filtra por provincia, uso y presupuesto en el mapa." },
+  { num: "02", title: "Solicita", desc: "Envía tu interés al propietario en un clic." },
+  { num: "03", title: "Acuerda", desc: "Negocia fechas y condiciones por chat." },
+  { num: "04", title: "Produce", desc: "Empieza a trabajar tu nueva tierra." },
 ];
 
-const steps = [
-  { number: "1", title: "Regístrate", desc: "Con tu email en menos de 1 minuto." },
-  { number: "2", title: "Publica o busca", desc: "Sube fotos de tu terreno o explora el catálogo." },
-  { number: "3", title: "Recibe ofertas", desc: "Los interesados te contactan." },
-  { number: "4", title: "Cierran el trato", desc: "Acuerdan fechas y formalizan." },
+// Ejemplos del prototipo — se usan como respaldo si aún no hay terrenos publicados.
+type FeaturedCard = {
+  id: string;
+  title: string;
+  use: string;
+  area: number;
+  province: string;
+  price: number | null;
+  to: string;
+};
+
+const SAMPLE_FEATURED: FeaturedCard[] = [
+  { id: "s1", title: "Finca El Tamarindo", use: "Ganadería", area: 5.2, province: "Los Santos", price: 420, to: "/catalog" },
+  { id: "s2", title: "Lote Vista Caisán", use: "Agricultura", area: 8.0, province: "Chiriquí", price: 560, to: "/catalog" },
+  { id: "s3", title: "Parcela Río Indio", use: "Mixto", area: 6.4, province: "Coclé", price: 390, to: "/catalog" },
 ];
+
+function toFeatured(land: LandDto): FeaturedCard {
+  return {
+    id: land.id,
+    title: land.title,
+    use: USE_LABELS[land.allowedUses?.[0]] ?? "Terreno",
+    area: land.area,
+    province: land.location?.province ?? "Panamá",
+    price: land.priceRule?.pricePerMonth ?? null,
+    to: `/lands/${land.id}`,
+  };
+}
+
+function PhotoPlaceholder({ label, className }: { label: string; className: string }) {
+  return (
+    <div className={className} aria-hidden="true">
+      <ImageIcon size={26} strokeWidth={1.5} />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function LandCard({ card }: { card: FeaturedCard }) {
+  return (
+    <Link to={card.to} className="lp-card">
+      <PhotoPlaceholder label="Foto terreno" className="lp-photo lp-card__photo" />
+      <div className="lp-card__body">
+        <div className="lp-card__top">
+          <span className="lp-card__badge">{card.use}</span>
+          <span className="lp-card__area">{card.area} ha</span>
+        </div>
+        <h3 className="lp-card__title">{card.title}</h3>
+        <div className="lp-card__loc">
+          <MapPin size={14} /> {card.province}
+        </div>
+        <div className="lp-card__foot">
+          <span className="lp-card__price">
+            {typeof card.price === "number" ? (
+              <>
+                ${card.price.toLocaleString("es-PA")}
+                <span>/mes</span>
+              </>
+            ) : (
+              "A consultar"
+            )}
+          </span>
+          <span className="lp-card__go">
+            <ArrowRight size={16} />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export default function LandingPage() {
   const { isSignedIn, user } = useUser();
   const admin = isAdminUser(user);
-  const [activeTab, setActiveTab] = useState("benefits");
-  const [featuredLands, setFeaturedLands] = useState<FeaturedLand[]>([]);
-  const [landsLoading, setLandsLoading] = useState(true);
+  const [featured, setFeatured] = useState<FeaturedCard[]>(SAMPLE_FEATURED);
 
   useEffect(() => {
-    const fetchFeaturedLands = async () => {
-      try {
-        const lands = await listLands({ sort: "createdAt", order: "desc", pageSize: 3 });
-        setFeaturedLands(lands.slice(0, 3));
-      } catch (err) {
-        console.error("Error fetching featured lands:", err);
-      } finally {
-        setLandsLoading(false);
-      }
+    let active = true;
+    listLands({ sort: "createdAt", order: "desc", pageSize: 3 })
+      .then((data) => {
+        if (!active || data.length === 0) return;
+        setFeatured(data.slice(0, 3).map(toFeatured));
+      })
+      .catch((err) => {
+        console.error("Error cargando terrenos destacados:", err);
+      });
+    return () => {
+      active = false;
     };
-    fetchFeaturedLands();
   }, []);
 
-  const primaryAction = isSignedIn
-    ? { to: admin ? "/dashboard/admin" : "/catalog", label: admin ? "Ir al dashboard admin" : "Explorar catálogo" }
-    : { to: "/register", label: "Publicar mi terreno" };
-
-  const secondaryAction = isSignedIn
-    ? { to: "/catalog", label: "Ver catálogo" }
-    : { to: "/login", label: "Iniciar sesión" };
+  const catalogTo = isSignedIn ? "/catalog" : "/register";
+  const publishTo = isSignedIn ? (admin ? "/dashboard/admin" : "/dashboard/lands") : "/register";
 
   return (
-    <div className="page-shell">
-      <div className="ambient ambient-left" aria-hidden="true" />
-      <div className="ambient ambient-right" aria-hidden="true" />
-      <div className="ambient ambient-bottom" aria-hidden="true" />
-
-      <PublicHeader />
-
-      <main>
-        <section className="hero-section">
-          <div className="hero-wrapper">
-            <div className="landing-hero-copy">
-              <span className="landing-hero-tag">Plataforma #1 en Panamá</span>
-              <h1 className="landing-hero-title">
-                Encuentra el terreno perfecto
-                <br />
-                <span className="landing-hero-title-accent">para producir</span>
-              </h1>
-              <p className="landing-hero-subtitle">
-                Conectamos propietarios y productores de forma clara y segura. 
-                Explora el catálogo sin registrarte. Solicita cuando estés seguro.
-              </p>
-              <div className="landing-hero-actions">
-                <Link to={primaryAction.to} className="btn btn-primary btn-lg">
-                  {primaryAction.label}
-                </Link>
-                <Link to={secondaryAction.to} className="btn btn-ghost btn-lg">
-                  {secondaryAction.label}
-                </Link>
-              </div>
-              <div className="landing-hero-metrics">
-                {metrics.map((m) => (
-                  <div key={m.label} className="landing-metric-card">
-                    <span className="landing-metric-value">{m.value}</span>
-                    <span className="landing-metric-label">{m.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="hero-visual" aria-hidden="true">
-              <div className="visual-card visual-main">
-                <div className="visual-badge">Destacado</div>
-                <h3>Finca El Tamarindo</h3>
-                <p className="visual-location">Los Santos • Agricultura</p>
-                <div className="visual-details">
-                  <span>5.2 Ha</span>
-                  <span>Pozo + Río</span>
-                  <span>Carroable</span>
-                </div>
-                <div className="visual-price">$420/mes</div>
-              </div>
-              <div className="visual-card visual-secondary">
-                <div className="visual-badge secondary">Disponible</div>
-                <p>Lote Vista Caisan</p>
-                <span className="visual-price-sm">$560/mes</span>
-              </div>
-              <div className="visual-card visual-tertiary">
-                <div className="visual-badge tertiary">Mixto</div>
-                <p>Parcela Río Indio</p>
-                <span className="visual-price-sm">$390/mes</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-<section className="features-section">
-          <div className="section-header">
-            <span className="kicker">Todo lo que necesitas</span>
-            <h2>Explora, publica y conecta</h2>
-            <p>Una plataforma diseñada para que alquilar tierras sea simple y seguro.</p>
-          </div>
-          
-          <div className="features-tabs">
-            <button 
-              className={`tab-btn ${activeTab === 'benefits' ? 'active' : ''}`}
-              onClick={() => setActiveTab('benefits')}
-            >
-              Beneficios
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'how' ? 'active' : ''}`}
-              onClick={() => setActiveTab('how')}
-            >
-              Cómo funciona
-            </button>
-          </div>
-
-          <div className="features-grid">
-            {activeTab === 'benefits' ? (
-              benefits.map((b, i) => (
-                <div key={b.title} className="feature-card" style={{ animationDelay: `${i * 80}ms` }}>
-                  <span className="feature-icon">{b.icon}</span>
-                  <h3>{b.title}</h3>
-                  <p>{b.desc}</p>
-                </div>
-              ))
-            ) : (
-              steps.map((step, i) => (
-                <div key={step.number} className="feature-card" style={{ animationDelay: `${i * 80}ms` }}>
-                  <span className="step-badge">{step.number}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.desc}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="preview-section">
-          <div className="section-header">
-            <h2>Terrenos disponibles ahora</h2>
-            <p>Explora las mejores opciones en las zonas agrícolas de Panamá.</p>
-          </div>
-          <div className="cards-grid lands-grid">
-            {landsLoading ? (
-              <p style={{ gridColumn: "1/-1", textAlign: "center", opacity: 0.6 }}>Cargando terrenos...</p>
-            ) : featuredLands.length === 0 ? (
-              <p style={{ gridColumn: "1/-1", textAlign: "center", opacity: 0.6 }}>No hay terrenos disponibles aún.</p>
-            ) : (
-              featuredLands.map((land) => (
-                <Link key={land.id} to={`/lands/${land.id}`} className="land-card-full">
-                  <div className="land-card-header">
-                    <span className="card-badge">{land.allowedUses?.[0] || land.type}</span>
-                    <span className="card-size">{land.areaHectares || land.area} ha</span>
-                  </div>
-                  <h3>{land.title}</h3>
-                  <p className="land-location">{land.location?.province}</p>
-                  <div className="land-features">
-                    <span>💧 {land.water}</span>
-                    <span>🚜 {land.access}</span>
-                  </div>
-                  <div className="card-footer">
-                    <span className="card-price">${land.priceRule?.pricePerMonth || land.monthlyPrice}<span>/mes</span></span>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-          <div className="preview-cta">
-            <Link to="/catalog" className="btn btn-ghost">
-              Ver todos los terrenos →
+    <div className="lp">
+      {/* ── 01 · Header ─────────────────────────────────────────────── */}
+      <nav className="lp-nav">
+        <Link to="/" className="lp-brand" aria-label="TerraShare, inicio">
+          <span className="lp-brand__mark">
+            <Sprout size={30} strokeWidth={1.8} />
+          </span>
+          <span className="lp-brand__name">TerraShare</span>
+        </Link>
+        <div className="lp-nav__links">
+          <Link to={catalogTo} className="lp-nav__link">
+            Catálogo
+          </Link>
+          <a href="#como-funciona" className="lp-nav__link">
+            Cómo funciona
+          </a>
+          {isSignedIn ? (
+            <Link to={admin ? "/dashboard/admin" : "/dashboard"} className="lp-nav__link lp-nav__link--accent">
+              Mi panel
             </Link>
-          </div>
-        </section>
+          ) : (
+            <Link to="/login" className="lp-nav__link lp-nav__link--accent">
+              Iniciar sesión
+            </Link>
+          )}
+          <Link to={publishTo} className="lp-nav__cta">
+            Publicar terreno
+          </Link>
+        </div>
+      </nav>
 
-        <section className="cta-section">
-          <div className="cta-box">
-            <div className="cta-content">
-              <h2>¿Listo para empezar?</h2>
-              <p>
-                {isSignedIn 
-                  ? "Explora más terrenos disponibles o gestiona los tuyos desde el dashboard." 
-                  : "Únete a propietarios y productores de todo Panamá. Es gratis."}
-              </p>
-              <div className="cta-actions">
-                <Link to="/catalog" className="btn btn-ghost btn-lg">Ver terrenos</Link>
-                {isSignedIn ? (
-                  <Link to={admin ? "/dashboard/admin" : "/dashboard"} className="btn btn-primary btn-lg">
-                    {admin ? "Panel de Admin" : "Mi Dashboard"}
-                  </Link>
-                ) : (
-                  <Link to="/register" className="btn btn-primary btn-lg">Crear cuenta gratis</Link>
-                )}
-              </div>
+      {/* ── Hero ────────────────────────────────────────────────────── */}
+      <header className="lp-hero">
+        <div>
+          <div className="lp-eyebrow lp-up">
+            <Sprout size={16} strokeWidth={2} /> Tierras productivas en Panamá
+          </div>
+          <h1 className="lp-hero__title lp-up-1">
+            Tierra fértil
+            <br />
+            para quienes la
+            <br />
+            saben <em>trabajar</em>.
+          </h1>
+          <p className="lp-hero__lede lp-up-2">
+            Conectamos a ganaderos y agricultores con dueños de tierra en toda Panamá. Explora, compara
+            agua y acceso, y solicita — sin intermediarios ni comisiones ocultas.
+          </p>
+          <div className="lp-hero__actions lp-up-3">
+            <Link to={catalogTo} className="lp-btn lp-btn--primary">
+              Explorar catálogo <ArrowRight size={18} />
+            </Link>
+            <a href="#como-funciona" className="lp-btn lp-btn--ghost">
+              Ver cómo funciona
+            </a>
+          </div>
+          <div className="lp-herostats lp-up-4">
+            <div>
+              <div className="lp-herostat__value">+120</div>
+              <div className="lp-herostat__label">terrenos activos</div>
+            </div>
+            <div className="lp-herostat__rule" />
+            <div>
+              <div className="lp-herostat__value">6</div>
+              <div className="lp-herostat__label">provincias</div>
+            </div>
+            <div className="lp-herostat__rule" />
+            <div>
+              <div className="lp-herostat__value">2 días</div>
+              <div className="lp-herostat__label">respuesta prom.</div>
             </div>
           </div>
-        </section>
+        </div>
+        <div className="lp-heroart">
+          <PhotoPlaceholder
+            label="Foto — potrero / cultivo al amanecer"
+            className="lp-photo lp-photo--hero lp-heroart__photo"
+          />
+          <div className="lp-chip lp-chip--water">
+            <span className="lp-chip--water__icon">
+              <Droplets size={21} />
+            </span>
+            <div>
+              <div className="lp-chip--water__k">Agua confirmada</div>
+              <div className="lp-chip--water__v">Pozo + Río</div>
+            </div>
+          </div>
+          <div className="lp-chip lp-chip--price">
+            <div className="lp-chip--price__k">Desde</div>
+            <div className="lp-chip--price__v">
+              $420<span>/mes</span>
+            </div>
+          </div>
+        </div>
+      </header>
 
-        <footer className="landing-footer">
-          <div className="footer-grid">
-            <div className="footer-brand">
-              <span className="brand">TerraShare</span>
-              <p>La plataforma #1 para alquilar tierras productivas en Panamá.</p>
-            </div>
-            <div className="footer-links">
-              <Link to="/catalog">Catálogo</Link>
-              {isSignedIn ? (
-                <Link to={admin ? "/dashboard/admin" : "/dashboard"} className="text-btn">
-                  {admin ? "Admin" : "Mi cuenta"}
-                </Link>
-              ) : (
-                <>
-                  <Link to="/login" className="text-btn">Entrar</Link>
-                  <Link to="/register" className="text-btn">Registrarse</Link>
-                </>
-              )}
+      {/* ── Banda de beneficios ─────────────────────────────────────── */}
+      <section className="lp-band">
+        {BENEFITS.map(({ icon: Icon, title, desc }) => (
+          <div key={title} className="lp-band__cell">
+            <span className="lp-band__icon">
+              <Icon size={27} strokeWidth={1.6} />
+            </span>
+            <div>
+              <div className="lp-band__title">{title}</div>
+              <div className="lp-band__desc">{desc}</div>
             </div>
           </div>
-          <div className="footer-legal">
-            <p>© {new Date().getFullYear()} TerraShare. Todos los derechos reservados.</p>
-            <div className="footer-legal-links">
-              <a href="#">Términos</a>
-              <a href="#">Privacidad</a>
+        ))}
+      </section>
+
+      {/* ── Terrenos destacados ─────────────────────────────────────── */}
+      <section className="lp-featured">
+        <div className="lp-featured__head">
+          <div>
+            <div className="lp-eyebrow">Disponibles ahora</div>
+            <h2 className="lp-featured__title">Terrenos destacados</h2>
+          </div>
+          <Link to={catalogTo} className="lp-seeall">
+            Ver todos <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="lp-grid3">
+          {featured.map((card) => (
+            <LandCard key={card.id} card={card} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── Cómo funciona ───────────────────────────────────────────── */}
+      <section className="lp-how" id="como-funciona">
+        <h2 className="lp-how__title">Cómo funciona</h2>
+        <div className="lp-how__grid">
+          {STEPS.map((step) => (
+            <div key={step.num}>
+              <div className="lp-step__num">{step.num}</div>
+              <div className="lp-step__rule" />
+              <h4 className="lp-step__title">{step.title}</h4>
+              <p className="lp-step__desc">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA / testimonio ────────────────────────────────────────── */}
+      <section className="lp-cta">
+        <div>
+          <Quote size={38} className="lp-cta__quote-icon" />
+          <p className="lp-cta__quote">
+            Encontré 8 hectáreas con agua a 20 minutos de mi casa. Hablé directo con el dueño y en una
+            semana ya tenía el ganado ahí.
+          </p>
+          <div className="lp-cta__author">
+            <span className="lp-cta__avatar">
+              <Sprout size={22} strokeWidth={1.8} />
+            </span>
+            <div>
+              <div className="lp-cta__author-name">Ricardo Him</div>
+              <div className="lp-cta__author-role">Ganadero · Herrera</div>
             </div>
           </div>
-        </footer>
-      </main>
+        </div>
+        <div className="lp-cta__aside">
+          <h3 className="lp-cta__aside-title">¿Listo para empezar?</h3>
+          <p className="lp-cta__aside-text">Crea tu cuenta gratis y publica o encuentra tierra hoy.</p>
+          <Link to={isSignedIn ? catalogTo : "/register"} className="lp-btn lp-btn--clay">
+            {isSignedIn ? "Explorar catálogo" : "Crear cuenta gratis"} <ArrowRight size={17} />
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Footer ──────────────────────────────────────────────────── */}
+      <footer className="lp-foot">
+        <div className="lp-foot__brand">
+          <span className="lp-brand__mark">
+            <Sprout size={24} strokeWidth={1.8} />
+          </span>
+          <span className="lp-foot__brand-name">TerraShare</span>
+        </div>
+        <div className="lp-foot__links">
+          <Link to={catalogTo}>Catálogo</Link>
+          <a href="#">Términos</a>
+          <a href="#">Privacidad</a>
+        </div>
+        <div className="lp-foot__copy">© {new Date().getFullYear()} TerraShare · Hecho en Panamá</div>
+      </footer>
     </div>
   );
 }
