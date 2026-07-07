@@ -1,11 +1,24 @@
 import { useEffect, useState } from "react";
+import { Search, ChevronDown, Download } from "lucide-react";
 import { listAdminLeads, type AdminLead } from "../services/adminApi";
+import "./admin.css";
 
-const sourceLabels: Record<string, string> = {
-  landing: "Landing Page",
-  "app-web": "App Web",
-  "admin-dashboard": "Admin Dashboard",
+const SOURCE_LABELS: Record<string, string> = {
+  landing: "Landing",
+  "app-web": "App",
+  "admin-dashboard": "Admin",
 };
+
+function sourceBadgeCls(source: string): string {
+  return source === "landing" ? "adm-badge--green" : "adm-badge--teal";
+}
+
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("es-PA", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<AdminLead[]>([]);
@@ -26,95 +39,90 @@ export default function AdminLeadsPage() {
       .then((res) => {
         if (active) setLeads(res.data?.leads ?? []);
       })
-      .catch((e) => {
-        if (active) setError(e instanceof Error ? e.message : "Error al cargar leads");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      .catch((e) => active && setError(e instanceof Error ? e.message : "Error"))
+      .finally(() => active && setLoading(false));
 
     return () => {
       active = false;
     };
   }, [filter, search]);
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "—";
-    try {
-      return new Date(dateStr).toLocaleDateString("es-PA", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return dateStr;
-    }
+  const exportCsv = () => {
+    const rows = [["Correo", "Fuente", "Fecha"], ...leads.map((l) => [l.email, l.source, l.createdAt ?? ""])];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "terrashare-leads.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
+  const cols = "2fr 1fr 1fr";
+
   return (
-    <div>
-      <div className="section-header">
-        <h1>Leads</h1>
-        <p>Correos captados desde la landing y la plataforma</p>
+    <>
+      <h1 className="adm-title">Leads</h1>
+      <p className="adm-sub">Correos captados desde el landing y otras fuentes.</p>
+
+      <div className="adm-toolbar">
+        <div className="adm-search">
+          <span className="adm-search__icon">
+            <Search size={17} />
+          </span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por correo…"
+            aria-label="Buscar leads"
+          />
+        </div>
+        <label className="adm-pill">
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtrar por fuente">
+            <option value="all">Fuente</option>
+            <option value="landing">Landing</option>
+            <option value="app-web">App</option>
+            <option value="admin-dashboard">Admin</option>
+          </select>
+          <ChevronDown size={14} />
+        </label>
+        <button type="button" className="adm-pill adm-pill--cta" onClick={exportCsv} disabled={leads.length === 0}>
+          <Download size={15} /> Exportar
+        </button>
       </div>
 
-      <div className="admin-toolbar" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "1rem" }}>
-        <input
-          type="search"
-          placeholder="Buscar por email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="admin-input"
-        />
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="admin-input">
-          <option value="all">Todas las fuentes</option>
-          <option value="landing">Landing Page</option>
-          <option value="app-web">App Web</option>
-          <option value="admin-dashboard">Admin Dashboard</option>
-        </select>
+      <div className="adm-table">
+        <div className="adm-trow adm-trow--head" style={{ gridTemplateColumns: cols }}>
+          <span>Correo</span>
+          <span>Fuente</span>
+          <span>Fecha</span>
+        </div>
+        {loading ? (
+          <div className="adm-empty">Cargando…</div>
+        ) : error ? (
+          <div className="adm-empty adm-empty--error">No pudimos cargar los leads.</div>
+        ) : leads.length === 0 ? (
+          <div className="adm-empty">No hay leads que coincidan.</div>
+        ) : (
+          leads.map((lead) => (
+            <div key={lead.id} className="adm-trow" style={{ gridTemplateColumns: cols }}>
+              <span className="adm-cell--strong adm-user__email">{lead.email}</span>
+              <span>
+                <span className={`adm-badge ${sourceBadgeCls(lead.source)}`}>
+                  {SOURCE_LABELS[lead.source] ?? lead.source}
+                </span>
+              </span>
+              <span className="adm-cell--muted">{formatDate(lead.createdAt)}</span>
+            </div>
+          ))
+        )}
       </div>
 
-      {error && (
-        <div className="glass-panel" style={{ marginTop: "1rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
-          <p style={{ color: "var(--danger)" }}>Error: {error}</p>
+      {!loading && !error && leads.length > 0 && (
+        <div className="adm-foot">
+          <span>{leads.length} lead{leads.length !== 1 ? "s" : ""} captado{leads.length !== 1 ? "s" : ""}</span>
         </div>
       )}
-
-      {loading ? (
-        <div className="glass-panel" style={{ marginTop: "1.5rem", textAlign: "center", padding: "3rem" }}>
-          <p>Cargando leads...</p>
-        </div>
-      ) : leads.length === 0 ? (
-        <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
-          <p>No hay leads que coincidan.</p>
-        </div>
-      ) : (
-        <div className="glass-panel" style={{ marginTop: "1.5rem", overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", opacity: 0.7 }}>
-                <th style={{ padding: "0.5rem" }}>Email</th>
-                <th style={{ padding: "0.5rem" }}>Fuente</th>
-                <th style={{ padding: "0.5rem" }}>Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map((lead) => (
-                <tr key={lead.id} style={{ borderTop: "1px solid var(--border, rgba(0,0,0,0.08))" }}>
-                  <td style={{ padding: "0.5rem" }}>{lead.email}</td>
-                  <td style={{ padding: "0.5rem" }}>
-                    <span className="card-badge">{sourceLabels[lead.source] ?? lead.source}</span>
-                  </td>
-                  <td style={{ padding: "0.5rem", whiteSpace: "nowrap", opacity: 0.7 }}>{formatDate(lead.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p style={{ marginTop: "0.75rem", opacity: 0.6, fontSize: "0.85rem" }}>{leads.length} lead{leads.length !== 1 ? "s" : ""}</p>
-        </div>
-      )}
-    </div>
+    </>
   );
 }

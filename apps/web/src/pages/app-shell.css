@@ -1,0 +1,11 @@
+/* Shell autenticado editorial (issue #134, Grupo 2). Navbar + contenido. */
+
+.app-shell {
+  width: min(1120px, 94vw);
+  margin: 0 auto;
+  padding: 1rem 0 3rem;
+}
+
+.app-main {
+  margin-top: 1.25rem;
+}
