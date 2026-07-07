@@ -17,11 +17,13 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 - Notas historicas: [docs/CLERK_TOKENS_REMOVAL.md](docs/CLERK_TOKENS_REMOVAL.md)
 
 ## Stack tecnologico
-- Frontend: React + Vite + Clerk (unificado en `apps/web`)
-- Backend: Bun + Hono (`apps/backend-api`)
+- Frontend: TanStack Start (React, modo SPA) sobre Vite 7 + Clerk (unificado en `apps/web`). Routing por archivos en `apps/web/src/routes/`.
+- Backend: Bun + Hono + Zod (`apps/backend-api`)
 - Base de datos: MongoDB + Mongoose
 - Testing E2E: Playwright
 - CI/CD: GitHub Actions
+- MCP server propio: planeado (epico #234)
+- Docker: planeado (issue #233)
 
 ## Estado actual
 - `apps/web`: frontend unificado (landing + dashboard + admin)
