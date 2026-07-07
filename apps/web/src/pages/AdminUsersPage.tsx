@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 import type { UserSummaryDto } from "@terrashare/shared";
+import { Search, ChevronDown } from "lucide-react";
 import { listAdminUsers, updateUserStatus } from "../services/adminApi";
+import "./admin.css";
 
-const roleLabel: Record<string, string> = { user: "Usuario", admin: "Admin" };
-const statusLabel: Record<string, string> = { active: "Activo", blocked: "Bloqueado" };
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserSummaryDto[]>([]);
@@ -11,9 +19,8 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [actionMsg, setActionMsg] = useState("");
 
-  const loadUsers = () => {
+  useEffect(() => {
     setLoading(true);
     setError("");
     const filters: { status?: string; search?: string } = {};
@@ -21,13 +28,9 @@ export default function AdminUsersPage() {
     if (search.trim()) filters.search = search.trim();
 
     listAdminUsers(filters)
-      .then((res) => setUsers(((res.data as any)?.items ?? []) as UserSummaryDto[]))
+      .then((res) => setUsers((((res.data as unknown) as { items?: UserSummaryDto[] })?.items ?? [])))
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadUsers();
   }, [filter, search]);
 
   const handleToggleStatus = async (userId: string, currentStatus: string) => {
@@ -37,68 +40,96 @@ export default function AdminUsersPage() {
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? ({ ...u, status: nextStatus } as UserSummaryDto) : u)),
       );
-      setActionMsg(`Usuario ${nextStatus === "blocked" ? "bloqueado" : "activado"}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     }
-    setTimeout(() => setActionMsg(""), 3000);
   };
 
-  const filtered = users;
-
   return (
-    <div className="admin-page-header">
-      <h1>Gestión de Usuarios</h1>
-      <p>Administra cuentas de usuarios y propietarios de la plataforma</p>
+    <>
+      <h1 className="adm-title">Usuarios</h1>
+      <p className="adm-sub">Gestiona las cuentas de la plataforma.</p>
 
-      <div className="admin-filters-bar">
-        <input
-          type="text"
-          placeholder="Buscar por nombre o email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="admin-search-input"
-        />
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="admin-select">
-          <option value="all">Todos</option>
-          <option value="active">Activos</option>
-          <option value="blocked">Bloqueados</option>
-        </select>
-        <span className="admin-count">{filtered.length} usuario{filtered.length !== 1 ? "s" : ""}</span>
-        {actionMsg && <span className="admin-action-msg">{actionMsg}</span>}
+      <div className="adm-toolbar">
+        <div className="adm-search">
+          <span className="adm-search__icon">
+            <Search size={17} />
+          </span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre o correo…"
+            aria-label="Buscar usuarios"
+          />
+        </div>
+        <label className="adm-pill">
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtrar por estado">
+            <option value="all">Estado</option>
+            <option value="active">Activos</option>
+            <option value="blocked">Bloqueados</option>
+          </select>
+          <ChevronDown size={14} />
+        </label>
       </div>
 
-      {loading && <div className="admin-loading">Cargando...</div>}
-      {error && <div className="admin-error">{error}</div>}
-
-      {!loading && !error && (
-        <div className="admin-users-list">
-          {filtered.length === 0 ? (
-            <div className="admin-empty">No se encontraron usuarios</div>
-          ) : (
-            filtered.map((u) => (
-              <div key={u.id} className="admin-data-card">
-                <div className="admin-data-card-info">
-                  <h3>{u.profile.fullName}</h3>
-                  <p>{u.email}</p>
+      <div className="adm-table">
+        <div className="adm-trow adm-trow--head" style={{ gridTemplateColumns: "2fr 0.8fr 0.8fr auto" }}>
+          <span>Usuario</span>
+          <span>Rol</span>
+          <span>Estado</span>
+          <span />
+        </div>
+        {loading ? (
+          <div className="adm-empty">Cargando…</div>
+        ) : error ? (
+          <div className="adm-empty adm-empty--error">No pudimos cargar los usuarios.</div>
+        ) : users.length === 0 ? (
+          <div className="adm-empty">No se encontraron usuarios.</div>
+        ) : (
+          users.map((u) => {
+            const active = u.status === "active";
+            const isAdmin = u.role === "admin";
+            return (
+              <div key={u.id} className="adm-trow" style={{ gridTemplateColumns: "2fr 0.8fr 0.8fr auto" }}>
+                <div className="adm-user">
+                  <span className="adm-user__avatar">{initials(u.profile.fullName || u.email)}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="adm-user__name">{u.profile.fullName || "—"}</div>
+                    <div className="adm-user__email">{u.email}</div>
+                  </div>
                 </div>
-                <span className={`role-badge role-${u.role}`}>
-                  {roleLabel[u.role] ?? u.role}
+                <span>
+                  {isAdmin ? <span className="adm-badge adm-badge--teal">Admin</span> : "Usuario"}
                 </span>
-                <span className={`admin-status-badge ${u.status === "active" ? "approved" : "rejected"}`}>
-                  {statusLabel[u.status] ?? u.status}
+                <span>
+                  <span className={`adm-badge ${active ? "adm-badge--green" : "adm-badge--red"}`}>
+                    {active ? "Activo" : "Bloqueado"}
+                  </span>
                 </span>
-                <button
-                  className={`admin-btn ${u.status === "active" ? "admin-btn-ghost" : "admin-btn-primary"}`}
-                  onClick={() => handleToggleStatus(u.id, u.status)}
-                >
-                  {u.status === "active" ? "Bloquear" : "Activar"}
-                </button>
+                <span className="adm-cell--right">
+                  {isAdmin ? (
+                    <span style={{ color: "var(--ts-sage-3)" }}>—</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`adm-act ${active ? "adm-act--danger" : ""}`}
+                      onClick={() => handleToggleStatus(u.id, u.status)}
+                    >
+                      {active ? "Bloquear" : "Desbloquear"}
+                    </button>
+                  )}
+                </span>
               </div>
-            ))
-          )}
+            );
+          })
+        )}
+      </div>
+
+      {!loading && !error && users.length > 0 && (
+        <div className="adm-foot">
+          <span>{users.length} usuario{users.length !== 1 ? "s" : ""}</span>
         </div>
       )}
-    </div>
+    </>
   );
 }
