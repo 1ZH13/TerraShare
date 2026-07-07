@@ -105,5 +105,11 @@ export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (!authUser || authUser.role !== "admin") {
     return failure(c, 403, "FORBIDDEN", "Admin role required");
   }
+
+  const isDevBypass = Boolean(c.req.header("x-dev-user-id") && env.allowDevAuthBypass);
+  if (!isDevBypass && authUser.mfaVerified !== true) {
+    return failure(c, 403, "MFA_REQUIRED", "Admin must have MFA enabled");
+  }
+
   await next();
 };

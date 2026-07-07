@@ -8,6 +8,7 @@ export interface AuthContextUser {
   email: string;
   role: AppRole;
   status: UserStatus;
+  mfaVerified?: boolean;
   profile: {
     fullName: string;
     phone?: string;
