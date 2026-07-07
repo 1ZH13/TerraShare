@@ -219,5 +219,5 @@ chore/<slug>                     # Chore
 
 - MongoDB requiere estar instalado y corriendo localmente
 - El backend usa Bun como runtime
-- Frontend usa Vite + React 18
+- Frontend usa TanStack Start (React, modo SPA) sobre Vite 7
 - Autenticación via Clerk

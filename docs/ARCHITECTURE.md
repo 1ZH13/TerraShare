@@ -1,8 +1,8 @@
 # Arquitectura tecnica - TerraShare
 
 ## 1. Stack acordado
-- Frontend: React + Vite + Clerk (unificado en `apps/web`)
-- Backend: Bun + Hono (`apps/backend-api`)
+- Frontend: TanStack Start (React, modo SPA) sobre Vite 7 + Clerk (unificado en `apps/web`). Routing por archivos en `apps/web/src/routes/`.
+- Backend: Bun + Hono + Zod (`apps/backend-api`)
 - Base de datos: MongoDB + Mongoose
 - Runtime y package manager: Bun
 - Testing E2E: Playwright
@@ -21,7 +21,7 @@ packages/
 ## 3. Diagrama de arquitectura
 ```mermaid
 flowchart LR
-    U[Usuario Web] --> FE[Frontend React + Vite + Tailwind]
+    U[Usuario Web] --> FE[Frontend TanStack Start React SPA sobre Vite]
     FE --> API[Backend API Hono sobre Bun]
     API --> AUTH[Auth y RBAC]
     API --> DB[(MongoDB + Mongoose)]

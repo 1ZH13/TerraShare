@@ -189,9 +189,10 @@ Dolores principales:
 
 | Tecnología | Versión | Uso |
 |------------|---------|-----|
-| React | 18.3.1 | Framework UI |
-| Vite | 5.4.10 | Build tool |
-| React Router DOM | 6.30.1 | Enrutamiento |
+| React | 18.3.1 | Librería UI |
+| TanStack Start | 1.168 | Framework frontend full-stack (modo SPA) |
+| TanStack Router | 1.170 | Enrutamiento por archivos (`src/routes/`) |
+| Vite | 7.3.6 | Build tool / dev server |
 | @clerk/clerk-react | 5.0.0 | Autenticación |
 | Leaflet + react-leaflet | 1.9.4 / 4.2.1 | Mapas |
 | @stripe/react-stripe-js | 6.3.0 | Pagos frontend |
@@ -569,7 +570,7 @@ metadata?: Record<string, any>;
 | D-05 | Base de datos: MongoDB |
 | D-06 | Runtime backend: Bun |
 | D-07 | Framework API: Hono |
-| D-08 | Framework frontend: React |
+| D-08 | Framework frontend: TanStack Start (React, modo SPA sobre Vite 7) |
 | D-09 | Mapa: Leaflet + react-leaflet |
 | D-10 | Descubrimiento: listado + mapa con filtros |
 | D-11 | Chat: mixto (interno + WhatsApp con teléfono) |
@@ -606,10 +607,10 @@ TerraShare-v1/
 │   │   │   ├── pages/
 │   │   │   ├── hooks/
 │   │   │   ├── services/
-│   │   │   └── App.jsx
-│   │   ├── public/
+│   │   │   ├── routes/                  # Rutas file-based (TanStack Start)
+│   │   │   └── router.tsx
 │   │   ├── tests/
-│   │   ├── vite.config.js
+│   │   ├── vite.config.ts
 │   │   └── package.json
 │   │
 │   ├── backend-api/                  # Backend Bun + Hono
