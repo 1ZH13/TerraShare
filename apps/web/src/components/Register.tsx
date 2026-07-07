@@ -1,59 +1,53 @@
 import { useEffect } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { useClerk } from "@clerk/clerk-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { SignUp } from "@clerk/clerk-react";
+import "../pages/auth.css";
+
+function LeafMark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+      <path d="M2 21c0-3 1.85-5.36 5.08-6" />
+    </svg>
+  );
+}
 
 export default function Register() {
-  const { openSignUp } = useClerk();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const utmSource = searchParams.get("utm_source");
     if (utmSource) {
+      // TODO(#137): adjuntar utm_source a unsafeMetadata del usuario al crear la
+      // cuenta. El <SignUp/> embebido no expone metadata como prop; se guarda en
+      // sessionStorage para conectarlo en el onboarding/backend más adelante.
       sessionStorage.setItem("terrashare_utm_source", utmSource);
     }
   }, [searchParams]);
 
-  const handleSignUp = () => {
-    const fromPath = location.state?.from?.pathname || location.state?.from;
-    const hasValidFrom = typeof fromPath === "string" && fromPath.startsWith("/");
-    const isAuthRoute = hasValidFrom && (fromPath.startsWith("/login") || fromPath.startsWith("/register"));
-    const redirectTarget = hasValidFrom && !isAuthRoute ? fromPath : "/dashboard";
-    const utmSource = sessionStorage.getItem("terrashare_utm_source");
-    openSignUp({
-      redirectUrl: redirectTarget,
-      ...(utmSource && { unsafeMetadata: { utm_source: utmSource } }),
-    });
-  };
-
   return (
-    <div className="page-shell">
-      <div className="glass-panel" style={{ marginTop: "2rem", maxWidth: "400px", margin: "2rem auto" }}>
-        <div className="section-header compact">
-          <h1>Crear cuenta</h1>
-          <p>Unete a TerraShare</p>
-        </div>
+    <div className="au-shell">
+      <Link to="/" className="au-brand" aria-label="TerraShare, inicio">
+        <LeafMark />
+        TerraShare
+      </Link>
 
-        <div className="btn-stack">
-          {/* Clerk's modal presents every provider enabled in the dashboard
-              (Google, Microsoft, email). openSignUp has no per-provider option,
-              so a single entry point is the correct flow. */}
-          <button className="btn btn-primary btn-full" onClick={handleSignUp}>
-            Crear cuenta
-          </button>
-        </div>
-
-        <div className="auth-link">
-          <p>
-            ¿Ya tienes cuenta?{" "}
-            <Link to="/login" state={{ from: location.state?.from }} className="auth-link-text">Inicia sesion</Link>
-          </p>
-        </div>
-
-        <div className="back-link">
-          <Link to="/" className="back-link-text">← Volver al inicio</Link>
-        </div>
+      <div className="au-intro">
+        <h1 className="ts-title">Crea tu cuenta</h1>
+        <p>Regístrate para publicar o solicitar tierra en Panamá.</p>
       </div>
+
+      {/* Tras registrarse, `forceRedirectUrl` lleva SIEMPRE al onboarding
+          (reforzado por `signUpForceRedirectUrl` del provider), de modo que
+          todos los caminos de registro pasen por ese paso. */}
+      <div className="au-widget">
+        <SignUp routing="virtual" signInUrl="/login" forceRedirectUrl="/onboarding" />
+      </div>
+
+      <p className="au-note">Autenticación con Clerk</p>
+      <Link to="/" className="au-back">
+        ← Volver al inicio
+      </Link>
     </div>
   );
 }

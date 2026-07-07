@@ -1,25 +1,38 @@
-import { useSearchParams } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { X, Lock } from "lucide-react";
+import "./checkout.css";
 
 export default function PaymentCancelPage() {
   const [searchParams] = useSearchParams();
   const requestId = searchParams.get("requestId");
 
   return (
-    <div className="page-shell">
-      <div className="glass-panel" style={{ maxWidth: "500px", margin: "4rem auto", textAlign: "center" }}>
-        <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>❌</div>
-        <h1 style={{ marginBottom: "1rem" }}>Pago cancelado</h1>
-        <p>No se realizo ningun cargo en tu tarjeta.</p>
-        <p style={{ opacity: 0.7, marginTop: "0.5rem" }}>
-          Tu solicitud sigue pendiente. Puedes intentar nuevamente cuando quieras.
+    <div className="co">
+      <div className="co-card">
+        <div className="co-icon co-icon--wait">
+          <X size={40} strokeWidth={2.5} />
+        </div>
+
+        <h1 className="co-title">Pago cancelado</h1>
+        <p className="co-text">
+          No se realizó ningún cargo en tu tarjeta. Tu solicitud sigue pendiente y puedes intentarlo de
+          nuevo cuando quieras.
         </p>
 
-        <div style={{ marginTop: "2rem", display: "flex", gap: "1rem", justifyContent: "center" }}>
-          <Link to={`/dashboard${requestId ? `?request=${requestId}` : ""}`} className="btn btn-primary">
-            Volver al dashboard
+        <div className="co-actions">
+          <Link
+            to={`/dashboard${requestId ? `?request=${requestId}` : ""}`}
+            className="co-btn co-btn--primary"
+          >
+            Volver al panel
           </Link>
-          <Link to="/catalog" className="btn btn-ghost">Explorar terrenos</Link>
+          <Link to="/catalog" className="co-btn co-btn--ghost">
+            Explorar terrenos
+          </Link>
+        </div>
+
+        <div className="co-secure">
+          <Lock size={13} /> Procesado de forma segura con Stripe
         </div>
       </div>
     </div>
