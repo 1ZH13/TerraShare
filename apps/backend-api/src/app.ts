@@ -17,6 +17,7 @@ import { contractRoutes } from "./routes/contracts";
 import { paymentRoutes } from "./routes/payments";
 import { chatRoutes } from "./routes/chat";
 import { analyticsRoutes } from "./routes/analytics";
+import { notificationRoutes } from "./routes/notifications";
 import { metricsRoutes } from "./routes/metrics";
 import { privacyRoutes } from "./routes/privacy";
 import type { AppEnv } from "./types";
@@ -52,6 +53,7 @@ export function createApp() {
   app.route("/api/v1", paymentRoutes);
   app.route("/api/v1", chatRoutes);
   app.route("/api/v1", analyticsRoutes);
+  app.route("/api/v1", notificationRoutes);
   app.route("/api/v1", metricsRoutes);
   app.route("/api/v1", privacyRoutes);
 
