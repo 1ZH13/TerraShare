@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { CreateLandDto, LandUse } from "@terrashare/shared";
 import { X, Sprout, ArrowLeft, ArrowRight, Check, MapPin, Info, CloudUpload } from "lucide-react";
 import { createLand } from "../services/api";
@@ -126,7 +126,7 @@ export default function PublishLandPage() {
         },
       };
       await createLand(dto);
-      navigate("/dashboard/lands", { replace: true });
+      navigate({ to: "/dashboard/lands", replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo publicar el terreno.");
       setSubmitting(false);

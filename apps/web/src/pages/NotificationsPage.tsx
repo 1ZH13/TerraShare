@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { Check, MessageCircle, CreditCard, Bell, MapPin } from "lucide-react";
 import EmptyState from "../components/EmptyState";
@@ -124,7 +124,7 @@ export default function NotificationsPage() {
                 key={n.id}
                 type="button"
                 className={`ntf-item ${n.read ? "ntf-item--read" : ""}`}
-                onClick={() => navigate(n.actionUrl!)}
+                onClick={() => navigate({ to: n.actionUrl! as string })}
               >
                 {content}
               </button>

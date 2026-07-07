@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { LandDto } from "@terrashare/shared";
 import { Plus, Eye, Inbox, MapPin, Map } from "lucide-react";
@@ -87,7 +87,7 @@ export default function MyLandsPage() {
                 : "ml-card__badge--paused";
             const badgeLabel = active ? "Publicada" : land.status === "draft" ? "Borrador" : "Pausada";
             return (
-              <Link key={land.id} to={`/lands/${land.id}`} className="ml-card">
+              <Link key={land.id} to="/lands/$id" params={{ id: land.id }} className="ml-card">
                 <div className="ml-card__media">
                   <div className="ml-card__photo" aria-hidden="true">
                     <MapPin size={26} strokeWidth={1.4} />

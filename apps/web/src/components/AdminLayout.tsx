@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useClerk } from "@clerk/clerk-react";
 import { LayoutDashboard, Flag, Map, Users, Mail, LogOut, Sprout } from "lucide-react";
 import "../pages/admin.css";
@@ -48,7 +48,7 @@ export default function AdminLayout({ children, onSignOut }: AdminLayoutProps) {
             type="button"
             className="adm-side__link"
             style={{ background: "transparent", border: 0, cursor: "pointer", textAlign: "left", font: "inherit" }}
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate({ to: "/dashboard" })}
           >
             <Sprout size={17} /> Ver como usuario
           </button>

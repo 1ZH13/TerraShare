@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { LandDto } from "@terrashare/shared";
 import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX } from "lucide-react";
 import { listLands } from "../services/api";
@@ -217,7 +217,7 @@ export default function CatalogPage() {
                     type="button"
                     className={`cat-card ${selectedLand?.id === land.id ? "is-active" : ""}`}
                     onClick={() => setSelectedId(land.id)}
-                    onDoubleClick={() => navigate(`/lands/${land.id}`)}
+                    onDoubleClick={() => navigate({ to: "/lands/$id", params: { id: land.id } })}
                   >
                     <div className="cat-card__thumb" aria-hidden="true">
                       <ImageIcon size={24} strokeWidth={1.5} />
@@ -265,7 +265,7 @@ export default function CatalogPage() {
                     : ""}
                 </div>
               </div>
-              <Link to={`/lands/${selectedLand.id}`} className="cat-mapcard__go">
+              <Link to="/lands/$id" params={{ id: selectedLand.id }} className="cat-mapcard__go">
                 Ver
               </Link>
             </div>

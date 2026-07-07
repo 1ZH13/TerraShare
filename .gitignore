@@ -49,3 +49,6 @@ pr_body*.md
 
 # Local tooling config (MCP / OpenCode)
 opencode.json
+
+# TanStack Start generated route tree
+apps/web/src/routeTree.gen.ts

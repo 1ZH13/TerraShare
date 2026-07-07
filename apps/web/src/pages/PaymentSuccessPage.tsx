@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import type { PaymentDto } from "@terrashare/shared";
 import { Check, Clock, Lock } from "lucide-react";
 import { confirmPayment, getPaymentsByRequest } from "../services/api";
@@ -8,7 +8,7 @@ import "./checkout.css";
 type Verify = "checking" | "paid" | "pending" | "error";
 
 export default function PaymentSuccessPage() {
-  const [searchParams] = useSearchParams();
+  const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
   const requestId = searchParams.get("requestId");
   const [verify, setVerify] = useState<Verify>("checking");
   const [payment, setPayment] = useState<PaymentDto | null>(null);

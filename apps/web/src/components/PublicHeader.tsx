@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { getDisplayName } from "./authDisplay";
 
@@ -16,11 +16,11 @@ export default function PublicHeader({ showDashboardLink }: PublicHeaderProps = 
   // Navigate to the full /login and /register pages (which host the Clerk
   // forms) instead of popping Clerk's modal overlay.
   const handleSignIn = () => {
-    navigate("/login");
+    navigate({ to: "/login" });
   };
 
   const handleSignUp = () => {
-    navigate("/register");
+    navigate({ to: "/register" });
   };
 
   const handleSignOut = async () => {
@@ -36,7 +36,7 @@ export default function PublicHeader({ showDashboardLink }: PublicHeaderProps = 
       <div className="auth-actions">
         {isSignedIn ? (
           <>
-            <button className="user-chip" onClick={() => navigate("/dashboard/profile")}>
+            <button className="user-chip" onClick={() => navigate({ to: "/dashboard/profile" })}>
               {userName}
             </button>
             <button className="btn btn-ghost" onClick={handleSignOut}>Cerrar sesión</button>

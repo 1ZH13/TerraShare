@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link, Outlet, useNavigate, useOutletContext } from "react-router-dom";
+import { createContext, useContext, useState } from "react";
+import type { ReactNode } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Navbar } from "./ui";
 import type { BuscoOfrezcoMode } from "./ui";
@@ -13,9 +14,13 @@ export interface AppLayoutContext {
   setMode: (mode: BuscoOfrezcoMode) => void;
 }
 
+const AppModeContext = createContext<AppLayoutContext | null>(null);
+
 /** Modo Busco/Ofrezco compartido por la Navbar y las páginas hijas. */
 export function useAppMode(): AppLayoutContext {
-  return useOutletContext<AppLayoutContext>();
+  const ctx = useContext(AppModeContext);
+  if (!ctx) throw new Error("useAppMode debe usarse dentro de <AppLayout>");
+  return ctx;
 }
 
 function readStoredMode(): BuscoOfrezcoMode {
@@ -52,7 +57,7 @@ function ChatIcon() {
   );
 }
 
-export default function AppLayout() {
+export default function AppLayout({ children }: { children?: ReactNode }) {
   const navigate = useNavigate();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -87,14 +92,14 @@ export default function AppLayout() {
         userName={getDisplayName(user)}
         actions={actions}
         userMenuItems={[
-          { label: "Mi perfil", onClick: () => navigate("/dashboard/profile") },
-          { label: "Mis terrenos", onClick: () => navigate("/dashboard/lands") },
-          { label: "Pagos", onClick: () => navigate("/dashboard/payments") },
+          { label: "Mi perfil", onClick: () => navigate({ to: "/dashboard/profile" }) },
+          { label: "Mis terrenos", onClick: () => navigate({ to: "/dashboard/lands" }) },
+          { label: "Pagos", onClick: () => navigate({ to: "/dashboard/payments" }) },
         ]}
         onSignOut={() => signOut({ redirectUrl: "/" })}
       />
       <main className="app-main">
-        <Outlet context={context} />
+        <AppModeContext.Provider value={context}>{children}</AppModeContext.Provider>
       </main>
     </div>
   );

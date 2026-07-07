@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { ChatDto, LandDto, RentalRequestDto, RentalRequestStatus } from "@terrashare/shared";
 import {
@@ -157,7 +157,7 @@ function BuscoHome({ name }: { name: string }) {
                     <Calendar size={14} /> {formatPeriod(req.period?.startDate, req.period?.endDate)}
                   </div>
                   {status.foot === "pay" ? (
-                    <Link to={`/pay/${req.id}`} className="hm-req__pay">
+                    <Link to="/pay/$requestId" params={{ requestId: req.id }} className="hm-req__pay">
                       <CreditCard size={16} /> Completar pago
                     </Link>
                   ) : status.foot === "active" ? (
@@ -344,7 +344,7 @@ function OfrezcoHome() {
             {lands.slice(0, 5).map((land) => {
               const active = land.status === "active";
               return (
-                <Link key={land.id} to={`/lands/${land.id}`} className="hm-pub">
+                <Link key={land.id} to="/lands/$id" params={{ id: land.id }} className="hm-pub">
                   <div className="hm-pub__media">
                     <div className="hm-pub__photo hm-photo" aria-hidden="true" />
                     <span className={`hm-pub__badge ${active ? "" : "hm-pub__badge--paused"}`}>
