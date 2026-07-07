@@ -1,0 +1,142 @@
+/* TerraShare — Mis terrenos (paridad con "Mis publicaciones" del prototipo). Prefijo `ml-`. */
+
+.ml { max-width: 1120px; margin: 0 auto; padding: 40px 40px 70px; font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+
+@keyframes mlUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ml-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+  animation: mlUp 0.6s ease both;
+}
+.ml-title {
+  font-family: var(--ts-font-serif);
+  font-weight: 500;
+  font-size: 38px;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--ts-green-ink);
+}
+.ml-sub { color: var(--ts-sage-2); font-size: 16px; margin: 6px 0 0; }
+.ml-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--ts-green);
+  color: var(--ts-bg);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 13px 22px;
+  border-radius: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.ml-btn:hover { transform: translateY(-2px); background: var(--ts-green-ink); }
+
+.ml-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; animation: mlUp 0.6s ease both 0.06s; }
+
+.ml-card {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.ml-card:hover { transform: translateY(-4px); box-shadow: 0 26px 44px -30px rgba(36, 49, 42, 0.4); }
+.ml-card__media { position: relative; }
+.ml-card__photo {
+  width: 100%;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e9e3d3, #dfe4d6);
+  color: var(--ts-sage-3);
+}
+.ml-card__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ts-green);
+  background: var(--ts-tint-green);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.ml-card__badge--paused { color: #9a6b1f; background: #f5e9d0; }
+.ml-card__badge--draft { color: var(--ts-text-secondary); background: var(--ts-beige); }
+.ml-card__body { padding: 16px 18px; }
+.ml-card__title { font-family: var(--ts-font-serif); font-weight: 600; font-size: 18px; }
+.ml-card__meta { font-size: 13px; color: var(--ts-sage); margin: 3px 0 12px; }
+.ml-card__stats { display: flex; gap: 16px; font-size: 13px; color: var(--ts-text-secondary); }
+.ml-card__stat { display: inline-flex; align-items: center; gap: 5px; }
+
+.ml-add {
+  text-decoration: none;
+  color: var(--ts-sage);
+  background: #faf5ea;
+  border: 1.5px dashed #d8cfb8;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 210px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.ml-add:hover { background: #f2ecdf; color: var(--ts-green); }
+.ml-add span { font-size: 14px; font-weight: 600; }
+
+.ml-empty {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  padding: 40px 30px;
+  text-align: center;
+  color: var(--ts-sage-2);
+  animation: mlUp 0.6s ease both 0.06s;
+}
+.ml-empty--error { color: #a5573a; }
+.ml-empty__cta {
+  display: inline-block;
+  margin-top: 16px;
+  background: var(--ts-green);
+  color: var(--ts-bg);
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 11px;
+  text-decoration: none;
+}
+.ml-skeleton {
+  height: 210px;
+  border-radius: 16px;
+  background: linear-gradient(100deg, #f3eee2 30%, #ece5d5 50%, #f3eee2 70%);
+  background-size: 200% 100%;
+  animation: mlShimmer 1.3s ease-in-out infinite;
+}
+@keyframes mlShimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+@media (max-width: 900px) {
+  .ml-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .ml { padding: 28px 20px 56px; }
+  .ml-title { font-size: 30px; }
+  .ml-grid { grid-template-columns: 1fr; }
+  .ml-head { flex-direction: column; align-items: flex-start; }
+}
