@@ -4,6 +4,7 @@ import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { ErrorFallback } from "./components/ErrorFallback";
+import "./i18n";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import LandDetailPage from "./pages/LandDetailPage";
