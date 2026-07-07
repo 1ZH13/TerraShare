@@ -22,7 +22,7 @@ Regla obligatoria:
 ```bash
 bun install
 bun run dev          # inicia web + backend-api en paralelo
-bun run dev:web      # solo frontend (puerto 5180)
+bun run dev:web      # solo frontend (puerto 5173)
 bun run dev:api       # solo backend (puerto 3000)
 bun run build        # build por modulo
 bun run test         # tests unitarios
@@ -42,7 +42,7 @@ Scripts:
 
 ## 4. Scripts por modulo
 - web:
-  - `bun run dev` (puerto 5180)
+  - `bun run dev` (puerto 5173)
   - `bun run build`
   - `bun run test:e2e`
 - backend-api:

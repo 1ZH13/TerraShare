@@ -10,7 +10,7 @@ Guia para levantar pagos con Stripe Checkout y webhooks en entorno local de Terr
 
 ## 2. Requisitos
 - Backend corriendo en `http://localhost:3000`.
-- Frontend corriendo en `http://localhost:5180`.
+- Frontend corriendo en `http://localhost:5173`.
 - Stripe CLI instalado.
 - Cuenta Stripe en modo test.
 

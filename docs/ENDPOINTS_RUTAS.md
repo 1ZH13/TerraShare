@@ -209,7 +209,7 @@ git commit -m "chore: update dependencies"
 
 ```bash
 # Frontend
-cd apps/web && bun run dev          # Puerto 5180
+cd apps/web && bun run dev          # Puerto 5173
 
 # Backend
 cd apps/backend-api && bun run dev   # Puerto 3000
