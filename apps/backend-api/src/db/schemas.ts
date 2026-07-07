@@ -175,6 +175,9 @@ const LandSchema = new Schema<ILand>({
   status: { type: String, enum: ["draft", "active", "inactive"], default: "active" },
 }, { timestamps: true });
 
+LandSchema.index({ title: "text", description: "text" });
+LandSchema.index({ "location.lat": 1, "location.lng": 1 });
+
 const RentalRequestSchema = new Schema<IRentalRequest>({
   id: { type: String, required: true, unique: true },
   landId: { type: String, required: true },
