@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { PaymentDto } from "@terrashare/shared";
 import { Check, Clock, Lock } from "lucide-react";
-import { getPaymentsByRequest } from "../services/api";
+import { confirmPayment, getPaymentsByRequest } from "../services/api";
 import "./checkout.css";
 
 type Verify = "checking" | "paid" | "pending" | "error";
@@ -19,7 +19,11 @@ export default function PaymentSuccessPage() {
       return;
     }
     let active = true;
-    getPaymentsByRequest(requestId)
+    // Confirmamos primero contra Stripe (no dependemos de que el webhook haya
+    // llegado en local); luego leemos el pago para mostrar el detalle.
+    confirmPayment(requestId)
+      .catch(() => null)
+      .then(() => getPaymentsByRequest(requestId))
       .then((payments) => {
         if (!active) return;
         const paid = payments.find((p) => p.status === "paid");

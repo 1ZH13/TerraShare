@@ -4,7 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { ArrowLeft, Sprout, Check, CreditCard, FileText, Flag, Lock, MessageCircle } from "lucide-react";
-import { createPaymentIntent, getPaymentsByRequest } from "../services/api";
+import { confirmPayment, createPaymentIntent, getPaymentsByRequest } from "../services/api";
 import "./deal.css";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -132,6 +132,8 @@ export default function PaymentPage() {
     }
     const initPayment = async () => {
       try {
+        // Verifica contra Stripe por si ya se pagó (p. ej. sin webhook local).
+        await confirmPayment(requestId).catch(() => null);
         const payments = await getPaymentsByRequest(requestId);
         if (payments.find((p) => p.status === "paid")) {
           setAlreadyPaid(true);
