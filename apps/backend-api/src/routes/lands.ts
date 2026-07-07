@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 
 import { failure, success } from "../lib/api-response";
-import { isOwnerOrAdmin } from "../lib/auth-helpers";
+import { canMutateLand } from "../lib/auth-helpers";
 import { getNumericQuery, getOptionalNumericQuery } from "../lib/request-utils";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent as createAudit } from "../store/audit";
@@ -219,7 +219,7 @@ landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+  if (!canMutateLand(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can update this land");
   }
 
@@ -268,7 +268,7 @@ landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+  if (!canMutateLand(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can update status");
   }
 
@@ -318,7 +318,7 @@ landRoutes.delete("/lands/:landId", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
 
-  if (!isOwnerOrAdmin(authUser, current.ownerId)) {
+  if (!canMutateLand(authUser, current)) {
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can delete this land");
   }
 

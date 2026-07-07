@@ -6,6 +6,10 @@ import { failure, success } from "../lib/api-response";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { Payment, RentalRequest, Land, Contract } from "../db/schemas";
+import {
+  canInitiatePayment,
+  canReadPayment,
+} from "../lib/auth-helpers";
 import type { AppEnv } from "../types";
 
 let stripeClient: Stripe | null = null;
@@ -182,7 +186,7 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Rental request not found");
   }
 
-  if (request.tenantId !== authUser.id && authUser.role !== "admin") {
+  if (!canInitiatePayment(authUser, request)) {
     return failure(c, 403, "FORBIDDEN", "Only tenant or admin can start payment");
   }
 
@@ -257,7 +261,7 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Rental request not found");
   }
 
-  if (request.tenantId !== authUser.id && authUser.role !== "admin") {
+  if (!canInitiatePayment(authUser, request)) {
     return failure(c, 403, "FORBIDDEN", "Only tenant or admin can start payment");
   }
 
@@ -365,7 +369,10 @@ paymentRoutes.get("/payments", requireAuth, async (c) => {
   const query: Record<string, any> = {};
 
   if (authUser.role !== "admin") {
-    const requests = await RentalRequest.find({ tenantId: authUser.id }).select("id").lean();
+    const ownerLandIds = (await Land.find({ ownerId: authUser.id }).lean()).map((l) => l.id);
+    const requests = await RentalRequest.find({
+      $or: [{ tenantId: authUser.id }, { landId: { $in: ownerLandIds } }],
+    }).select("id").lean();
     const requestIds = requests.map((r) => r.id);
     if (requestIds.length === 0) {
       return success(c, []);
@@ -399,11 +406,12 @@ paymentRoutes.get("/payments/:paymentId", requireAuth, async (c) => {
   }
 
   const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
-  if (
-    authUser.role !== "admin" &&
-    request &&
-    request.tenantId !== authUser.id
-  ) {
+  if (!request) {
+    return failure(c, 404, "NOT_FOUND", "Related rental request not found");
+  }
+
+  const land = await Land.findOne({ id: request.landId }).lean();
+  if (!canReadPayment(authUser, request, land ?? { ownerId: "" })) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this payment");
   }
 

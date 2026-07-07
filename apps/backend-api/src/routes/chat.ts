@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
+import { canReadChat } from "../lib/auth-helpers";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { getStore } from "../store/in-memory-db";
@@ -124,7 +125,7 @@ chatRoutes.get("/chats/:chatId/messages", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Chat not found");
   }
 
-  if (authUser.role !== "admin" && !isParticipant(chat as any, authUser.id)) {
+  if (!canReadChat(authUser, chat)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this chat");
   }
 
@@ -141,7 +142,7 @@ chatRoutes.post("/chats/:chatId/messages", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Chat not found");
   }
 
-  if (authUser.role !== "admin" && !isParticipant(chat as any, authUser.id)) {
+  if (!canReadChat(authUser, chat)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to send messages in this chat");
   }
 
@@ -179,7 +180,7 @@ chatRoutes.get("/chats/:chatId/external-contact", requireAuth, async (c) => {
     return failure(c, 404, "NOT_FOUND", "Chat not found");
   }
 
-  if (authUser.role !== "admin" && !isParticipant(chat as any, authUser.id)) {
+  if (!canReadChat(authUser, chat)) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to view external contact for this chat");
   }
 
