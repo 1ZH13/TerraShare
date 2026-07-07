@@ -1,46 +1,91 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getPaymentsByRequest } from "../services/api";
+import type { PaymentDto } from "@terrashare/shared";
+import { Check, Clock, Lock } from "lucide-react";
+import { confirmPayment, getPaymentsByRequest } from "../services/api";
+import "./checkout.css";
+
+type Verify = "checking" | "paid" | "pending" | "error";
 
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
   const requestId = searchParams.get("requestId");
-  const [status, setStatus] = useState("verificando...");
+  const [verify, setVerify] = useState<Verify>("checking");
+  const [payment, setPayment] = useState<PaymentDto | null>(null);
 
   useEffect(() => {
     if (!requestId) {
-      setStatus("Sin ID de solicitud");
+      setVerify("error");
       return;
     }
-
-    const checkPayment = async () => {
-      try {
-        const payments = await getPaymentsByRequest(requestId);
-        const paidPayment = payments.find((p) => p.status === "paid");
-        if (paidPayment) {
-          setStatus("Pago confirmado ✓");
-        } else {
-          setStatus("Pago pendiente - esperando confirmación de Stripe");
-        }
-      } catch {
-        setStatus("No se pudo verificar el pago");
-      }
+    let active = true;
+    // Confirmamos primero contra Stripe (no dependemos de que el webhook haya
+    // llegado en local); luego leemos el pago para mostrar el detalle.
+    confirmPayment(requestId)
+      .catch(() => null)
+      .then(() => getPaymentsByRequest(requestId))
+      .then((payments) => {
+        if (!active) return;
+        const paid = payments.find((p) => p.status === "paid");
+        setPayment(paid ?? payments[0] ?? null);
+        setVerify(paid ? "paid" : "pending");
+      })
+      .catch(() => active && setVerify("error"));
+    return () => {
+      active = false;
     };
-
-    checkPayment();
   }, [requestId]);
 
-  return (
-    <div className="page-shell">
-      <div className="glass-panel" style={{ maxWidth: "500px", margin: "4rem auto", textAlign: "center" }}>
-        <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>✅</div>
-        <h1 style={{ marginBottom: "1rem" }}>¡Pago exitoso!</h1>
-        <p>{status}</p>
-        <p style={{ opacity: 0.7, marginTop: "0.5rem" }}>Recibirás un email de confirmación de Stripe.</p>
+  const isPaid = verify === "paid";
 
-        <div style={{ marginTop: "2rem", display: "flex", gap: "1rem", justifyContent: "center" }}>
-          <Link to="/dashboard" className="btn btn-primary">Ver dashboard</Link>
-          <Link to="/catalog" className="btn btn-ghost">Explorar más</Link>
+  return (
+    <div className="co">
+      <div className="co-card">
+        <div className={`co-icon ${isPaid ? "" : "co-icon--wait"}`}>
+          {isPaid ? <Check size={42} strokeWidth={2.5} /> : <Clock size={40} strokeWidth={2.2} />}
+        </div>
+
+        <h1 className="co-title">{isPaid ? "¡Pago confirmado!" : verify === "checking" ? "Verificando pago…" : "Pago en proceso"}</h1>
+        <p className="co-text">
+          {isPaid ? (
+            <>Tu alquiler quedó activo. El propietario ya fue notificado.</>
+          ) : verify === "error" ? (
+            "No pudimos verificar el pago. Si ya pagaste, recibirás un correo de confirmación."
+          ) : (
+            "Estamos confirmando tu pago con Stripe. Esto puede tardar unos segundos."
+          )}
+        </p>
+
+        {payment && (
+          <div className="co-details">
+            <div className="co-detail">
+              <span className="co-detail__k">Monto</span>
+              <span className="co-detail__v">
+                ${payment.amount?.toLocaleString("es-PA")} {payment.currency ?? "USD"}
+              </span>
+            </div>
+            <div className="co-detail">
+              <span className="co-detail__k">Estado</span>
+              <span className="co-detail__v">{isPaid ? "Pagado" : "Pendiente"}</span>
+            </div>
+            <div className="co-detail">
+              <span className="co-detail__k">Referencia</span>
+              <span className="co-detail__v co-detail__v--mono">{payment.id}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="co-actions">
+          <Link to="/dashboard/payments" className="co-btn co-btn--primary">
+            Ver mis pagos
+          </Link>
+          <Link to="/dashboard" className="co-btn co-btn--ghost">
+            Ir al inicio
+          </Link>
+        </div>
+
+        <div className="co-secure">
+          <Lock size={13} /> Procesado de forma segura con Stripe
         </div>
       </div>
     </div>

@@ -5,11 +5,26 @@ import { failure, success } from "../lib/api-response";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { getStore } from "../store/in-memory-db";
-import { Chat, ChatMessage, User } from "../db/schemas";
+import { Chat, ChatMessage, Land, User } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 function isParticipant(chat: { participants: { userId: string }[] }, userId: string) {
   return chat.participants.some((participant) => participant.userId === userId);
+}
+
+const ROLE_FALLBACK: Record<string, string> = {
+  owner: "Propietario",
+  tenant: "Interesado",
+  admin: "Administrador",
+};
+
+/** Resuelve el nombre visible de un usuario desde el store en memoria o Mongo. */
+async function resolveDisplayName(userId: string, role: string): Promise<string> {
+  const store = getStore();
+  const inMemory = store.users.get(userId);
+  if (inMemory?.profile?.fullName) return inMemory.profile.fullName;
+  const inMongo = await User.findOne({ clerkUserId: userId }).lean();
+  return inMongo?.profile?.fullName ?? ROLE_FALLBACK[role] ?? "Usuario";
 }
 
 export const chatRoutes = new Hono<AppEnv>();
@@ -22,7 +37,41 @@ chatRoutes.get("/chats", requireAuth, async (c) => {
     : { "participants.userId": authUser.id };
 
   const chats = await Chat.find(query).lean();
-  return success(c, chats);
+  const store = getStore();
+
+  // Enriquecimiento para la bandeja (#149): interlocutor, terreno y último mensaje.
+  const enriched = await Promise.all(
+    chats.map(async (chat) => {
+      const other =
+        chat.participants.find((p) => p.userId !== authUser.id) ?? chat.participants[0];
+
+      const [displayName, lastMsg] = await Promise.all([
+        other ? resolveDisplayName(other.userId, other.role) : Promise.resolve("Usuario"),
+        ChatMessage.find({ chatId: chat.id }).sort({ createdAt: -1 }).limit(1).lean(),
+      ]);
+
+      let landTitle: string | undefined;
+      if (chat.landId) {
+        const landInMemory = store.lands.get(chat.landId);
+        landTitle = landInMemory?.title ?? (await Land.findOne({ id: chat.landId }).lean())?.title;
+      }
+
+      const last = lastMsg[0];
+      return {
+        ...chat,
+        otherParticipant: other
+          ? { userId: other.userId, role: other.role, displayName }
+          : undefined,
+        landTitle,
+        lastMessage: last
+          ? { text: last.text, senderId: last.senderId, createdAt: last.createdAt }
+          : undefined,
+        unread: Boolean(last && last.senderId !== authUser.id),
+      };
+    }),
+  );
+
+  return success(c, enriched);
 });
 
 chatRoutes.post("/chats", requireAuth, async (c) => {
