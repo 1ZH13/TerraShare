@@ -8,12 +8,14 @@ interface AppError extends Error {
 
 export const errorHandler: ErrorHandler = (error, c) => {
   const requestId = c.get("requestId") ?? "unknown";
+  const traceId = c.get("traceId") ?? "unknown";
   const appError = error as AppError;
 
   console.error(JSON.stringify({
     level: "error",
     timestamp: new Date().toISOString(),
     requestId,
+    traceId,
     error: appError.message,
     stack: appError.stack,
   }));

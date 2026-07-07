@@ -36,4 +36,7 @@ export const env = {
   get whatsappContactEnabled() {
     return (getEnv("WHATSAPP_CONTACT_ENABLED") ?? "false") === "true";
   },
+  get stripeConfigured() {
+    return !!getEnv("STRIPE_SECRET_KEY");
+  },
 };
