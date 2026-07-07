@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { failure } from "./lib/api-response";
+import { securityHeaders } from "./middleware/security-headers";
 import { requestIdMiddleware } from "./middleware/request-id";
 import { loggerMiddleware } from "./middleware/logger";
 import { errorHandler } from "./middleware/error-handler";
@@ -21,14 +22,24 @@ import { notificationRoutes } from "./routes/notifications";
 import { metricsRoutes } from "./routes/metrics";
 import { privacyRoutes } from "./routes/privacy";
 import type { AppEnv } from "./types";
+import { corsAllowHeaders, resolveCorsOrigin } from "./config/env";
 
 export function createApp() {
   const app = new Hono<AppEnv>();
 
+  app.use("*", securityHeaders);
   app.use("*", cors({
-    origin: "*",
+    origin: resolveCorsOrigin,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "x-dev-role", "x-dev-user-id", "stripe-signature"],
+    allowHeaders: corsAllowHeaders(),
+    exposeHeaders: [
+      "x-request-id",
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
+      "X-RateLimit-Reset",
+    ],
+    credentials: false,
+    maxAge: 86400,
   }));
   app.use("*", requestIdMiddleware);
   app.use("*", loggerMiddleware);
