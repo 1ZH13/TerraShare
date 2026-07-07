@@ -38,9 +38,14 @@ describe("env validation", () => {
       CLERK_JWKS_URL: "https://example.test/.well-known/jwks.json",
       CLERK_ISSUER: "https://example.test",
     });
-    expect(result.ALLOW_DEV_AUTH_BYPASS).toBe("false");
+    expect(result.ALLOW_DEV_AUTH_BYPASS).toBeUndefined();
     expect(result.WHATSAPP_CONTACT_ENABLED).toBe("false");
     expect(result.ADMIN_SEED_EMAIL).toBe("terradmin@gmail.com");
+  });
+
+  it("allowDevAuthBypass es true en desarrollo por defecto", () => {
+    const { env } = require("../config/env");
+    expect(env.allowDevAuthBypass).toBe(true);
   });
 
   it("STRIPE_SECRET_KEY es opcional", () => {
