@@ -4,6 +4,7 @@ import { failure, success } from "../lib/api-response";
 import { isOwnerOrAdmin } from "../lib/auth-helpers";
 import { getNumericQuery, getOptionalNumericQuery } from "../lib/request-utils";
 import { requireAuth } from "../middleware/require-auth";
+import { rateLimitByUser } from "../middleware/rate-limit";
 import { createAuditEvent as createAudit } from "../store/audit";
 import { listLands, getLandById, createLand, updateLand, deleteLand } from "../db/collections";
 import { getStore } from "../store/in-memory-db";
@@ -125,7 +126,7 @@ landRoutes.get("/lands/:landId", async (c) => {
   return success(c, land);
 });
 
-landRoutes.get("/lands/me", requireAuth, async (c) => {
+landRoutes.get("/lands/me", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const mongoOk = useMongoDB();
 
@@ -140,7 +141,7 @@ landRoutes.get("/lands/me", requireAuth, async (c) => {
   return success(c, lands);
 });
 
-landRoutes.post("/lands", requireAuth, async (c) => {
+landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const body = (await c.req.json().catch(() => null)) as Partial<LandRecord> | null;
 
@@ -184,7 +185,7 @@ landRoutes.post("/lands", requireAuth, async (c) => {
   return success(c, land, 201);
 });
 
-landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
+landRoutes.patch("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
   const mongoOk = useMongoDB();
@@ -233,7 +234,7 @@ landRoutes.patch("/lands/:landId", requireAuth, async (c) => {
   return success(c, updated);
 });
 
-landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
+landRoutes.patch("/lands/:landId/status", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
   const mongoOk = useMongoDB();
@@ -283,7 +284,7 @@ landRoutes.patch("/lands/:landId/status", requireAuth, async (c) => {
   return success(c, updated);
 });
 
-landRoutes.delete("/lands/:landId", requireAuth, async (c) => {
+landRoutes.delete("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
   const mongoOk = useMongoDB();

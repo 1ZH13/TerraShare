@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { failure } from "./lib/api-response";
 import { requestIdMiddleware } from "./middleware/request-id";
 import { rateLimitByIP, rateLimitByUser } from "./middleware/rate-limit";
+import { requireAuth } from "./middleware/require-auth";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
 import { adminRoutes } from "./routes/admin";
@@ -26,13 +27,12 @@ export function createApp() {
   }));
   app.use("*", requestIdMiddleware);
   app.use("/api/v1/*", rateLimitByIP(100));
-  app.use("/api/v1/lands*", rateLimitByUser(200));
-  app.use("/api/v1/rental-requests*", rateLimitByUser(200));
-  app.use("/api/v1/contracts*", rateLimitByUser(200));
-  app.use("/api/v1/payments*", rateLimitByUser(200));
-  app.use("/api/v1/chats*", rateLimitByUser(200));
-  app.use("/api/v1/admin*", rateLimitByUser(200));
-  app.use("/api/v1/analytics*", rateLimitByUser(200));
+  app.use("/api/v1/rental-requests*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/contracts*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/payments*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/chats*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/admin*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/analytics*", requireAuth, rateLimitByUser(200));
 
   app.get("/", (c) => {
     return c.json({
