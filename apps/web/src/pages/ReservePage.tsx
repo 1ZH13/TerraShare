@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import { ArrowLeft, Sprout, MapPin, Info, Check } from "lucide-react";
 import { getLandById, createRentalRequest, adaptLand } from "../services/api";
@@ -48,13 +48,13 @@ function BrandMark() {
 }
 
 export default function ReservePage() {
-  const { landId } = useParams();
+  const { landId } = useParams({ strict: false });
   const navigate = useNavigate();
   const location = useLocation();
   const { isSignedIn } = useUser();
 
   const [land, setLand] = useState<ReserveLand | null>(
-    (normalizeReserveLand(location.state?.land) as ReserveLand | null) ?? null,
+    (normalizeReserveLand((location.state as { land?: Parameters<typeof normalizeReserveLand>[0] })?.land) as ReserveLand | null) ?? null,
   );
   const [loading, setLoading] = useState(!land);
   const [submitting, setSubmitting] = useState(false);
@@ -99,7 +99,7 @@ export default function ReservePage() {
     e.preventDefault();
 
     if (!isSignedIn && !import.meta.env.DEV) {
-      navigate("/login", { state: { from: { pathname: location.pathname } }, replace: true });
+      navigate({ to: "/login", replace: true });
       return;
     }
 
@@ -128,7 +128,7 @@ export default function ReservePage() {
 
       setSuccess(`El propietario revisará tu solicitud pronto. ID: ${result?.id ?? "—"}.`);
       setTimeout(() => {
-        navigate("/dashboard", { replace: true });
+        navigate({ to: "/dashboard", replace: true });
       }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al enviar la solicitud.");
@@ -139,7 +139,7 @@ export default function ReservePage() {
 
   const Nav = (
     <nav className="rsv-nav">
-      <Link to={landId ? `/lands/${landId}` : "/catalog"} className="rsv-nav__back">
+      <Link to={landId ? "/lands/$id" : "/catalog"} params={{ id: landId }} className="rsv-nav__back">
         <ArrowLeft size={17} /> Volver al terreno
       </Link>
       <BrandMark />
@@ -306,7 +306,7 @@ export default function ReservePage() {
                   <button type="submit" className="rsv-submit" disabled={submitting}>
                     {submitting ? "Enviando…" : "Enviar solicitud"}
                   </button>
-                  <Link to={landId ? `/lands/${landId}` : "/catalog"} className="rsv-cancel">
+                  <Link to={landId ? "/lands/$id" : "/catalog"} params={{ id: landId }} className="rsv-cancel">
                     Cancelar
                   </Link>
                 </div>

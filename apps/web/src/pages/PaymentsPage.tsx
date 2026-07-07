@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { PaymentDto } from "@terrashare/shared";
 import { CreditCard } from "lucide-react";
@@ -118,7 +118,7 @@ export default function PaymentsPage() {
                 </span>
                 <span className="pay-cell--action">
                   {isPending ? (
-                    <Link to={`/pay/${p.rentalRequestId}`} className="pay-action pay-action--pay">
+                    <Link to="/pay/$requestId" params={{ requestId: p.rentalRequestId }} className="pay-action pay-action--pay">
                       Pagar
                     </Link>
                   ) : p.receiptUrl ? (

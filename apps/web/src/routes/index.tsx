@@ -1,9 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
+import LandingPage from "../pages/LandingPage";
 
-export const Route = createFileRoute("/")({
-  component: Home,
-});
-
-function Home() {
-  return <div>TerraShare — TanStack Start OK</div>;
-}
+export const Route = createFileRoute("/")({ component: LandingPage });

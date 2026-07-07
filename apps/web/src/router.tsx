@@ -1,4 +1,4 @@
-import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import { createRouter as createTanStackRouter, Navigate } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -6,6 +6,8 @@ export function getRouter() {
     routeTree,
     scrollRestoration: true,
     defaultPreload: "intent",
+    // Cualquier ruta desconocida vuelve al landing (equivalente al `*` anterior).
+    defaultNotFoundComponent: () => <Navigate to="/" />,
   });
 }
 

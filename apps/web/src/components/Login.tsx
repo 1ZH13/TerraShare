@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { SignIn } from "@clerk/clerk-react";
 import "../pages/auth.css";
 
@@ -13,14 +13,14 @@ function LeafMark() {
 }
 
 export default function Login() {
-  const [searchParams] = useSearchParams();
+  const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
 
   useEffect(() => {
     const utmSource = searchParams.get("utm_source");
     if (utmSource) {
       sessionStorage.setItem("terrashare_utm_source", utmSource);
     }
-  }, [searchParams]);
+  }, []);
 
   return (
     <div className="au-shell">

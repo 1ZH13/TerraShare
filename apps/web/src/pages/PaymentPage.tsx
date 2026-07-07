@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "@tanstack/react-router";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { ArrowLeft, Sprout, Check, CreditCard, FileText, Flag, Lock, MessageCircle } from "lucide-react";
@@ -117,7 +117,7 @@ function PaymentForm({
 }
 
 export default function PaymentPage() {
-  const { requestId } = useParams();
+  const { requestId } = useParams({ strict: false });
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

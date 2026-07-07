@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { LandDto, LandUse } from "@terrashare/shared";
 import {

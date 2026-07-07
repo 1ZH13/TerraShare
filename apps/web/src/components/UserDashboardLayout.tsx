@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Bell, MessageCircle, Sprout } from "lucide-react";
 import { Navbar } from "./ui";
@@ -48,10 +48,10 @@ export default function UserDashboardLayout({ children, onSignOut }: UserDashboa
         userName={getDisplayName(user)}
         actions={actions}
         userMenuItems={[
-          { label: "Mi perfil", onClick: () => navigate("/dashboard/profile") },
-          { label: "Mis solicitudes", onClick: () => navigate("/dashboard") },
-          { label: "Mis terrenos", onClick: () => navigate("/dashboard/lands") },
-          { label: "Pagos", onClick: () => navigate("/dashboard/payments") },
+          { label: "Mi perfil", onClick: () => navigate({ to: "/dashboard/profile" }) },
+          { label: "Mis solicitudes", onClick: () => navigate({ to: "/dashboard" }) },
+          { label: "Mis terrenos", onClick: () => navigate({ to: "/dashboard/lands" }) },
+          { label: "Pagos", onClick: () => navigate({ to: "/dashboard/payments" }) },
         ]}
         onSignOut={handleSignOut}
       />

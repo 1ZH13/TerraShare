@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import type { LandDto } from "@terrashare/shared";
 import {
@@ -71,7 +71,7 @@ function BrandMark() {
 }
 
 export default function LandDetailPage() {
-  const { id } = useParams();
+  const { id } = useParams({ strict: false });
   const navigate = useNavigate();
   const { openSignIn } = useClerk();
   const { isSignedIn, user } = useUser();
@@ -101,7 +101,7 @@ export default function LandDetailPage() {
       openSignIn({ redirectUrl: `/reserve/${id}` });
       return;
     }
-    navigate(`/reserve/${id}`, { state: { land } });
+    navigate({ to: "/reserve/$landId", params: { landId: id! } });
   };
 
   const handleContact = async () => {
@@ -114,7 +114,7 @@ export default function LandDetailPage() {
     } catch (err) {
       console.error("No se pudo iniciar el chat:", err);
     }
-    navigate("/dashboard/chats");
+    navigate({ to: "/dashboard/chats" });
   };
 
   if (status === "loading") {

@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { Button, Card, Field, Input } from "../components/ui";
 import { PANAMA_PROVINCES } from "../data/panama-provinces";
 import "./auth.css";
@@ -40,7 +40,7 @@ export default function OnboardingPage() {
     // Ofrezco) en el perfil del usuario. Hoy no hay endpoint para provincia ni
     // preferencia; se capturan en el estado de la UI (phone/province/preference)
     // y solo se usan para elegir la vista inicial.
-    navigate(preference === "ofrezco" ? "/dashboard/lands" : "/catalog");
+    navigate({ to: preference === "ofrezco" ? "/dashboard/lands" : "/catalog" });
   };
 
   return (

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { SignUp } from "@clerk/clerk-react";
 import "../pages/auth.css";
 
@@ -13,7 +13,7 @@ function LeafMark() {
 }
 
 export default function Register() {
-  const [searchParams] = useSearchParams();
+  const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
 
   useEffect(() => {
     const utmSource = searchParams.get("utm_source");
@@ -23,7 +23,7 @@ export default function Register() {
       // sessionStorage para conectarlo en el onboarding/backend más adelante.
       sessionStorage.setItem("terrashare_utm_source", utmSource);
     }
-  }, [searchParams]);
+  }, []);
 
   return (
     <div className="au-shell">

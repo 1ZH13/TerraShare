@@ -1,9 +1,9 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { X, Lock } from "lucide-react";
 import "./checkout.css";
 
 export default function PaymentCancelPage() {
-  const [searchParams] = useSearchParams();
+  const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
   const requestId = searchParams.get("requestId");
 
   return (
@@ -21,7 +21,7 @@ export default function PaymentCancelPage() {
 
         <div className="co-actions">
           <Link
-            to={`/dashboard${requestId ? `?request=${requestId}` : ""}`}
+            to="/dashboard"
             className="co-btn co-btn--primary"
           >
             Volver al panel
