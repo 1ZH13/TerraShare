@@ -52,6 +52,18 @@ describe("rental requests routes", () => {
     expect(payload.data.status).toBe("approved");
   });
 
+  it("returns requests received on the owner's lands with role=owner", async () => {
+    const { response, payload } = await requestJson("/api/v1/rental-requests?role=owner", {
+      headers: { "x-dev-user-id": "user_owner_01" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(Array.isArray(payload.data)).toBe(true);
+    // rr_seed_01 targets land_seed_01, owned by user_owner_01.
+    expect(payload.data.some((r: { id: string }) => r.id === "rr_seed_01")).toBe(true);
+  });
+
   it("rejects a request whose intended use is not allowed on the land", async () => {
     // land_seed_02 only allows "ganaderia".
     const { response, payload } = await requestJson("/api/v1/rental-requests", {

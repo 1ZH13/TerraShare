@@ -124,13 +124,27 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
 
 rentalRequestRoutes.get("/rental-requests", requireAuth, async (c) => {
   const authUser = c.get("authUser");
+  const role = c.req.query("role");
+
+  // role=owner: requests received on the caller's own lands. Unblocks the
+  // "Solicitudes recibidas" block of the "Ofrezco" home.
+  if (role === "owner") {
+    const ownerLands = await Land.find({ ownerId: authUser.id }).lean();
+    const ownerLandIds = ownerLands.map((land) => land.id);
+
+    if (ownerLandIds.length === 0) {
+      return success(c, []);
+    }
+
+    const items = await RentalRequest.find({ landId: { $in: ownerLandIds } }).lean();
+    return success(c, items);
+  }
 
   const ownerLandIds = authUser.role === "admin"
     ? []
     : (await Land.find({ ownerId: authUser.id }).lean()).map((l) => l.id);
 
   const query = canListRentalRequests(authUser, ownerLandIds);
-
   const items = await RentalRequest.find(query).lean();
 
   return success(c, items);
