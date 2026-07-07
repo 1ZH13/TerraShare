@@ -4,6 +4,7 @@ interface LogEntry {
   level: "info" | "warn" | "error";
   timestamp: string;
   requestId: string;
+  traceId: string;
   method: string;
   path: string;
   status: number;
@@ -14,6 +15,7 @@ interface LogEntry {
 export const loggerMiddleware: MiddlewareHandler = async (c, next) => {
   const start = Date.now();
   const requestId = c.get("requestId") ?? "unknown";
+  const traceId = c.get("traceId") ?? "unknown";
   const method = c.req.method;
   const path = c.req.path;
 
@@ -27,6 +29,7 @@ export const loggerMiddleware: MiddlewareHandler = async (c, next) => {
     level: status >= 500 ? "error" : status >= 400 ? "warn" : "info",
     timestamp: new Date().toISOString(),
     requestId,
+    traceId,
     method,
     path,
     status,
