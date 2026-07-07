@@ -14,6 +14,7 @@ type ErrorCode =
   | "BUSINESS_RULE_VIOLATION"
   | "INVALID_TRANSITION"
   | "STRIPE_NOT_CONFIGURED"
+  | "MFA_REQUIRED"
   | "INTERNAL_ERROR";
 
 type SuccessStatus = 200 | 201 | 202;
