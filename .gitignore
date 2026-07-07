@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Config local de Claude Code (preview/launch); no compartir entre máquinas
+.claude/
+
 # Build outputs
 dist/
 build/

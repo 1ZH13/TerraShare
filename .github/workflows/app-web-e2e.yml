@@ -20,6 +20,8 @@ jobs:
     name: Build and E2E (auth flow)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
     defaults:
       run:
         working-directory: apps/web
@@ -43,7 +45,7 @@ jobs:
         run: bun run build
 
       - name: Run auth smoke tests
-        run: bun run test:e2e -- tests/e2e/auth-protected.smoke.spec.js
+        run: bun run test:e2e -- --project=chromium tests/e2e/auth-protected.smoke.spec.js
 
       - name: Upload Playwright report
         if: always()
