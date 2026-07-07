@@ -16,6 +16,7 @@ export interface AuthContextUser {
 
 export interface AppVariables {
   requestId: string;
+  traceId: string;
   authUser: AuthContextUser;
 }
 
