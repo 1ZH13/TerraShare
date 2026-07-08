@@ -1,4 +1,8 @@
-import { getDatabase } from "../config/database";
+import mongoose from "mongoose";
+
+import {
+  User, Land, RentalRequest, Contract, Payment, Chat, ChatMessage, AuditEvent, Lead,
+} from "./schemas";
 
 const PROVINCES = [
   { name: "Bocas del Toro", districts: ["Bocolvas y Ranch", "Changuinola", "Isla Colón"] },
@@ -277,8 +281,7 @@ function generateLeads(count: number) {
 }
 
 export async function seedDatabase() {
-  const db = getDatabase();
-  if (!db) {
+  if (mongoose.connection.readyState !== 1) {
     console.error("[seed] Database not connected");
     return;
   }
@@ -316,32 +319,36 @@ export async function seedDatabase() {
   
   const leads = generateLeads(100);
 
+  // Se inserta vía `Model.collection` (handle nativo de la conexión Mongoose):
+  // usa el nombre de colección real del modelo — corrige el desajuste
+  // rentalRequests/chatMessages/auditEvents del driver nativo (#135 A-2) — y
+  // preserva la forma de los documentos semilla sin casteo de Mongoose.
   console.log(`[seed] Inserting ${users.length} users...`);
-  await db.collection("users").insertMany(users);
-  
+  await User.collection.insertMany(users);
+
   console.log(`[seed] Inserting ${lands.length} lands...`);
-  await db.collection("lands").insertMany(lands);
-  
+  await Land.collection.insertMany(lands);
+
   console.log(`[seed] Inserting ${requests.length} rental requests...`);
-  await db.collection("rentalRequests").insertMany(requests);
-  
+  await RentalRequest.collection.insertMany(requests);
+
   console.log(`[seed] Inserting ${contracts.length} contracts...`);
-  await db.collection("contracts").insertMany(contracts);
-  
+  await Contract.collection.insertMany(contracts);
+
   console.log(`[seed] Inserting ${payments.length} payments...`);
-  await db.collection("payments").insertMany(payments);
-  
+  await Payment.collection.insertMany(payments);
+
   console.log(`[seed] Inserting ${chats.length} chats...`);
-  await db.collection("chats").insertMany(chats);
-  
+  await Chat.collection.insertMany(chats);
+
   console.log(`[seed] Inserting ${messages.length} chat messages...`);
-  await db.collection("chatMessages").insertMany(messages);
-  
+  await ChatMessage.collection.insertMany(messages);
+
   console.log(`[seed] Inserting ${auditEvents.length} audit events...`);
-  await db.collection("auditEvents").insertMany(auditEvents);
-  
+  await AuditEvent.collection.insertMany(auditEvents);
+
   console.log(`[seed] Inserting ${leads.length} leads...`);
-  await db.collection("leads").insertMany(leads);
+  await Lead.collection.insertMany(leads);
 
   console.log("[seed] Database seeded successfully!");
   console.log(`[seed] Total: ${users.length} users, ${lands.length} lands, ${requests.length} requests, ${contracts.length} contracts, ${payments.length} payments, ${chats.length} chats, ${messages.length} messages, ${auditEvents.length} events, ${leads.length} leads`);

@@ -225,7 +225,7 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
     { status: "pending_payment", updatedAt: new Date() },
   );
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "payment",
     action: "created",
@@ -333,7 +333,7 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
     { status: "pending_payment", updatedAt: new Date() },
   );
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "payment",
     action: "created",
@@ -485,7 +485,7 @@ paymentRoutes.post("/payments/confirm", requireAuth, async (c) => {
 
   if (paidAtStripe) {
     await applyPaidTransition(payment, "paid", { paymentIntentId: resolvedIntentId });
-    createAuditEvent({
+    await createAuditEvent({
       actor: authUser,
       entity: "payment",
       action: "paid",

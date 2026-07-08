@@ -252,6 +252,21 @@ const LeadSchema = new Schema<ILead>({
   source: { type: String, enum: ["landing", "app-web", "admin-dashboard"], required: true },
 }, { timestamps: true });
 
+// Índices secundarios (antes vivían en el driver nativo config/database.ts; se
+// migran aquí para que Mongoose sea la única fuente de índices — #135 A-1/A-6).
+LandSchema.index({ ownerId: 1 });
+LandSchema.index({ status: 1 });
+RentalRequestSchema.index({ landId: 1 });
+RentalRequestSchema.index({ tenantId: 1 });
+RentalRequestSchema.index({ status: 1 });
+ContractSchema.index({ ownerId: 1 });
+ContractSchema.index({ tenantId: 1 });
+PaymentSchema.index({ rentalRequestId: 1 });
+ChatSchema.index({ landId: 1 });
+ChatMessageSchema.index({ chatId: 1, createdAt: 1 });
+AuditEventSchema.index({ entity: 1, entityId: 1 });
+LeadSchema.index({ email: 1 });
+
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
 export const RentalRequest = mongoose.model<IRentalRequest>("RentalRequest", RentalRequestSchema);
