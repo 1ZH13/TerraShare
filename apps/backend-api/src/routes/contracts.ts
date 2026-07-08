@@ -205,29 +205,4 @@ contractRoutes.post("/contracts/:contractId/complete", requireAuth, async (c) =>
   return success(c, updated);
 });
 
-contractRoutes.get("/audit-events", requireAuth, requireAdmin, async (c) => {
-  const actorId = c.req.query("actorId");
-  const entity = c.req.query("entity");
-  const action = c.req.query("action");
-  const entityIdQuery = c.req.query("entityId");
-
-  const query: Record<string, any> = {};
-  if (actorId) query.actorId = actorId;
-  if (entity) query.entity = entity;
-  if (action) query.action = action;
-  if (entityIdQuery) query.entityId = entityIdQuery;
-
-  const events = await AuditEvent.find(query).sort({ createdAt: -1 }).lean();
-  return success(c, events);
-});
-
-contractRoutes.get("/audit-events/:eventId", requireAuth, requireAdmin, async (c) => {
-  const eventId = c.req.param("eventId");
-
-  const event = await AuditEvent.findOne({ id: eventId }).lean();
-  if (!event) {
-    return failure(c, 404, "NOT_FOUND", "Audit event not found");
-  }
-
-  return success(c, event);
-});
+// audit-events endpoints are now in routes/audit.ts (with pagination)

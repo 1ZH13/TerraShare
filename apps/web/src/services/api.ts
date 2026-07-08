@@ -29,10 +29,6 @@ declare global {
 const buildHeaders = async (): Promise<Record<string, string>> => {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
 
-  // Identidad real: si hay sesión de Clerk, enviamos su JWT. El backend valida
-  // el token y deriva el usuario de `sub`. Importante: NO enviamos los headers
-  // `x-dev-*` en este caso, porque el middleware prioriza el bypass sobre el
-  // token y todos los usuarios colapsarían en uno solo.
   try {
     const token = await window.Clerk?.session?.getToken();
     if (token) {
