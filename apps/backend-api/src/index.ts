@@ -1,29 +1,22 @@
 import { env } from "./config/env";
-import { connectDatabase, getDatabase } from "./config/database";
 import { connectMongoose } from "./db/mongoose";
 import { createApp } from "./app";
 import { seedDatabase } from "./db/seed";
+import { Land } from "./db/schemas";
 
 const app = createApp();
 
 async function init() {
   try {
     await connectMongoose();
-    
-    const db = await connectDatabase();
-    
-    if (db) {
-      console.log("[backend-api] Using MongoDB database");
-      
-      const needsSeed = (await db.collection("lands").countDocuments()) === 0;
-      if (needsSeed || process.env.FORCE_SEED === "true") {
-        console.log("[backend-api] Database is empty, running seed...");
-        await seedDatabase();
-      } else {
-        console.log("[backend-api] Database already has data, skipping seed");
-      }
+    console.log("[backend-api] Using MongoDB database (Mongoose)");
+
+    const needsSeed = (await Land.estimatedDocumentCount()) === 0;
+    if (needsSeed || process.env.FORCE_SEED === "true") {
+      console.log("[backend-api] Database is empty, running seed...");
+      await seedDatabase();
     } else {
-      console.warn("[backend-api] MongoDB connection failed, using fallback");
+      console.log("[backend-api] Database already has data, skipping seed");
     }
   } catch (error) {
     console.warn("[backend-api] Failed to connect to MongoDB:", error);

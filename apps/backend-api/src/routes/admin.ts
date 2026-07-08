@@ -82,7 +82,7 @@ adminRoutes.patch("/admin/users/:userId/status", requireAuth, requireAdmin, asyn
     store.users.set(userId, { ...memUser, status: nextStatus });
   }
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "user",
     action: "status_changed",
@@ -166,7 +166,7 @@ adminRoutes.patch("/admin/lands/:landId/status", requireAuth, requireAdmin, asyn
 
   await Land.updateOne({ id: landId }, { status: nextStatus as any });
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "land",
     action: nextStatus === "active" ? "approved" : "rejected",

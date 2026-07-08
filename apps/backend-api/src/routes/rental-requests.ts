@@ -108,7 +108,7 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
     status: initialStatus,
   });
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "rental_request",
     action: "created",
@@ -207,7 +207,7 @@ rentalRequestRoutes.patch("/rental-requests/:requestId/status", requireAuth, asy
     { status: nextStatus, updatedAt: new Date() },
   );
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "rental_request",
     action:

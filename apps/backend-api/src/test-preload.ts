@@ -5,8 +5,9 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import "./setup-test-env";
-import { connectDatabase, getDatabase, closeDatabase } from "./config/database";
+import mongoose from "mongoose";
 import { connectMongoose, disconnectMongoose } from "./db/mongoose";
+import { __resetRateLimit } from "./middleware/rate-limit";
 import { getStore, resetStore } from "./store/in-memory-db";
 
 // Maps the in-memory store collections to the Mongo collection names the routes
@@ -27,7 +28,7 @@ function fixtures(): Record<string, Record<string, unknown>[]> {
 }
 
 async function seedDatabase(): Promise<void> {
-  const db = getDatabase();
+  const db = mongoose.connection.db;
   if (!db) return;
   for (const [collection, docs] of Object.entries(fixtures())) {
     await db.collection(collection).deleteMany({});
@@ -41,18 +42,19 @@ async function seedDatabase(): Promise<void> {
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare`;
 
-await connectDatabase();
 await connectMongoose();
 await seedDatabase();
 
 beforeEach(async () => {
   // Normalize the in-memory store, then mirror it into Mongo for test isolation.
   resetStore();
+  // Reset the module-level rate-limit counter so cumulative suite requests from
+  // the shared test IP don't trip the IP limit and cause spurious 429s.
+  __resetRateLimit();
   await seedDatabase();
 });
 
 afterAll(async () => {
   await disconnectMongoose();
-  await closeDatabase();
   await mongod.stop();
 });
