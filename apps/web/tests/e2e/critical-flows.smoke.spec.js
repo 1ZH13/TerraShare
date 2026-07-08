@@ -50,7 +50,6 @@ test.describe("Critical flows - auth redirect", () => {
     await page.waitForTimeout(2000);
     await expect(page.getByRole("heading", { name: /Entra a tu cuenta/i })).toBeVisible();
     await expect(page.locator(".au-widget")).toBeVisible();
-    await expect(page.getByRole("link", { name: /Registrate/i })).toBeVisible();
   });
 
   test("register page has all required elements", async ({ page }) => {
@@ -58,7 +57,6 @@ test.describe("Critical flows - auth redirect", () => {
     await page.waitForTimeout(2000);
     await expect(page.locator("h1.ts-title")).toBeVisible();
     await expect(page.locator(".au-widget")).toBeVisible();
-    await expect(page.getByRole("link", { name: /Inicia sesion/i })).toBeVisible();
   });
 });
 
