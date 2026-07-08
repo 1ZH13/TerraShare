@@ -1,6 +1,12 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
+import type { ClerkClient } from "@clerk/backend";
 
-import { mapClerkClaimsToAuthUser } from "./clerk-user";
+import { env } from "../config/env";
+import {
+  __clearClerkUserProfileCache,
+  __setClerkClientForTests,
+} from "./clerk-backend";
+import { mapClerkClaimsToAuthUser, resolveClerkAuthUser } from "./clerk-user";
 
 describe("mapClerkClaimsToAuthUser", () => {
   it("maps admin role from claims", () => {
@@ -40,5 +46,104 @@ describe("mapClerkClaimsToAuthUser", () => {
 
     expect(user.role).toBe("user");
     expect(user.profile.fullName).toBe("fallback");
+  });
+});
+
+interface FakeUserShape {
+  primaryEmailAddress: { emailAddress: string } | null;
+  fullName: string | null;
+  primaryPhoneNumber: { phoneNumber: string } | null;
+}
+
+function fakeClerkClient(
+  user: FakeUserShape,
+  counter: { calls: number },
+): ClerkClient {
+  return {
+    users: {
+      getUser: async () => {
+        counter.calls += 1;
+        return user;
+      },
+    },
+  } as unknown as ClerkClient;
+}
+
+describe("resolveClerkAuthUser", () => {
+  afterEach(() => {
+    __setClerkClientForTests(undefined);
+    __clearClerkUserProfileCache();
+  });
+
+  it("does not call Clerk when the token already has email and name", async () => {
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: "should-not@use.me" },
+          fullName: "Should Not Use",
+          primaryPhoneNumber: null,
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({
+      sub: "user_present",
+      email: "present@example.com",
+      full_name: "Present User",
+    });
+
+    expect(user.email).toBe("present@example.com");
+    expect(user.profile.fullName).toBe("Present User");
+    expect(counter.calls).toBe(0);
+  });
+
+  it("enriches email/name/phone from Clerk when the token lacks them", async () => {
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: "Real@Example.com" },
+          fullName: "Real Person",
+          primaryPhoneNumber: { phoneNumber: "+50761234567" },
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({ sub: "user_missing" });
+
+    expect(user.email).toBe("real@example.com");
+    expect(user.profile.fullName).toBe("Real Person");
+    expect(user.profile.phone).toBe("+50761234567");
+    expect(counter.calls).toBe(1);
+  });
+
+  it("promotes to admin when the enriched email matches the seed", async () => {
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: env.adminSeedEmail },
+          fullName: "Seed Admin",
+          primaryPhoneNumber: null,
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({ sub: "user_seed_admin" });
+
+    expect(user.email).toBe(env.adminSeedEmail);
+    expect(user.role).toBe("admin");
+  });
+
+  it("degrades to fallbacks when Clerk is not configured", async () => {
+    // Sin cliente inyectado ni CLERK_SECRET_KEY: no hay enriquecimiento.
+    const user = await resolveClerkAuthUser({ sub: "user_no_clerk" });
+
+    expect(user.email).toBe("unknown@terrashare.local");
+    expect(user.profile.fullName).toBe("Usuario");
   });
 });
