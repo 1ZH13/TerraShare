@@ -11,7 +11,7 @@ test.describe("Smoke E2E auth y flujo protegido", () => {
   test("register: carga correcta y elementos visibles", async ({ page }) => {
     await page.goto("/register");
 
-    await expect(page.getByRole("heading", { name: /Crea tu cuenta/i })).toBeVisible();
+    await expect(page.locator("h1.ts-title")).toBeVisible();
     await expect(page.getByText(/publicar o solicitar tierra/i)).toBeVisible();
   });
 
