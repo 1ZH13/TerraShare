@@ -4,7 +4,7 @@ import type { MiddlewareHandler } from "hono";
 import { env } from "../config/env";
 import { failure } from "../lib/api-response";
 import type { AuthContextUser } from "../types";
-import { mapClerkClaimsToAuthUser } from "../lib/clerk-user";
+import { resolveClerkAuthUser } from "../lib/clerk-user";
 import { getStore } from "../store/in-memory-db";
 import type { AppEnv } from "../types";
 
@@ -86,7 +86,7 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
       algorithms: ["RS256"],
     });
 
-    const authUser = mapClerkClaimsToAuthUser(payload);
+    const authUser = await resolveClerkAuthUser(payload);
     const persistedUser = upsertAuthUser(authUser);
 
     if (persistedUser.status !== "active") {
