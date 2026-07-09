@@ -13,6 +13,8 @@ export type LandUse =
 
 export type LandStatus = "draft" | "active" | "inactive";
 
+export type LandOperation = "alquiler" | "venta" | "ambas";
+
 export interface LandRecord {
   id: string;
   ownerId: string;
@@ -38,6 +40,11 @@ export interface LandRecord {
     pricePerMonth: number;
   };
   status: LandStatus;
+  operation: LandOperation;
+  salePrice?: number;
+  water?: string;
+  access?: string;
+  features?: string[];
   createdAt: string;
   updatedAt: string;
 }

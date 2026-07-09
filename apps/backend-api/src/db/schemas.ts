@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export type LandUse = "agricultura" | "ganaderia" | "forestal" | "acuicultura" | "mixto" | "otro";
 export type LandStatus = "draft" | "active" | "inactive";
+export type LandOperation = "alquiler" | "venta" | "ambas";
 export type RentalRequestStatus = "draft" | "pending_owner" | "approved" | "rejected" | "cancelled" | "pending_payment" | "paid";
 export type ContractStatus = "draft" | "active" | "completed" | "cancelled";
 export type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "cancelled";
@@ -46,6 +47,11 @@ export interface ILand extends Document {
     pricePerMonth: number;
   };
   status: LandStatus;
+  operation: LandOperation;
+  salePrice?: number;
+  water?: string;
+  access?: string;
+  features?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -173,6 +179,11 @@ const LandSchema = new Schema<ILand>({
     pricePerMonth: { type: Number, required: true },
   },
   status: { type: String, enum: ["draft", "active", "inactive"], default: "active" },
+  operation: { type: String, enum: ["alquiler", "venta", "ambas"], default: "alquiler" },
+  salePrice: Number,
+  water: String,
+  access: String,
+  features: [String],
 }, { timestamps: true });
 
 LandSchema.index({ title: "text", description: "text" });

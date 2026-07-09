@@ -200,6 +200,11 @@ landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
     availability: body.availability ?? {},
     priceRule: body.priceRule,
     status: "draft",
+    operation: body.operation ?? "alquiler",
+    salePrice: body.salePrice,
+    water: body.water,
+    access: body.access,
+    features: body.features ?? [],
     createdAt: now,
     updatedAt: now,
   };

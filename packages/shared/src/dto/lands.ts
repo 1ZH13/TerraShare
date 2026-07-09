@@ -11,6 +11,9 @@ export type LandUse =
 
 export type LandStatus = "draft" | "active" | "inactive";
 
+/** Tipo de operación de una publicación: alquiler, venta o ambas (#138). */
+export type LandOperation = "alquiler" | "venta" | "ambas";
+
 export type LandSortField = "createdAt" | "price" | "area";
 
 export interface LandLocationDto {
@@ -43,6 +46,16 @@ export interface LandDto {
   availability: LandAvailabilityDto;
   priceRule: LandPriceRuleDto;
   status: LandStatus;
+  /** Tipo de operación; por defecto "alquiler" si el backend no lo envía. */
+  operation?: LandOperation;
+  /** Precio de venta (aplica cuando operation es "venta" o "ambas"). */
+  salePrice?: number;
+  /** Fuente/acceso a agua del terreno (#138). */
+  water?: string;
+  /** Tipo de acceso al terreno (#138). */
+  access?: string;
+  /** Características destacadas del terreno (#138). */
+  features?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +68,11 @@ export interface CreateLandDto {
   location: LandLocationDto;
   availability?: LandAvailabilityDto;
   priceRule: LandPriceRuleDto;
+  operation?: LandOperation;
+  salePrice?: number;
+  water?: string;
+  access?: string;
+  features?: string[];
 }
 
 export interface UpdateLandDto {
@@ -65,6 +83,11 @@ export interface UpdateLandDto {
   location?: Partial<LandLocationDto>;
   availability?: LandAvailabilityDto;
   priceRule?: LandPriceRuleDto;
+  operation?: LandOperation;
+  salePrice?: number;
+  water?: string;
+  access?: string;
+  features?: string[];
 }
 
 export interface UpdateLandStatusDto {
