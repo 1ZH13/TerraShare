@@ -119,3 +119,56 @@ export const listAdminLeads = (filters: AdminLeadFilters = {}) => {
     `/api/v1/admin/leads${qs ? `?${qs}` : ""}`,
   );
 };
+
+// ─── Reports (moderación) ────────────────────────────────────────────────────
+
+export type ReportTargetType = "land" | "user" | "chat";
+export type ReportReason = "spam" | "fraude" | "contenido_inapropiado" | "informacion_falsa" | "otro";
+export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
+
+export interface AdminReportSummary {
+  id: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  targetLabel: string;
+  reason: ReportReason;
+  status: ReportStatus;
+  reporterId: string;
+  reporterEmail: string;
+  createdAt?: string;
+}
+
+export interface AdminReportDetail extends AdminReportSummary {
+  description?: string;
+  reporterName?: string | null;
+  resolutionNote?: string;
+  resolvedBy?: string;
+  updatedAt?: string;
+}
+
+interface AdminReportFilters {
+  status?: string;
+  targetType?: string;
+  search?: string;
+}
+
+/** GET /api/v1/admin/reports?status=&targetType=&search= */
+export const listAdminReports = (filters: AdminReportFilters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.targetType) params.set("targetType", filters.targetType);
+  if (filters.search) params.set("search", filters.search);
+  const qs = params.toString();
+  return request<{ items: AdminReportSummary[]; total: number }>(
+    "GET",
+    `/api/v1/admin/reports${qs ? `?${qs}` : ""}`,
+  );
+};
+
+/** GET /api/v1/admin/reports/:reportId */
+export const getAdminReport = (reportId: string) =>
+  request<AdminReportDetail>("GET", `/api/v1/admin/reports/${reportId}`);
+
+/** PATCH /api/v1/admin/reports/:reportId — { status, resolutionNote? } */
+export const updateReportStatus = (reportId: string, status: ReportStatus, resolutionNote?: string) =>
+  request<AdminReportDetail>("PATCH", `/api/v1/admin/reports/${reportId}`, { status, resolutionNote });

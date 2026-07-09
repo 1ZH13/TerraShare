@@ -306,6 +306,22 @@ export const updateMyProfile = async (payload: UserProfile): Promise<MeResponse 
   return res?.data ?? null;
 };
 
+export type ReportTargetType = "land" | "user" | "chat";
+export type ReportReason = "spam" | "fraude" | "contenido_inapropiado" | "informacion_falsa" | "otro";
+
+export interface CreateReportInput {
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: ReportReason;
+  description?: string;
+}
+
+/** POST /api/v1/reports — reporta un terreno/usuario/chat (usuario autenticado). */
+export const createReport = async (input: CreateReportInput): Promise<{ id: string } | null> => {
+  const res = await request<{ id: string }>("POST", "/api/v1/reports", input);
+  return res?.data ?? null;
+};
+
 export const api = {
   listLands,
   getMyLands,
@@ -322,4 +338,5 @@ export const api = {
   getMessages,
   sendMessage,
   getExternalContact,
+  createReport,
 };

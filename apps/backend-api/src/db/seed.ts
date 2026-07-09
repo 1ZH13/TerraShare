@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 import {
-  User, Land, RentalRequest, Contract, Payment, Chat, ChatMessage, AuditEvent, Lead,
+  User, Land, RentalRequest, Contract, Payment, Chat, ChatMessage, AuditEvent, Lead, Report,
 } from "./schemas";
 
 const PROVINCES = [
@@ -318,6 +318,47 @@ function generateLeads(count: number) {
   return leads;
 }
 
+function generateReports(count: number, landIds: string[], userIds: string[], chatIds: string[]) {
+  const reports = [];
+  const reasons = ["spam", "fraude", "contenido_inapropiado", "informacion_falsa", "otro"] as const;
+  const statuses = ["open", "open", "reviewing", "resolved", "dismissed"] as const;
+  const descriptions = [
+    "El anuncio parece falso o engañoso.",
+    "Precio sospechosamente bajo para la zona.",
+    "El usuario pide pagos por fuera de la plataforma.",
+    "Contenido inapropiado en la descripción.",
+    "Fotos que no corresponden al terreno.",
+    "",
+  ];
+
+  for (let i = 0; i < count; i++) {
+    const targetType = randomItem(["land", "land", "user", "chat"] as const);
+    const targetId =
+      targetType === "land"
+        ? randomItem(landIds)
+        : targetType === "user"
+          ? randomItem(userIds)
+          : randomItem(chatIds);
+    const createdAt = randomDate(45);
+    const status = randomItem(statuses);
+    const isClosing = status === "resolved" || status === "dismissed";
+    reports.push({
+      id: `report_${String(i + 1).padStart(4, "0")}`,
+      targetType,
+      targetId,
+      reason: randomItem(reasons),
+      description: randomItem(descriptions) || undefined,
+      reporterId: randomItem(userIds),
+      status,
+      resolutionNote: isClosing ? "Revisado por el equipo de moderación." : undefined,
+      resolvedBy: isClosing ? randomItem(userIds.slice(0, 3)) : undefined,
+      createdAt,
+      updatedAt: createdAt,
+    });
+  }
+  return reports;
+}
+
 export async function seedDatabase() {
   if (mongoose.connection.readyState !== 1) {
     console.error("[seed] Database not connected");
@@ -357,6 +398,8 @@ export async function seedDatabase() {
   
   const leads = generateLeads(100);
 
+  const reports = generateReports(30, landIds, userIds, chatIds);
+
   // Se inserta vía `Model.collection` (handle nativo de la conexión Mongoose):
   // usa el nombre de colección real del modelo — corrige el desajuste
   // rentalRequests/chatMessages/auditEvents del driver nativo (#135 A-2) — y
@@ -388,6 +431,9 @@ export async function seedDatabase() {
   console.log(`[seed] Inserting ${leads.length} leads...`);
   await Lead.collection.insertMany(leads);
 
+  console.log(`[seed] Inserting ${reports.length} reports...`);
+  await Report.collection.insertMany(reports);
+
   console.log("[seed] Database seeded successfully!");
-  console.log(`[seed] Total: ${users.length} users, ${lands.length} lands, ${requests.length} requests, ${contracts.length} contracts, ${payments.length} payments, ${chats.length} chats, ${messages.length} messages, ${auditEvents.length} events, ${leads.length} leads`);
+  console.log(`[seed] Total: ${users.length} users, ${lands.length} lands, ${requests.length} requests, ${contracts.length} contracts, ${payments.length} payments, ${chats.length} chats, ${messages.length} messages, ${auditEvents.length} events, ${leads.length} leads, ${reports.length} reports`);
 }

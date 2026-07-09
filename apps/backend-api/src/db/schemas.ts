@@ -10,6 +10,9 @@ export type ChatStatus = "active" | "archived";
 export type LeadSource = "landing" | "app-web" | "admin-dashboard";
 export type UserStatus = "active" | "blocked";
 export type AppRole = "user" | "admin";
+export type ReportTargetType = "land" | "user" | "chat";
+export type ReportReason = "spam" | "fraude" | "contenido_inapropiado" | "informacion_falsa" | "otro";
+export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
 
 export interface IUser extends Document {
   clerkUserId: string;
@@ -128,7 +131,7 @@ export interface IAuditEvent extends Document {
   id: string;
   actorId: string;
   actorRole: AppRole;
-  entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat";
+  entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat" | "report";
   action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "status_changed";
   entityId: string;
   metadata?: Record<string, unknown>;
@@ -140,6 +143,20 @@ export interface ILead extends Document {
   email: string;
   source: LeadSource;
   createdAt: Date;
+}
+
+export interface IReport extends Document {
+  id: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: ReportReason;
+  description?: string;
+  reporterId: string;
+  status: ReportStatus;
+  resolutionNote?: string;
+  resolvedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -253,7 +270,7 @@ const AuditEventSchema = new Schema<IAuditEvent>({
   id: { type: String, required: true, unique: true },
   actorId: { type: String, required: true },
   actorRole: { type: String, enum: ["user", "admin"], required: true },
-  entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat"], required: true },
+  entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat", "report"], required: true },
   action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "status_changed"], required: true },
   entityId: { type: String, required: true },
   metadata: Schema.Types.Mixed,
@@ -263,6 +280,18 @@ const LeadSchema = new Schema<ILead>({
   id: { type: String, required: true, unique: true },
   email: { type: String, required: true },
   source: { type: String, enum: ["landing", "app-web", "admin-dashboard"], required: true },
+}, { timestamps: true });
+
+const ReportSchema = new Schema<IReport>({
+  id: { type: String, required: true, unique: true },
+  targetType: { type: String, enum: ["land", "user", "chat"], required: true },
+  targetId: { type: String, required: true },
+  reason: { type: String, enum: ["spam", "fraude", "contenido_inapropiado", "informacion_falsa", "otro"], required: true },
+  description: String,
+  reporterId: { type: String, required: true },
+  status: { type: String, enum: ["open", "reviewing", "resolved", "dismissed"], default: "open" },
+  resolutionNote: String,
+  resolvedBy: String,
 }, { timestamps: true });
 
 // Índices secundarios (antes vivían en el driver nativo config/database.ts; se
@@ -279,6 +308,9 @@ ChatSchema.index({ landId: 1 });
 ChatMessageSchema.index({ chatId: 1, createdAt: 1 });
 AuditEventSchema.index({ entity: 1, entityId: 1 });
 LeadSchema.index({ email: 1 });
+ReportSchema.index({ status: 1 });
+ReportSchema.index({ targetType: 1, targetId: 1 });
+ReportSchema.index({ reporterId: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
@@ -289,3 +321,4 @@ export const Chat = mongoose.model<IChat>("Chat", ChatSchema);
 export const ChatMessage = mongoose.model<IChatMessage>("ChatMessage", ChatMessageSchema);
 export const AuditEvent = mongoose.model<IAuditEvent>("AuditEvent", AuditEventSchema);
 export const Lead = mongoose.model<ILead>("Lead", LeadSchema);
+export const Report = mongoose.model<IReport>("Report", ReportSchema);
