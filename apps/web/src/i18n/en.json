@@ -11,5 +11,16 @@
     "area": "Area",
     "price": "Price/month",
     "search": "Search lands..."
+  },
+  "privacy": {
+    "title": "Privacy & data",
+    "subtitle": "Manage your personal data and account",
+    "export_title": "Export my data",
+    "export_desc": "Download a copy of the personal data stored on the platform (GDPR).",
+    "export_button": "Export data",
+    "delete_title": "Delete my account",
+    "delete_desc": "Permanently delete your account. Your personal data will be anonymized.",
+    "delete_button": "Delete account",
+    "retention_title": "Data retention"
   }
 }

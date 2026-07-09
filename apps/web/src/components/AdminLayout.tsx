@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useClerk } from "@clerk/clerk-react";
-import { LayoutDashboard, Flag, Map, Users, Mail, LogOut, Sprout } from "lucide-react";
+import { LayoutDashboard, Flag, Map, Users, Mail, LogOut, Sprout, ScrollText, Activity } from "lucide-react";
 import "../pages/admin.css";
 
 interface AdminLayoutProps {
@@ -14,6 +14,8 @@ const NAV = [
   { to: "/dashboard/admin/lands", label: "Terrenos", icon: Map },
   { to: "/dashboard/admin/users", label: "Usuarios", icon: Users },
   { to: "/dashboard/admin/leads", label: "Leads", icon: Mail },
+  { to: "/dashboard/admin/audit", label: "Auditoria", icon: ScrollText },
+  { to: "/dashboard/admin/observability", label: "Observabilidad", icon: Activity },
 ];
 
 /** Layout editorial del panel admin: sidebar oscuro + contenido. Sustituye al
