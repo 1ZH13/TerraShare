@@ -142,6 +142,29 @@ export interface ILead extends Document {
   createdAt: Date;
 }
 
+/**
+ * Evento de webhook de Stripe ya procesado (HU-42 #160). Se registra por
+ * `eventId` (único) para que reentregas del mismo evento no repitan efectos.
+ */
+export interface IWebhookEvent extends Document {
+  eventId: string;
+  type?: string;
+  paymentId?: string;
+  createdAt: Date;
+}
+
+/**
+ * Clave de idempotencia de una operación de pago (HU-42 #160). Mapea la
+ * `Idempotency-Key` del cliente al pago creado, para que un reintento devuelva
+ * el mismo pago en vez de crear (y cobrar) uno nuevo.
+ */
+export interface IIdempotencyKey extends Document {
+  key: string;
+  scope: string;
+  paymentId: string;
+  createdAt: Date;
+}
+
 const UserSchema = new Schema<IUser>({
   clerkUserId: { type: String, required: true, unique: true },
   email: { type: String, required: true },
@@ -265,6 +288,20 @@ const LeadSchema = new Schema<ILead>({
   source: { type: String, enum: ["landing", "app-web", "admin-dashboard"], required: true },
 }, { timestamps: true });
 
+const WebhookEventSchema = new Schema<IWebhookEvent>({
+  eventId: { type: String, required: true, unique: true },
+  type: String,
+  paymentId: String,
+  createdAt: { type: Date, default: Date.now },
+});
+
+const IdempotencyKeySchema = new Schema<IIdempotencyKey>({
+  key: { type: String, required: true, unique: true },
+  scope: { type: String, required: true },
+  paymentId: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
 // Índices secundarios (antes vivían en el driver nativo config/database.ts; se
 // migran aquí para que Mongoose sea la única fuente de índices — #135 A-1/A-6).
 LandSchema.index({ ownerId: 1 });
@@ -279,6 +316,10 @@ ChatSchema.index({ landId: 1 });
 ChatMessageSchema.index({ chatId: 1, createdAt: 1 });
 AuditEventSchema.index({ entity: 1, entityId: 1 });
 LeadSchema.index({ email: 1 });
+// TTL: las claves/eventos caducan a los 30 días (Stripe recomienda conservar
+// las claves de idempotencia ≥24 h). El unique index es el guardián real. #160
+WebhookEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+IdempotencyKeySchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
@@ -289,3 +330,5 @@ export const Chat = mongoose.model<IChat>("Chat", ChatSchema);
 export const ChatMessage = mongoose.model<IChatMessage>("ChatMessage", ChatMessageSchema);
 export const AuditEvent = mongoose.model<IAuditEvent>("AuditEvent", AuditEventSchema);
 export const Lead = mongoose.model<ILead>("Lead", LeadSchema);
+export const WebhookEvent = mongoose.model<IWebhookEvent>("WebhookEvent", WebhookEventSchema);
+export const IdempotencyKey = mongoose.model<IIdempotencyKey>("IdempotencyKey", IdempotencyKeySchema);

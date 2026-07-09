@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import Stripe from "stripe";
 
 import { env } from "../config/env";
@@ -10,6 +11,12 @@ import {
   canInitiatePayment,
   canReadPayment,
 } from "../lib/auth-helpers";
+import {
+  findPaymentIdByIdempotencyKey,
+  reserveIdempotencyKey,
+  isWebhookProcessed,
+  markWebhookProcessed,
+} from "../lib/payments-idempotency";
 import type { AppEnv } from "../types";
 
 let stripeClient: Stripe | null = null;
@@ -22,6 +29,7 @@ type StripeEventObject = {
 };
 
 type StripeWebhookEvent = {
+  id?: string;
   type?: string;
   data?: { object?: StripeEventObject };
 };
@@ -171,6 +179,53 @@ async function applyPaidTransition(
   }
 }
 
+/**
+ * Respuesta idempotente de create-intent: reconstruye la forma habitual a
+ * partir del pago ya creado. Recupera el `client_secret` desde Stripe cuando es
+ * posible para que el cliente pueda continuar el pago. (HU-42 #160)
+ */
+async function existingIntentResponse(c: Context<AppEnv>, paymentId: string) {
+  const payment = await Payment.findOne({ id: paymentId }).lean();
+  if (!payment) {
+    return failure(c, 404, "NOT_FOUND", "Payment not found");
+  }
+
+  let clientSecret: string | null | undefined;
+  const stripe = getStripeClient();
+  if (stripe && payment.stripePaymentIntentId) {
+    try {
+      const intent = await stripe.paymentIntents.retrieve(payment.stripePaymentIntentId);
+      clientSecret = intent.client_secret;
+    } catch (err) {
+      console.error("Stripe intent retrieval failed on idempotent replay:", err);
+    }
+  }
+
+  return success(c, {
+    paymentId: payment.id,
+    clientSecret,
+    amount: payment.amount,
+    currency: payment.currency,
+    idempotent: true,
+  });
+}
+
+/** Respuesta idempotente de checkout-session: reutiliza la sesión ya creada. */
+async function existingSessionResponse(c: Context<AppEnv>, paymentId: string) {
+  const payment = await Payment.findOne({ id: paymentId }).lean();
+  if (!payment) {
+    return failure(c, 404, "NOT_FOUND", "Payment not found");
+  }
+
+  return success(c, {
+    paymentId: payment.id,
+    stripeSessionId: payment.stripeSessionId,
+    checkoutUrl: payment.checkoutUrl,
+    status: payment.status,
+    idempotent: true,
+  });
+}
+
 export const paymentRoutes = new Hono<AppEnv>();
 
 paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
@@ -194,6 +249,17 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
     return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Rental request is not payable");
   }
 
+  const idempotencyKey = c.req.header("idempotency-key");
+
+  // Reintento con la misma clave → devolver el pago ya creado, sin volver a
+  // cobrar ni crear un duplicado (HU-42 #160).
+  if (idempotencyKey) {
+    const existingId = await findPaymentIdByIdempotencyKey(idempotencyKey);
+    if (existingId) {
+      return existingIntentResponse(c, existingId);
+    }
+  }
+
   const amount = await computePaymentAmount(request.id);
   const stripe = getStripeClient();
 
@@ -201,18 +267,35 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
     return failure(c, 503, "STRIPE_NOT_CONFIGURED", "Stripe is not configured");
   }
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(amount * 100),
-    currency: body.currency.toLowerCase(),
-    metadata: {
-      paymentId: `pay_${crypto.randomUUID()}`,
-      rentalRequestId: request.id,
+  const paymentId = `pay_${crypto.randomUUID()}`;
+
+  // Reservar la clave antes de crear: si una petición concurrente ganó la
+  // carrera, devolvemos su pago en lugar de crear otro.
+  if (idempotencyKey) {
+    const reserved = await reserveIdempotencyKey(idempotencyKey, "create-intent", paymentId);
+    if (!reserved) {
+      const winnerId = await findPaymentIdByIdempotencyKey(idempotencyKey);
+      if (winnerId) return existingIntentResponse(c, winnerId);
+    }
+  }
+
+  const paymentIntent = await stripe.paymentIntents.create(
+    {
+      amount: Math.round(amount * 100),
+      currency: body.currency.toLowerCase(),
+      metadata: {
+        paymentId,
+        rentalRequestId: request.id,
+      },
+      automatic_payment_methods: { enabled: true },
     },
-    automatic_payment_methods: { enabled: true },
-  });
+    // Clave de idempotencia hacia Stripe: la del cliente si la hay, o el propio
+    // paymentId (estable dentro de esta petición).
+    { idempotencyKey: idempotencyKey ?? paymentId },
+  );
 
   const payment = await Payment.create({
-    id: paymentIntent.metadata.paymentId,
+    id: paymentId,
     rentalRequestId: request.id,
     amount,
     currency: body.currency,
@@ -269,10 +352,31 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
     return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Rental request is not payable");
   }
 
+  const idempotencyKey = c.req.header("idempotency-key");
+
+  // Reintento con la misma clave → devolver la sesión ya creada (HU-42 #160).
+  if (idempotencyKey) {
+    const existingId = await findPaymentIdByIdempotencyKey(idempotencyKey);
+    if (existingId) {
+      return existingSessionResponse(c, existingId);
+    }
+  }
+
   const amount = await computePaymentAmount(request.id);
+  const paymentId = `pay_${crypto.randomUUID()}`;
+
+  // Reservar la clave antes de crear: si otra petición concurrente ganó la
+  // carrera, devolvemos su sesión en lugar de crear otra.
+  if (idempotencyKey) {
+    const reserved = await reserveIdempotencyKey(idempotencyKey, "checkout-session", paymentId);
+    if (!reserved) {
+      const winnerId = await findPaymentIdByIdempotencyKey(idempotencyKey);
+      if (winnerId) return existingSessionResponse(c, winnerId);
+    }
+  }
 
   const payment = await Payment.create({
-    id: `pay_${crypto.randomUUID()}`,
+    id: paymentId,
     rentalRequestId: request.id,
     amount,
     currency: body.currency,
@@ -309,7 +413,7 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
           rentalRequestId: request.id,
         },
       },
-    });
+    }, { idempotencyKey: idempotencyKey ?? payment.id });
 
     const paymentIntentId = extractPaymentIntentId(session.payment_intent);
 
@@ -540,6 +644,14 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
     event = payload as StripeWebhookEvent;
   }
 
+  // Idempotencia de webhooks (HU-42 #160): si este mismo evento de Stripe ya se
+  // procesó, no repetimos efectos. Solo aplica cuando llega un `event.id`
+  // (siempre presente en producción; en pruebas/dev sin id se omite el dedupe).
+  const eventId = event.id;
+  if (eventId && (await isWebhookProcessed(eventId))) {
+    return success(c, { received: true, duplicate: true, eventId });
+  }
+
   const paymentId = await resolvePaymentIdFromWebhook(event);
 
   if (!paymentId) {
@@ -554,6 +666,7 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
   const eventType = event.type ?? "";
 
   if (!paidWebhookEvents.has(eventType) && !failedWebhookEvents.has(eventType)) {
+    if (eventId) await markWebhookProcessed(eventId, eventType, payment.id);
     return success(c, {
       received: true,
       paymentId: payment.id,
@@ -574,6 +687,15 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
     (eventType.startsWith("payment_intent") ? event.data?.object?.id : undefined);
 
   const stripeSessionId = eventType.startsWith("checkout.session") ? event.data?.object?.id : undefined;
+
+  // Reservar el eventId antes de aplicar; si otra entrega concurrente ya lo
+  // registró, no repetimos la transición.
+  if (eventId) {
+    const firstDelivery = await markWebhookProcessed(eventId, eventType, payment.id);
+    if (!firstDelivery) {
+      return success(c, { received: true, duplicate: true, eventId });
+    }
+  }
 
   await applyPaidTransition(payment, newStatus, { paymentIntentId, stripeSessionId });
 

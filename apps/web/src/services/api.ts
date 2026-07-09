@@ -15,6 +15,7 @@ import type {
   PaymentDto,
   RentalRequestDto,
 } from "@terrashare/shared";
+import { IDEMPOTENCY_HEADER } from "@terrashare/shared";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -64,8 +65,10 @@ const request = async <T = unknown>(
   method: string,
   path: string,
   body?: unknown,
+  extraHeaders?: Record<string, string>,
 ): Promise<ApiSuccess<T>> => {
-  const opts: RequestInit = { method, headers: await buildHeaders() };
+  const headers = { ...(await buildHeaders()), ...(extraHeaders ?? {}) };
+  const opts: RequestInit = { method, headers };
   if (body != null) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE_URL}${path}`, opts);
   return (await handleResponse(res)) as ApiSuccess<T>;
@@ -145,6 +148,8 @@ interface CheckoutSessionInput {
   currency?: string;
   successUrl: string;
   cancelUrl: string;
+  /** Clave de idempotencia para evitar sesiones/cobros duplicados (HU-42 #160). */
+  idempotencyKey?: string;
 }
 
 /** POST /api/v1/payments/checkout-session */
@@ -153,13 +158,14 @@ export const createCheckoutSession = async ({
   currency = "USD",
   successUrl,
   cancelUrl,
+  idempotencyKey,
 }: CheckoutSessionInput): Promise<any> => {
-  const res = await request("POST", "/api/v1/payments/checkout-session", {
-    rentalRequestId,
-    currency,
-    successUrl,
-    cancelUrl,
-  });
+  const res = await request(
+    "POST",
+    "/api/v1/payments/checkout-session",
+    { rentalRequestId, currency, successUrl, cancelUrl },
+    idempotencyKey ? { [IDEMPOTENCY_HEADER]: idempotencyKey } : undefined,
+  );
   return res?.data ?? null;
 };
 

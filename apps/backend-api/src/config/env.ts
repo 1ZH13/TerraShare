@@ -22,6 +22,7 @@ const BASE_CORS_ALLOW_HEADERS = [
   "Authorization",
   "x-request-id",
   "stripe-signature",
+  "Idempotency-Key",
 ];
 
 const DEV_CORS_ALLOW_HEADERS = ["x-dev-role", "x-dev-user-id"];
