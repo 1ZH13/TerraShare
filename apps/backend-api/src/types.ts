@@ -2,6 +2,9 @@ export type AppRole = "user" | "admin";
 
 export type UserStatus = "active" | "blocked";
 
+/** Preferencia de lado del mercado en el modelo de cuenta única (#137). */
+export type MarketPreference = "busco" | "ofrezco";
+
 export interface AuthContextUser {
   id: string;
   clerkUserId: string;
@@ -12,6 +15,8 @@ export interface AuthContextUser {
   profile: {
     fullName: string;
     phone?: string;
+    province?: string;
+    marketPreference?: MarketPreference;
   };
 }
 

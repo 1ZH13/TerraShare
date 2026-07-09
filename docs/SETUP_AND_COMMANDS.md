@@ -70,6 +70,30 @@ Nota:
 - El contrato para backend esta en `docs/MODULE_INTEGRATION_CONTRACTS.md`.
 - Setup detallado de Stripe en dev: `docs/STRIPE_DEV_SETUP.md`.
 
+## 4.2 Autenticacion en desarrollo (#137)
+
+El backend admite dos modos de autenticacion en dev, conmutables por entorno:
+
+- **Dev-bypass** (`ALLOW_DEV_AUTH_BYPASS=true`, valor por defecto fuera de
+  produccion): enviando las cabeceras `x-dev-user-id` y opcionalmente
+  `x-dev-role: admin` se sintetiza un usuario sin pasar por Clerk. Util para
+  probar rutas sin tokens. **Los usuarios dev viven en el store en memoria**, no
+  se sincronizan a Mongo.
+- **Token real de Clerk**: enviando `Authorization: Bearer <jwt>` con un token de
+  sesion real, el backend lo valida contra el JWKS (`CLERK_JWKS_URL` /
+  `CLERK_ISSUER`). Este camino **hace upsert del usuario en la coleccion `users`
+  de Mongo** (aparece en el panel admin, D-4) y enriquece email/nombre via la
+  Clerk Backend API cuando el token no los trae (requiere `CLERK_SECRET_KEY`, ver
+  #132). El bypass sigue disponible aunque haya token real, segun la cabecera.
+
+Para forzar solo tokens reales en un entorno (o en produccion), poner
+`ALLOW_DEV_AUTH_BYPASS=false`.
+
+**Rol admin (D-5):** el rol `admin` se asigna automaticamente al usuario cuyo
+email coincide con `ADMIN_SEED_EMAIL`. Antes de produccion, revisar/rotar ese
+valor y preferir asignar el rol via `public_metadata` de Clerk en vez del email
+semilla.
+
 ## 5. Arranque sugerido en equipo
 1. Clonar repo.
 2. Configurar variables de entorno en cada modulo.
