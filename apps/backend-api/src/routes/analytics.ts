@@ -147,7 +147,9 @@ analyticsRoutes.get("/analytics/requests", requireAdmin, async (c) => {
 
   const byIntendedUse: Record<string, number> = {};
   for (const req of recentRequests) {
-    byIntendedUse[req.intendedUse] = (byIntendedUse[req.intendedUse] || 0) + 1;
+    // Las ofertas de compra no tienen intendedUse (#249); se agrupan como "venta".
+    const key = req.intendedUse ?? (req.operation === "venta" ? "venta" : "otro");
+    byIntendedUse[key] = (byIntendedUse[key] || 0) + 1;
   }
 
   const approvedLast30Days = requests.filter(

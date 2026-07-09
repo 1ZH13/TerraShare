@@ -59,7 +59,8 @@ function formatPeriod(startDate?: string, endDate?: string): string {
   return `${formatMonth(startDate)} – ${formatMonth(endDate)}`;
 }
 
-function useLabel(use: string): string {
+function useLabel(use?: string): string {
+  if (!use) return "Terreno";
   return USE_LABELS[use] ?? use;
 }
 
@@ -150,7 +151,9 @@ function BuscoHome({ name }: { name: string }) {
               return (
                 <div key={req.id} className="hm-req">
                   <div className="hm-req__top">
-                    <span className="hm-req__title">{useLabel(req.intendedUse)}</span>
+                    <span className="hm-req__title">
+                      {req.operation === "venta" ? "Compra" : useLabel(req.intendedUse)}
+                    </span>
                     <span className={`hm-badge ${status.badge}`}>{status.label}</span>
                   </div>
                   <div className="hm-req__meta">

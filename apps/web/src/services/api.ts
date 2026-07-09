@@ -126,6 +126,12 @@ export const listRentalRequests = async (): Promise<RentalRequestDto[]> => {
   return res?.data ?? [];
 };
 
+/** GET /api/v1/rental-requests/:requestId */
+export const getRentalRequestById = async (requestId: string): Promise<RentalRequestDto | null> => {
+  const res = await request<RentalRequestDto>("GET", `/api/v1/rental-requests/${requestId}`);
+  return res?.data ?? null;
+};
+
 /** GET /api/v1/lands/:landId */
 export const getLandById = async (landId: string): Promise<LandDto | null> => {
   const res = await request<LandDto>("GET", `/api/v1/lands/${landId}`);
@@ -312,6 +318,7 @@ export const api = {
   getLandById,
   createRentalRequest,
   listRentalRequests,
+  getRentalRequestById,
   createCheckoutSession,
   getPaymentsByRequest,
   getMyPayments,

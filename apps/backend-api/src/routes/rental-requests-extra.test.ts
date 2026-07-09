@@ -75,6 +75,56 @@ describe("rental requests - extended coverage", () => {
     expect(payload.data.status).toBe("rejected");
   });
 
+  it("creates a purchase offer on a land that is for sale (#249)", async () => {
+    const { response, payload } = await requestJson("/api/v1/rental-requests", {
+      method: "POST",
+      headers: { "x-dev-user-id": "user_buyer_01" },
+      body: { landId: "land_seed_04", operation: "venta", offerAmount: 190000 },
+    });
+    expect(response.status).toBe(201);
+    expect(payload.ok).toBe(true);
+    expect(payload.data.operation).toBe("venta");
+    expect(payload.data.offerAmount).toBe(190000);
+    expect(payload.data.status).toBe("pending_owner");
+  });
+
+  it("rejects a purchase offer without an offerAmount", async () => {
+    const { response, payload } = await requestJson("/api/v1/rental-requests", {
+      method: "POST",
+      headers: { "x-dev-user-id": "user_buyer_02" },
+      body: { landId: "land_seed_04", operation: "venta" },
+    });
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+  });
+
+  it("rejects a purchase offer on a rent-only land", async () => {
+    const { response, payload } = await requestJson("/api/v1/rental-requests", {
+      method: "POST",
+      headers: { "x-dev-user-id": "user_buyer_03" },
+      body: { landId: "land_seed_01", operation: "venta", offerAmount: 50000 },
+    });
+    expect(response.status).toBe(422);
+    expect(payload.ok).toBe(false);
+  });
+
+  it("owner can approve a purchase offer", async () => {
+    const createRes = await requestJson("/api/v1/rental-requests", {
+      method: "POST",
+      headers: { "x-dev-user-id": "user_buyer_04" },
+      body: { landId: "land_seed_04", operation: "venta", offerAmount: 205000 },
+    });
+    const requestId = createRes.payload.data.id;
+
+    const { response, payload } = await requestJson(`/api/v1/rental-requests/${requestId}/status`, {
+      method: "PATCH",
+      headers: { "x-dev-user-id": "user_owner_02" },
+      body: { status: "approved" },
+    });
+    expect(response.status).toBe(200);
+    expect(payload.data.status).toBe("approved");
+  });
+
   it("prevents non-owner from changing status", async () => {
     const createRes = await requestJson("/api/v1/rental-requests", {
       method: "POST",
