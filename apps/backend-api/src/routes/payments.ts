@@ -3,13 +3,19 @@ import Stripe from "stripe";
 
 import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
-import { requireAuth } from "../middleware/require-auth";
+import { requireAuth, requireAdmin } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { Payment, RentalRequest, Land, Contract } from "../db/schemas";
 import {
   canInitiatePayment,
   canReadPayment,
 } from "../lib/auth-helpers";
+import {
+  computePaymentBreakdown,
+  stripeChargeCurrency,
+  toStripeMinorUnits,
+} from "../lib/payments-money";
+import { buildReconciliationReport } from "../lib/payments-reconciliation";
 import type { AppEnv } from "../types";
 
 let stripeClient: Stripe | null = null;
@@ -195,6 +201,7 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
   }
 
   const amount = await computePaymentAmount(request.id);
+  const breakdown = computePaymentBreakdown(amount, body.currency, env.platformFeeBps);
   const stripe = getStripeClient();
 
   if (!stripe) {
@@ -202,11 +209,14 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
   }
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(amount * 100),
-    currency: body.currency.toLowerCase(),
+    amount: toStripeMinorUnits(breakdown.grossAmount),
+    currency: stripeChargeCurrency(body.currency),
     metadata: {
       paymentId: `pay_${crypto.randomUUID()}`,
       rentalRequestId: request.id,
+      presentmentCurrency: body.currency,
+      platformFeeAmount: String(breakdown.platformFeeAmount),
+      netAmount: String(breakdown.netAmount),
     },
     automatic_payment_methods: { enabled: true },
   });
@@ -214,8 +224,11 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
   const payment = await Payment.create({
     id: paymentIntent.metadata.paymentId,
     rentalRequestId: request.id,
-    amount,
+    amount: breakdown.grossAmount,
     currency: body.currency,
+    platformFeeAmount: breakdown.platformFeeAmount,
+    netAmount: breakdown.netAmount,
+    settlementCurrency: breakdown.settlementCurrency,
     status: "pending",
     stripePaymentIntentId: paymentIntent.id,
   });
@@ -270,18 +283,27 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
   }
 
   const amount = await computePaymentAmount(request.id);
+  const breakdown = computePaymentBreakdown(amount, body.currency, env.platformFeeBps);
 
   const payment = await Payment.create({
     id: `pay_${crypto.randomUUID()}`,
     rentalRequestId: request.id,
-    amount,
+    amount: breakdown.grossAmount,
     currency: body.currency,
+    platformFeeAmount: breakdown.platformFeeAmount,
+    netAmount: breakdown.netAmount,
+    settlementCurrency: breakdown.settlementCurrency,
     status: "pending",
   });
 
   const stripe = getStripeClient();
 
   if (stripe) {
+    const feeMetadata = {
+      presentmentCurrency: body.currency,
+      platformFeeAmount: String(breakdown.platformFeeAmount),
+      netAmount: String(breakdown.netAmount),
+    };
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       client_reference_id: payment.id,
@@ -291,8 +313,8 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
         {
           quantity: 1,
           price_data: {
-            currency: body.currency.toLowerCase(),
-            unit_amount: Math.round(amount * 100),
+            currency: stripeChargeCurrency(body.currency),
+            unit_amount: toStripeMinorUnits(breakdown.grossAmount),
             product_data: {
               name: `TerraShare rental ${request.id}`,
             },
@@ -302,11 +324,13 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
       metadata: {
         paymentId: payment.id,
         rentalRequestId: request.id,
+        ...feeMetadata,
       },
       payment_intent_data: {
         metadata: {
           paymentId: payment.id,
           rentalRequestId: request.id,
+          ...feeMetadata,
         },
       },
     });
@@ -394,6 +418,17 @@ paymentRoutes.get("/payments", requireAuth, async (c) => {
 
   const items = await Payment.find(query).sort({ createdAt: -1 }).lean();
   return success(c, items);
+});
+
+/**
+ * Reporte de conciliación (HU-41 #159): totales por moneda (bruto/comisión/neto)
+ * y discrepancias entre pagos, solicitudes y contratos. Solo admin. Se registra
+ * antes de `/payments/:paymentId` para que "reconciliation" no se interprete
+ * como un id de pago.
+ */
+paymentRoutes.get("/payments/reconciliation", requireAuth, requireAdmin, async (c) => {
+  const report = await buildReconciliationReport();
+  return success(c, report);
 });
 
 paymentRoutes.get("/payments/:paymentId", requireAuth, async (c) => {

@@ -3,7 +3,7 @@
  * Always uses dev bypass headers in development.
  * No authentication tokens required.
  */
-import type { ApiSuccess, LandDto, UserSummaryDto } from "@terrashare/shared";
+import type { ApiSuccess, LandDto, UserSummaryDto, ReconciliationReportDto } from "@terrashare/shared";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -93,6 +93,12 @@ export const listAdminRentalRequests = (filters: AdminLandFilters = {}) => {
 
 /** GET /api/v1/admin/summary */
 export const getAdminSummary = () => request("GET", "/api/v1/admin/summary");
+
+// ─── Pagos / Conciliación (HU-41 #159) ────────────────────────────────────────
+
+/** GET /api/v1/payments/reconciliation */
+export const getReconciliation = () =>
+  request<ReconciliationReportDto>("GET", "/api/v1/payments/reconciliation");
 
 // ─── Leads ───────────────────────────────────────────────────────────────────
 

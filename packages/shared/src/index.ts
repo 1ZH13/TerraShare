@@ -57,6 +57,10 @@ export type {
   PaymentListFilterDto,
   PaymentStatus,
   StripeWebhookEventDto,
+  ReconciliationDiscrepancyType,
+  ReconciliationDiscrepancyDto,
+  ReconciliationCurrencyTotalsDto,
+  ReconciliationReportDto,
 } from "./dto/payments";
 
 export type {

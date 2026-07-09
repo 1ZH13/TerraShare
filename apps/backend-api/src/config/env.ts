@@ -10,6 +10,8 @@ export const envSchema = z.object({
   ADMIN_SEED_EMAIL: z.string().default("terradmin@gmail.com"),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  // Comisión de plataforma en basis points (100 bps = 1%). Default 5%. (HU-41 #159)
+  STRIPE_PLATFORM_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(500),
   CLERK_SECRET_KEY: z.string().optional(),
   WHATSAPP_CONTACT_ENABLED: z.string().default("false"),
   FORCE_SEED: z.string().default("false"),
@@ -43,6 +45,7 @@ export const env = {
   },
   stripeSecretKey: parsed.STRIPE_SECRET_KEY,
   stripeWebhookSecret: parsed.STRIPE_WEBHOOK_SECRET,
+  platformFeeBps: parsed.STRIPE_PLATFORM_FEE_BPS,
   whatsappContactEnabled: parsed.WHATSAPP_CONTACT_ENABLED === "true",
   get isProduction() {
     return process.env.NODE_ENV === "production";

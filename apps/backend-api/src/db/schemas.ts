@@ -93,6 +93,9 @@ export interface IPayment extends Document {
   contractId?: string;
   amount: number;
   currency: "USD" | "PAB";
+  platformFeeAmount?: number;
+  netAmount?: number;
+  settlementCurrency?: "USD";
   status: PaymentStatus;
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
@@ -224,6 +227,9 @@ const PaymentSchema = new Schema<IPayment>({
   contractId: String,
   amount: { type: Number, required: true },
   currency: { type: String, enum: ["USD", "PAB"], default: "USD" },
+  platformFeeAmount: Number,
+  netAmount: Number,
+  settlementCurrency: { type: String, enum: ["USD"] },
   status: { type: String, enum: ["pending", "processing", "paid", "failed", "cancelled"], default: "pending" },
   stripeSessionId: String,
   stripePaymentIntentId: String,
