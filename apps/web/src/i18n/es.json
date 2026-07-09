@@ -11,5 +11,16 @@
     "area": "Area",
     "price": "Precio/mes",
     "search": "Buscar terrenos..."
+  },
+  "privacy": {
+    "title": "Privacidad y datos",
+    "subtitle": "Gestiona tus datos personales y tu cuenta",
+    "export_title": "Exportar mis datos",
+    "export_desc": "Descarga una copia de tus datos personales almacenados en la plataforma (RGPD).",
+    "export_button": "Exportar datos",
+    "delete_title": "Eliminar mi cuenta",
+    "delete_desc": "Elimina tu cuenta de forma permanente. Tus datos personales se anonimizaran.",
+    "delete_button": "Eliminar cuenta",
+    "retention_title": "Retencion de datos"
   }
 }

@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button, Card, Field, Input } from "../components/ui";
 import { PANAMA_PROVINCES } from "../data/panama-provinces";
+import { updateMyProfile } from "../services/api";
 import "./auth.css";
 
 type Preference = "busco" | "ofrezco";
@@ -33,14 +34,27 @@ export default function OnboardingPage() {
   const [phone, setPhone] = useState("");
   const [province, setProvince] = useState("");
   const [preference, setPreference] = useState<Preference>("busco");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO(#137): persistir teléfono, provincia y preferencia inicial (Busco/
-    // Ofrezco) en el perfil del usuario. Hoy no hay endpoint para provincia ni
-    // preferencia; se capturan en el estado de la UI (phone/province/preference)
-    // y solo se usan para elegir la vista inicial.
-    navigate({ to: preference === "ofrezco" ? "/dashboard/lands" : "/catalog" });
+    setSaving(true);
+    setError("");
+    try {
+      // Persiste teléfono, provincia y preferencia inicial (Busco/Ofrezco) en el
+      // perfil del usuario vía PATCH /auth/profile (#137).
+      await updateMyProfile({
+        phone: phone || undefined,
+        province: province || undefined,
+        marketPreference: preference,
+      });
+      navigate({ to: preference === "ofrezco" ? "/dashboard/lands" : "/catalog" });
+    } catch {
+      setError("No se pudo guardar tu información. Intenta de nuevo.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -110,8 +124,14 @@ export default function OnboardingPage() {
             </p>
           </div>
 
-          <Button type="submit" block>
-            Empezar
+          {error ? (
+            <p className="au-onb__error" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <Button type="submit" block disabled={saving}>
+            {saving ? "Guardando…" : "Empezar"}
           </Button>
         </form>
       </Card>

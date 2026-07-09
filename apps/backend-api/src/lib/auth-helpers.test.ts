@@ -336,4 +336,21 @@ describe("requireAdmin", () => {
     await requireAdmin(c, () => { called = true; });
     expect(called).toBe(true);
   });
+
+  it("permite admin sin MFA en dev bypass con solo x-dev-role", async () => {
+    const c = {
+      get: (key: string) => {
+        if (key === "authUser") return { ...mfaAdminUser, mfaVerified: false };
+        return undefined;
+      },
+      req: { header: (name: string) => name === "x-dev-role" ? "admin" : undefined },
+      header: () => {},
+      json: () => Promise.resolve({ error: { code: "" } }),
+      res: undefined,
+    } as any;
+
+    let called = false;
+    await requireAdmin(c, () => { called = true; });
+    expect(called).toBe(true);
+  });
 });

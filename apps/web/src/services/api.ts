@@ -223,8 +223,10 @@ const adaptLandForCatalog = (land: LandLike | null | undefined) => {
     areaHectares: land.area ?? 0,
     type: land.allowedUses?.[0] ?? "",
     features: land.features ?? [],
-    water: land.water ?? "No especificado",
-    access: land.access ?? "No especificado",
+    // #138: sin "No especificado" por defecto; el backend ya sirve estos campos
+    // y la UI oculta los ausentes.
+    water: land.water,
+    access: land.access,
     mapPosition: land.mapPosition ?? { x: 50, y: 50 },
   };
 };
@@ -281,6 +283,8 @@ export const getExternalContact = async (chatId: string): Promise<ExternalContac
 export interface UserProfile {
   fullName?: string;
   phone?: string;
+  province?: string;
+  marketPreference?: "busco" | "ofrezco";
 }
 
 interface MeResponse {

@@ -29,6 +29,7 @@ export type {
   CreateLandDto,
   LandDto,
   LandFilterDto,
+  LandOperation,
   LandSortField,
   LandStatus,
   LandUse,

@@ -79,10 +79,37 @@ function generateUsers(count: number) {
   return users;
 }
 
+const WATER_SOURCES = [
+  "Pozo propio", "Río permanente cercano", "Quebrada natural", "Acueducto rural",
+  "Toma de quebrada", "Nacimiento de agua en la finca", "Pozo perforado y río",
+];
+
+const ACCESS_TYPES = [
+  "Carretera asfaltada hasta la entrada", "Camino de tierra transitable todo el año",
+  "Calle pavimentada", "Camino balastrado", "Acceso por vía interamericana",
+  "Entrada principal compactada",
+];
+
+const FEATURE_POOL = [
+  "Riego instalado", "Suelo fértil", "Cercas perimetrales", "Acceso vehicular",
+  "Electricidad disponible", "Galpón de almacenamiento", "Pasto establecido",
+  "Cerca de río", "Topografía suave", "Buena drenaje",
+];
+
+function pickFeatures(): string[] {
+  const n = randomBetween(2, 4);
+  const pool = [...FEATURE_POOL];
+  const picked: string[] = [];
+  for (let k = 0; k < n && pool.length > 0; k++) {
+    picked.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  }
+  return picked;
+}
+
 function generateLands(count: number, userIds: string[]) {
   const lands = [];
   const statuses = ["active", "draft", "inactive"];
-  
+
   for (let i = 0; i < count; i++) {
     const province = randomItem(PROVINCES);
     const district = randomItem(province.districts);
@@ -93,13 +120,19 @@ function generateLands(count: number, userIds: string[]) {
       const use = randomItem(LAND_USES);
       if (!allowedUses.includes(use)) allowedUses.push(use);
     }
-    
+
+    const area = randomBetween(5, 500);
+    // Mezcla: ~60% alquiler, ~25% venta, ~15% ambas.
+    const roll = Math.random();
+    const operation = roll < 0.6 ? "alquiler" : roll < 0.85 ? "venta" : "ambas";
+    const isSale = operation === "venta" || operation === "ambas";
+
     lands.push({
       id: `land_${String(i + 1).padStart(4, "0")}`,
       ownerId: randomItem(userIds.filter((_, idx) => idx >= 3)),
       title: `${titlePrefix} ${province.name}`,
       description: `Terreno fértil en ${district}, ${province.name}. Ideal para ${allowedUses.join(" y ")}.`,
-      area: randomBetween(5, 500),
+      area,
       allowedUses,
       location: {
         province: province.name,
@@ -116,6 +149,11 @@ function generateLands(count: number, userIds: string[]) {
         pricePerMonth: randomBetween(150, 2500),
       },
       status: i < count * 0.7 ? "active" : randomItem(statuses),
+      operation,
+      salePrice: isSale ? area * randomBetween(800, 2500) : undefined,
+      water: randomItem(WATER_SOURCES),
+      access: randomItem(ACCESS_TYPES),
+      features: pickFeatures(),
       createdAt: randomDate(180),
       updatedAt: randomDate(30),
     });
