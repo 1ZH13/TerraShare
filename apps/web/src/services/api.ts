@@ -283,6 +283,8 @@ export const getExternalContact = async (chatId: string): Promise<ExternalContac
 export interface UserProfile {
   fullName?: string;
   phone?: string;
+  province?: string;
+  marketPreference?: "busco" | "ofrezco";
 }
 
 interface MeResponse {

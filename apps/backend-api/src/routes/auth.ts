@@ -16,11 +16,27 @@ authRoutes.get("/auth/me", requireAuth, (c) => {
 authRoutes.patch("/auth/profile", requireAuth, async (c) => {
   const authUser = c.get("authUser");
   const body = (await c.req.json().catch(() => null)) as
-    | { fullName?: string; phone?: string }
+    | { fullName?: string; phone?: string; province?: string; marketPreference?: "busco" | "ofrezco" }
     | null;
 
-  if (!body || (body.fullName === undefined && body.phone === undefined)) {
-    return failure(c, 400, "VALIDATION_ERROR", "Provide fullName and/or phone");
+  const hasAnyField =
+    body &&
+    (body.fullName !== undefined ||
+      body.phone !== undefined ||
+      body.province !== undefined ||
+      body.marketPreference !== undefined);
+
+  if (!hasAnyField) {
+    return failure(
+      c,
+      400,
+      "VALIDATION_ERROR",
+      "Provide fullName, phone, province and/or marketPreference",
+    );
+  }
+
+  if (body.marketPreference !== undefined && !["busco", "ofrezco"].includes(body.marketPreference)) {
+    return failure(c, 400, "VALIDATION_ERROR", "marketPreference must be 'busco' or 'ofrezco'");
   }
 
   const store = getStore();
@@ -29,14 +45,29 @@ authRoutes.patch("/auth/profile", requireAuth, async (c) => {
     ...existing.profile,
     ...(body.fullName !== undefined ? { fullName: body.fullName } : {}),
     ...(body.phone !== undefined ? { phone: body.phone } : {}),
+    ...(body.province !== undefined ? { province: body.province } : {}),
+    ...(body.marketPreference !== undefined ? { marketPreference: body.marketPreference } : {}),
   };
 
   // Update the in-memory store (the source require-auth reads from).
   const updatedUser = { ...existing, profile: nextProfile };
   store.users.set(authUser.id, updatedUser);
 
-  // Persist to Mongo if the user exists there (no-op for dev-bypass users).
-  await User.updateOne({ clerkUserId: authUser.id }, { profile: nextProfile });
+  // Persist to Mongo. Upsert so el onboarding funciona aunque el usuario aún no
+  // exista en Mongo; $setOnInsert cubre los campos requeridos del schema (#137).
+  await User.updateOne(
+    { clerkUserId: authUser.id },
+    {
+      $set: { profile: nextProfile },
+      $setOnInsert: {
+        clerkUserId: authUser.id,
+        email: authUser.email,
+        role: authUser.role,
+        status: authUser.status,
+      },
+    },
+    { upsert: true },
+  );
 
   return success(c, updatedUser);
 });

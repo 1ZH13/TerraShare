@@ -16,7 +16,7 @@ export interface IUser extends Document {
   email: string;
   role: AppRole;
   status: UserStatus;
-  profile: { fullName: string; phone?: string };
+  profile: { fullName: string; phone?: string; province?: string; marketPreference?: "busco" | "ofrezco" };
   deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -150,6 +150,8 @@ const UserSchema = new Schema<IUser>({
   profile: {
     fullName: { type: String, required: true },
     phone: String,
+    province: String,
+    marketPreference: { type: String, enum: ["busco", "ofrezco"] },
   },
   deletedAt: { type: Date, default: null },
 }, { timestamps: true });
