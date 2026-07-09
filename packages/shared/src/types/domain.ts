@@ -11,7 +11,8 @@ export type AuditableEntity =
   | "rental_request"
   | "contract"
   | "payment"
-  | "chat";
+  | "chat"
+  | "webhook";
 
 export type AuditAction =
   | "created"

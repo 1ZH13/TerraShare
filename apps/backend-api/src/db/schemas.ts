@@ -127,8 +127,8 @@ export interface IChatMessage extends Document {
 export interface IAuditEvent extends Document {
   id: string;
   actorId: string;
-  actorRole: AppRole;
-  entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat";
+  actorRole: AppRole | "system";
+  entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat" | "webhook";
   action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "status_changed";
   entityId: string;
   metadata?: Record<string, unknown>;
@@ -252,8 +252,8 @@ const ChatMessageSchema = new Schema<IChatMessage>({
 const AuditEventSchema = new Schema<IAuditEvent>({
   id: { type: String, required: true, unique: true },
   actorId: { type: String, required: true },
-  actorRole: { type: String, enum: ["user", "admin"], required: true },
-  entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat"], required: true },
+  actorRole: { type: String, enum: ["user", "admin", "system"], required: true },
+  entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat", "webhook"], required: true },
   action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "status_changed"], required: true },
   entityId: { type: String, required: true },
   metadata: Schema.Types.Mixed,
