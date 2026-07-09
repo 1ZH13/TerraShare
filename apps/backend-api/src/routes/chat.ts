@@ -101,7 +101,7 @@ chatRoutes.post("/chats", requireAuth, async (c) => {
     status: "active",
   });
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "chat",
     action: "created",
@@ -158,7 +158,7 @@ chatRoutes.post("/chats/:chatId/messages", requireAuth, async (c) => {
     text: body.text.trim(),
   });
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "chat",
     action: "updated",

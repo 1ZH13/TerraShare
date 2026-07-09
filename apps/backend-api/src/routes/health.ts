@@ -1,9 +1,14 @@
 import { Hono } from "hono";
+import mongoose from "mongoose";
 
 import { success } from "../lib/api-response";
-import { isDatabaseConnected } from "../config/database";
 import { env } from "../config/env";
 import type { AppEnv } from "../types";
+
+// readyState === 1 => conectado (Mongoose es la única capa de datos — #135).
+function isDatabaseConnected(): boolean {
+  return mongoose.connection.readyState === 1;
+}
 
 export const healthRoutes = new Hono<AppEnv>();
 

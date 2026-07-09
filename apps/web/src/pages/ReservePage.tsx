@@ -4,7 +4,6 @@ import { Link, useParams, useNavigate, useLocation } from "@tanstack/react-route
 import { useUser } from "@clerk/clerk-react";
 import { ArrowLeft, Sprout, MapPin, Info, Check } from "lucide-react";
 import { getLandById, createRentalRequest, adaptLand } from "../services/api";
-import { normalizeReserveLand } from "../data/lands";
 import "./reserve.css";
 
 const USO_OPCIONES = [
@@ -27,6 +26,45 @@ interface ReserveLand {
   monthlyPrice?: number;
   availableFrom?: string;
   features?: string[];
+}
+
+type LandLike = Record<string, unknown> & {
+  id?: string;
+  type?: string;
+  title?: string;
+  allowedUses?: string[];
+  province?: string;
+  district?: string;
+  location?: { province?: string; district?: string };
+  areaHectares?: number;
+  area?: number;
+  monthlyPrice?: number;
+  priceRule?: { pricePerMonth?: number };
+  availableFrom?: string;
+  availability?: { availableFrom?: string };
+  features?: string[];
+};
+
+function labelForUse(use: string | undefined): string {
+  if (!use) return "";
+  return USO_OPCIONES.find((o) => o.value === use)?.label ?? use;
+}
+
+// Normaliza un terreno (crudo de la API vía adaptLand, o pasado por router state)
+// a la forma que consume esta pantalla. Antes vivía en el mock data/lands (#138).
+function normalizeReserveLand(land: LandLike | null | undefined): ReserveLand | null {
+  if (!land) return null;
+  return {
+    id: land.id,
+    type: land.type ?? labelForUse(land.allowedUses?.[0]),
+    title: land.title,
+    province: land.province ?? land.location?.province ?? "",
+    district: land.district ?? land.location?.district ?? "",
+    areaHectares: land.areaHectares ?? land.area ?? 0,
+    monthlyPrice: land.monthlyPrice ?? land.priceRule?.pricePerMonth ?? 0,
+    availableFrom: land.availableFrom ?? land.availability?.availableFrom ?? "",
+    features: land.features,
+  };
 }
 
 interface ReserveForm {

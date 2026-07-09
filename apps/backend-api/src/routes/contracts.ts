@@ -56,7 +56,7 @@ contractRoutes.post("/contracts", requireAuth, async (c) => {
     status: "draft",
   });
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "contract",
     action: "created",
@@ -121,7 +121,7 @@ contractRoutes.patch("/contracts/:contractId/status", requireAuth, async (c) => 
     { status: status as any, updatedAt: new Date() },
   );
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "contract",
     action: "status_changed",
@@ -159,7 +159,7 @@ contractRoutes.post("/contracts/:contractId/sign", requireAuth, async (c) => {
     },
   );
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "contract",
     action: "signed",
@@ -193,7 +193,7 @@ contractRoutes.post("/contracts/:contractId/complete", requireAuth, async (c) =>
     { status: "completed", updatedAt: new Date() },
   );
 
-  createAuditEvent({
+  await createAuditEvent({
     actor: authUser,
     entity: "contract",
     action: "completed",

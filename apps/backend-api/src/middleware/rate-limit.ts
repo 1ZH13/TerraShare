@@ -7,6 +7,15 @@ interface RateLimitEntry {
 
 const inMemoryStore = new Map<string, RateLimitEntry>();
 
+/**
+ * Limpia el contador de rate limiting. Solo para tests: el store es a nivel de
+ * módulo y las requests de toda la suite comparten IP, por lo que sin reset el
+ * contador se acumula entre tests y termina devolviendo 429 espurios.
+ */
+export function __resetRateLimit(): void {
+  inMemoryStore.clear();
+}
+
 const WINDOW_MS = 60 * 1000;
 const MAX_REQUESTS_IP = 100;
 const MAX_REQUESTS_USER = 200;

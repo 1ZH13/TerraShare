@@ -37,6 +37,10 @@ export const env = {
     return (process.env.ALLOW_DEV_AUTH_BYPASS ?? fallback) === "true";
   },
   adminSeedEmail: parsed.ADMIN_SEED_EMAIL.toLowerCase(),
+  clerkSecretKey: parsed.CLERK_SECRET_KEY,
+  get clerkBackendConfigured() {
+    return !!process.env.CLERK_SECRET_KEY;
+  },
   stripeSecretKey: parsed.STRIPE_SECRET_KEY,
   stripeWebhookSecret: parsed.STRIPE_WEBHOOK_SECRET,
   whatsappContactEnabled: parsed.WHATSAPP_CONTACT_ENABLED === "true",

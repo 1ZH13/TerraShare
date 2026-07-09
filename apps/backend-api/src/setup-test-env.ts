@@ -4,3 +4,7 @@ process.env.CLERK_ISSUER = process.env.CLERK_ISSUER ?? "https://example.test";
 process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "sk_test_placeholder";
 process.env.STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "whsec_placeholder";
 process.env.WHATSAPP_CONTACT_ENABLED = process.env.WHATSAPP_CONTACT_ENABLED ?? "false";
+// Los tests nunca deben golpear la Clerk Backend API real: el enriquecimiento
+// de usuario (#132) se prueba inyectando un cliente falso. Sin secret, el
+// resolver degrada al mapeo puro de claims de forma determinista.
+delete process.env.CLERK_SECRET_KEY;

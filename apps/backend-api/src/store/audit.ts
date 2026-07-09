@@ -1,17 +1,20 @@
 import type { AuthContextUser } from "../types";
-import { getStore } from "./in-memory-db";
+import { AuditEvent } from "../db/schemas";
 import type { AuditEventRecord } from "./types";
 
-export function createAuditEvent(input: {
+/**
+ * Registra un evento de auditoría en Mongo (#135, hallazgo A-5). Antes vivía en
+ * el store en memoria y se perdía al reiniciar, y el endpoint de lectura
+ * (`GET /audit-events`, Mongoose) nunca veía los eventos creados en runtime.
+ */
+export async function createAuditEvent(input: {
   actor: AuthContextUser;
   entity: AuditEventRecord["entity"];
   action: AuditEventRecord["action"];
   entityId: string;
   metadata?: Record<string, unknown>;
-}) {
-  const store = getStore();
-  const now = new Date().toISOString();
-  const event: AuditEventRecord = {
+}): Promise<void> {
+  await AuditEvent.create({
     id: `audit_${crypto.randomUUID()}`,
     actorId: input.actor.id,
     actorRole: input.actor.role,
@@ -19,9 +22,5 @@ export function createAuditEvent(input: {
     action: input.action,
     entityId: input.entityId,
     metadata: input.metadata,
-    createdAt: now,
-  };
-
-  store.auditEvents.set(event.id, event);
-  return event;
+  });
 }

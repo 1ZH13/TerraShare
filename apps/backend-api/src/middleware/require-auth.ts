@@ -4,11 +4,48 @@ import type { MiddlewareHandler } from "hono";
 import { env } from "../config/env";
 import { failure } from "../lib/api-response";
 import type { AuthContextUser } from "../types";
-import { mapClerkClaimsToAuthUser } from "../lib/clerk-user";
+import { resolveClerkAuthUser } from "../lib/clerk-user";
 import { getStore } from "../store/in-memory-db";
+import { User } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | undefined;
+
+// Usuarios ya sincronizados a Mongo en este proceso: evita un write por request.
+const mongoSyncedUsers = new Set<string>();
+
+/**
+ * Asegura que el usuario autenticado por Clerk exista en la colección `users`
+ * de Mongo para que aparezca en el panel admin (#137, D-4). Usa $setOnInsert
+ * para no pisar datos de onboarding (provincia/preferencia) en logins futuros.
+ */
+export async function ensureUserInMongo(user: AuthContextUser): Promise<void> {
+  if (mongoSyncedUsers.has(user.clerkUserId)) return;
+  mongoSyncedUsers.add(user.clerkUserId);
+  try {
+    await User.updateOne(
+      { clerkUserId: user.clerkUserId },
+      {
+        $setOnInsert: {
+          clerkUserId: user.clerkUserId,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+          profile: { fullName: user.profile.fullName, phone: user.profile.phone },
+        },
+      },
+      { upsert: true },
+    );
+  } catch {
+    // No romper la auth si Mongo falla; se reintenta en el próximo proceso.
+    mongoSyncedUsers.delete(user.clerkUserId);
+  }
+}
+
+/** Limpia la caché de sincronización a Mongo (solo para tests). */
+export function __resetMongoUserSync(): void {
+  mongoSyncedUsers.clear();
+}
 
 function getJwks() {
   if (!jwks) {
@@ -86,12 +123,15 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
       algorithms: ["RS256"],
     });
 
-    const authUser = mapClerkClaimsToAuthUser(payload);
+    const authUser = await resolveClerkAuthUser(payload);
     const persistedUser = upsertAuthUser(authUser);
 
     if (persistedUser.status !== "active") {
       return failure(c, 403, "FORBIDDEN", "User is blocked");
     }
+
+    // D-4: registrar al usuario real de Clerk en Mongo (aparece en admin).
+    await ensureUserInMongo(persistedUser);
 
     c.set("authUser", persistedUser);
     await next();

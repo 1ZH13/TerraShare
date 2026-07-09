@@ -22,15 +22,8 @@ import "./detail.css";
 
 type Operation = "alquiler" | "venta" | "ambas";
 
-// Campos que llegarán con #138 (agua/acceso/características) y #140 (operación y
-// precio de venta). Aún no existen en LandDto; se leen de forma opcional.
-type DetailLand = LandDto & {
-  operation?: Operation;
-  salePrice?: number;
-  water?: string;
-  access?: string;
-  features?: string[];
-};
+// Los campos operation/salePrice/water/access/features ya viven en LandDto (#138).
+type DetailLand = LandDto;
 
 const USE_LABELS: Record<string, string> = {
   agricultura: "Agricultura",
@@ -53,8 +46,7 @@ function formatAvailable(iso?: string): string {
   return d.toLocaleDateString("es-PA", { month: "short", year: "numeric" });
 }
 
-// TODO(#140): sin campo de operación en el backend, el detalle es de alquiler
-// por defecto. La rama de venta queda lista para cuando #140 lo aporte.
+// El backend ya aporta `operation` (#138); alquiler por defecto si viniera vacío.
 function getOperation(land: DetailLand): Operation {
   return land.operation ?? "alquiler";
 }

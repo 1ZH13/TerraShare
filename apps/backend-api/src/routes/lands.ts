@@ -6,39 +6,97 @@ import { getNumericQuery, getOptionalNumericQuery } from "../lib/request-utils";
 import { requireAuth } from "../middleware/require-auth";
 import { rateLimitByUser } from "../middleware/rate-limit";
 import { createAuditEvent as createAudit } from "../store/audit";
-import { listLands, getLandById, createLand, updateLand, deleteLand } from "../db/collections";
-import { getStore } from "../store/in-memory-db";
 import { Land } from "../db/schemas";
-import type { LandRecord, LandUse } from "../store/types";
+import type { LandRecord } from "../store/types";
 import type { AppEnv } from "../types";
 
 const allowedSortFields = new Set(["createdAt", "price", "area"]);
 
-function useMongoDB(): boolean {
-  try {
-    const { getDatabase } = require("../config/database");
-    return !!getDatabase();
-  } catch {
-    return false;
+/** Elimina los campos internos de Mongo de un documento `lean`. */
+function clean<T>(doc: Record<string, unknown> | null | undefined): T | undefined {
+  if (!doc) return undefined;
+  const { _id, __v, ...rest } = doc;
+  return rest as T;
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Construye la query de Mongo con TODOS los filtros de catálogo (A-4): antes se
+ * resolvían en JS sobre el resultado completo; ahora los resuelve la BD.
+ */
+function buildLandQuery(params: {
+  use?: string;
+  province?: string;
+  district?: string;
+  priceMin?: number;
+  priceMax?: number;
+  availableFrom?: string;
+  availableTo?: string;
+  q?: string;
+}): Record<string, unknown> {
+  const query: Record<string, unknown> = { status: "active" };
+
+  if (params.use) query.allowedUses = params.use;
+  if (params.province) {
+    query["location.province"] = new RegExp(`^${escapeRegex(params.province)}$`, "i");
   }
+  if (params.district) {
+    query["location.district"] = new RegExp(`^${escapeRegex(params.district)}$`, "i");
+  }
+
+  if (params.priceMin !== undefined || params.priceMax !== undefined) {
+    const price: Record<string, number> = {};
+    if (params.priceMin !== undefined) price.$gte = params.priceMin;
+    if (params.priceMax !== undefined) price.$lte = params.priceMax;
+    query["priceRule.pricePerMonth"] = price;
+  }
+
+  const and: Record<string, unknown>[] = [];
+  if (params.availableFrom) {
+    and.push({
+      $or: [
+        { "availability.availableFrom": { $in: [null, undefined, ""] } },
+        { "availability.availableFrom": { $lte: params.availableFrom } },
+      ],
+    });
+  }
+  if (params.availableTo) {
+    and.push({
+      $or: [
+        { "availability.availableTo": { $in: [null, undefined, ""] } },
+        { "availability.availableTo": { $gte: params.availableTo } },
+      ],
+    });
+  }
+  if (and.length > 0) query.$and = and;
+
+  if (params.q) query.$text = { $search: params.q };
+
+  return query;
+}
+
+function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) *
+      Math.cos((bLat * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
 export const landRoutes = new Hono<AppEnv>();
 
 landRoutes.get("/lands", async (c) => {
-  const mongoOk = useMongoDB();
   const page = getNumericQuery(c, "page", 1, { min: 1 });
   const pageSize = getNumericQuery(c, "pageSize", 20, { min: 1, max: 100 });
   const sort = c.req.query("sort") ?? "createdAt";
   const order = c.req.query("order") === "asc" ? "asc" : "desc";
-  const use = c.req.query("use");
-  const province = c.req.query("province");
-  const district = c.req.query("district");
-  const priceMin = getOptionalNumericQuery(c, "priceMin");
-  const priceMax = getOptionalNumericQuery(c, "priceMax");
-  const availableFrom = c.req.query("availableFrom");
-  const availableTo = c.req.query("availableTo");
-  const q = c.req.query("q");
   const lat = getOptionalNumericQuery(c, "lat");
   const lng = getOptionalNumericQuery(c, "lng");
   const radius = getOptionalNumericQuery(c, "radius") ?? 10;
@@ -49,56 +107,26 @@ landRoutes.get("/lands", async (c) => {
     ]);
   }
 
-  let lands: LandRecord[];
-  
-  if (mongoOk) {
-    if (q) {
-      lands = await Land.find({ $text: { $search: q }, status: "active" }).lean() as unknown as LandRecord[];
-    } else if (lat !== undefined && lng !== undefined) {
-      const allLands = await Land.find({ status: "active" }).lean() as unknown as LandRecord[];
-      const maxRadiusKm = radius;
-      lands = allLands.filter((land) => {
-        if (land.location.lat === undefined || land.location.lng === undefined) return false;
-        const R = 6371;
-        const dLat = ((land.location.lat ?? 0) - lat) * Math.PI / 180;
-        const dLng = ((land.location.lng ?? 0) - lng) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat * Math.PI / 180) * Math.cos((land.location.lat ?? 0) * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-        const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return dist <= maxRadiusKm;
-      });
-    } else {
-      lands = await listLands({ status: "active" }) as LandRecord[];
-    }
-  } else {
-    lands = Array.from(getStore().lands.values()).filter((land) => land.status === "active");
-  }
+  const query = buildLandQuery({
+    use: c.req.query("use"),
+    province: c.req.query("province"),
+    district: c.req.query("district"),
+    priceMin: getOptionalNumericQuery(c, "priceMin"),
+    priceMax: getOptionalNumericQuery(c, "priceMax"),
+    availableFrom: c.req.query("availableFrom"),
+    availableTo: c.req.query("availableTo"),
+    q: c.req.query("q"),
+  });
 
-  if (use) {
-    lands = lands.filter((land) => land.allowedUses.includes(use as LandUse));
-  }
+  const docs = (await Land.find(query).lean()) as unknown as Record<string, unknown>[];
+  let lands = docs.map((d) => clean<LandRecord>(d)!);
 
-  if (province) {
-    lands = lands.filter((land) => land.location.province.toLowerCase() === province.toLowerCase());
-  }
-
-  if (district) {
-    lands = lands.filter((land) => land.location.district.toLowerCase() === district.toLowerCase());
-  }
-
-  if (priceMin !== undefined) {
-    lands = lands.filter((land) => land.priceRule.pricePerMonth >= priceMin);
-  }
-
-  if (priceMax !== undefined) {
-    lands = lands.filter((land) => land.priceRule.pricePerMonth <= priceMax);
-  }
-
-  if (availableFrom) {
-    lands = lands.filter((land) => !land.availability.availableFrom || land.availability.availableFrom <= availableFrom);
-  }
-
-  if (availableTo) {
-    lands = lands.filter((land) => !land.availability.availableTo || land.availability.availableTo >= availableTo);
+  // Filtro geográfico (haversine) en JS: el índice es plano, no 2dsphere.
+  if (lat !== undefined && lng !== undefined) {
+    lands = lands.filter((land) => {
+      if (land.location.lat === undefined || land.location.lng === undefined) return false;
+      return distanceKm(lat, lng, land.location.lat, land.location.lng) <= radius;
+    });
   }
 
   lands.sort((a, b) => {
@@ -131,29 +159,16 @@ landRoutes.get("/lands", async (c) => {
 // landId and this route becomes unreachable (404).
 landRoutes.get("/lands/me", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
-  const mongoOk = useMongoDB();
-
-  let lands: LandRecord[] = [];
-
-  if (mongoOk) {
-    lands = await listLands({ ownerId: authUser.id }) as LandRecord[];
-  } else {
-    lands = Array.from(getStore().lands.values()).filter((l) => l.ownerId === authUser.id);
-  }
-
+  const docs = (await Land.find({ ownerId: authUser.id }).lean()) as unknown as Record<string, unknown>[];
+  const lands = docs.map((d) => clean<LandRecord>(d)!);
   return success(c, lands);
 });
 
 landRoutes.get("/lands/:landId", async (c) => {
-  const mongoOk = useMongoDB();
   const landId = c.req.param("landId");
-
-  let land: LandRecord | undefined;
-  if (mongoOk) {
-    land = await getLandById(landId) as LandRecord | undefined;
-  } else {
-    land = getStore().lands.get(landId);
-  }
+  const land = clean<LandRecord>(
+    (await Land.findOne({ id: landId }).lean()) as Record<string, unknown> | null,
+  );
 
   if (!land || land.status === "inactive") {
     return failure(c, 404, "NOT_FOUND", "Land not found");
@@ -185,18 +200,18 @@ landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
     availability: body.availability ?? {},
     priceRule: body.priceRule,
     status: "draft",
+    operation: body.operation ?? "alquiler",
+    salePrice: body.salePrice,
+    water: body.water,
+    access: body.access,
+    features: body.features ?? [],
     createdAt: now,
     updatedAt: now,
   };
 
-  const mongoOk = useMongoDB();
-  if (mongoOk) {
-    await createLand(land);
-  } else {
-    getStore().lands.set(land.id, land);
-  }
-  
-  createAudit({
+  await Land.create(land);
+
+  await createAudit({
     actor: authUser,
     entity: "land",
     action: "created",
@@ -209,15 +224,10 @@ landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
 landRoutes.patch("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
-  const mongoOk = useMongoDB();
-  
-  let current: LandRecord | undefined;
-  if (mongoOk) {
-    current = await getLandById(landId) as LandRecord | undefined;
-  } else {
-    current = getStore().lands.get(landId);
-  }
-  
+
+  const current = clean<LandRecord>(
+    (await Land.findOne({ id: landId }).lean()) as Record<string, unknown> | null,
+  );
   if (!current) {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
@@ -239,13 +249,9 @@ landRoutes.patch("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) 
     updatedAt: new Date().toISOString(),
   };
 
-  if (mongoOk) {
-    await updateLand(landId, updated);
-  } else {
-    getStore().lands.set(updated.id, updated);
-  }
-  
-  createAudit({
+  await Land.findOneAndUpdate({ id: landId }, { $set: updated });
+
+  await createAudit({
     actor: authUser,
     entity: "land",
     action: "updated",
@@ -258,15 +264,10 @@ landRoutes.patch("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) 
 landRoutes.patch("/lands/:landId/status", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
-  const mongoOk = useMongoDB();
-  
-  let current: LandRecord | undefined;
-  if (mongoOk) {
-    current = await getLandById(landId) as LandRecord | undefined;
-  } else {
-    current = getStore().lands.get(landId);
-  }
-  
+
+  const current = clean<LandRecord>(
+    (await Land.findOne({ id: landId }).lean()) as Record<string, unknown> | null,
+  );
   if (!current) {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
@@ -287,14 +288,10 @@ landRoutes.patch("/lands/:landId/status", requireAuth, rateLimitByUser(200), asy
     status,
     updatedAt: new Date().toISOString(),
   };
-  
-  if (mongoOk) {
-    await updateLand(landId, updated);
-  } else {
-    getStore().lands.set(landId, updated);
-  }
 
-  createAudit({
+  await Land.findOneAndUpdate({ id: landId }, { $set: { status, updatedAt: updated.updatedAt } });
+
+  await createAudit({
     actor: authUser,
     entity: "land",
     action: "status_changed",
@@ -308,15 +305,10 @@ landRoutes.patch("/lands/:landId/status", requireAuth, rateLimitByUser(200), asy
 landRoutes.delete("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
   const landId = c.req.param("landId");
-  const mongoOk = useMongoDB();
-  
-  let current: LandRecord | undefined;
-  if (mongoOk) {
-    current = await getLandById(landId) as LandRecord | undefined;
-  } else {
-    current = getStore().lands.get(landId);
-  }
-  
+
+  const current = clean<LandRecord>(
+    (await Land.findOne({ id: landId }).lean()) as Record<string, unknown> | null,
+  );
   if (!current) {
     return failure(c, 404, "NOT_FOUND", "Land not found");
   }
@@ -325,13 +317,9 @@ landRoutes.delete("/lands/:landId", requireAuth, rateLimitByUser(200), async (c)
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can delete this land");
   }
 
-  if (mongoOk) {
-    await deleteLand(landId);
-  } else {
-    getStore().lands.delete(landId);
-  }
-  
-  createAudit({
+  await Land.deleteOne({ id: landId });
+
+  await createAudit({
     actor: authUser,
     entity: "land",
     action: "deleted",

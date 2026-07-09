@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export type LandUse = "agricultura" | "ganaderia" | "forestal" | "acuicultura" | "mixto" | "otro";
 export type LandStatus = "draft" | "active" | "inactive";
+export type LandOperation = "alquiler" | "venta" | "ambas";
 export type RentalRequestStatus = "draft" | "pending_owner" | "approved" | "rejected" | "cancelled" | "pending_payment" | "paid";
 export type ContractStatus = "draft" | "active" | "completed" | "cancelled";
 export type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "cancelled";
@@ -15,7 +16,7 @@ export interface IUser extends Document {
   email: string;
   role: AppRole;
   status: UserStatus;
-  profile: { fullName: string; phone?: string };
+  profile: { fullName: string; phone?: string; province?: string; marketPreference?: "busco" | "ofrezco" };
   deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -46,6 +47,11 @@ export interface ILand extends Document {
     pricePerMonth: number;
   };
   status: LandStatus;
+  operation: LandOperation;
+  salePrice?: number;
+  water?: string;
+  access?: string;
+  features?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -144,6 +150,8 @@ const UserSchema = new Schema<IUser>({
   profile: {
     fullName: { type: String, required: true },
     phone: String,
+    province: String,
+    marketPreference: { type: String, enum: ["busco", "ofrezco"] },
   },
   deletedAt: { type: Date, default: null },
 }, { timestamps: true });
@@ -173,6 +181,11 @@ const LandSchema = new Schema<ILand>({
     pricePerMonth: { type: Number, required: true },
   },
   status: { type: String, enum: ["draft", "active", "inactive"], default: "active" },
+  operation: { type: String, enum: ["alquiler", "venta", "ambas"], default: "alquiler" },
+  salePrice: Number,
+  water: String,
+  access: String,
+  features: [String],
 }, { timestamps: true });
 
 LandSchema.index({ title: "text", description: "text" });
@@ -251,6 +264,21 @@ const LeadSchema = new Schema<ILead>({
   email: { type: String, required: true },
   source: { type: String, enum: ["landing", "app-web", "admin-dashboard"], required: true },
 }, { timestamps: true });
+
+// Índices secundarios (antes vivían en el driver nativo config/database.ts; se
+// migran aquí para que Mongoose sea la única fuente de índices — #135 A-1/A-6).
+LandSchema.index({ ownerId: 1 });
+LandSchema.index({ status: 1 });
+RentalRequestSchema.index({ landId: 1 });
+RentalRequestSchema.index({ tenantId: 1 });
+RentalRequestSchema.index({ status: 1 });
+ContractSchema.index({ ownerId: 1 });
+ContractSchema.index({ tenantId: 1 });
+PaymentSchema.index({ rentalRequestId: 1 });
+ChatSchema.index({ landId: 1 });
+ChatMessageSchema.index({ chatId: 1, createdAt: 1 });
+AuditEventSchema.index({ entity: 1, entityId: 1 });
+LeadSchema.index({ email: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);

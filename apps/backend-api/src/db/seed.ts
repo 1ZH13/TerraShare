@@ -1,4 +1,8 @@
-import { getDatabase } from "../config/database";
+import mongoose from "mongoose";
+
+import {
+  User, Land, RentalRequest, Contract, Payment, Chat, ChatMessage, AuditEvent, Lead,
+} from "./schemas";
 
 const PROVINCES = [
   { name: "Bocas del Toro", districts: ["Bocolvas y Ranch", "Changuinola", "Isla Colón"] },
@@ -75,10 +79,37 @@ function generateUsers(count: number) {
   return users;
 }
 
+const WATER_SOURCES = [
+  "Pozo propio", "Río permanente cercano", "Quebrada natural", "Acueducto rural",
+  "Toma de quebrada", "Nacimiento de agua en la finca", "Pozo perforado y río",
+];
+
+const ACCESS_TYPES = [
+  "Carretera asfaltada hasta la entrada", "Camino de tierra transitable todo el año",
+  "Calle pavimentada", "Camino balastrado", "Acceso por vía interamericana",
+  "Entrada principal compactada",
+];
+
+const FEATURE_POOL = [
+  "Riego instalado", "Suelo fértil", "Cercas perimetrales", "Acceso vehicular",
+  "Electricidad disponible", "Galpón de almacenamiento", "Pasto establecido",
+  "Cerca de río", "Topografía suave", "Buena drenaje",
+];
+
+function pickFeatures(): string[] {
+  const n = randomBetween(2, 4);
+  const pool = [...FEATURE_POOL];
+  const picked: string[] = [];
+  for (let k = 0; k < n && pool.length > 0; k++) {
+    picked.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  }
+  return picked;
+}
+
 function generateLands(count: number, userIds: string[]) {
   const lands = [];
   const statuses = ["active", "draft", "inactive"];
-  
+
   for (let i = 0; i < count; i++) {
     const province = randomItem(PROVINCES);
     const district = randomItem(province.districts);
@@ -89,13 +120,19 @@ function generateLands(count: number, userIds: string[]) {
       const use = randomItem(LAND_USES);
       if (!allowedUses.includes(use)) allowedUses.push(use);
     }
-    
+
+    const area = randomBetween(5, 500);
+    // Mezcla: ~60% alquiler, ~25% venta, ~15% ambas.
+    const roll = Math.random();
+    const operation = roll < 0.6 ? "alquiler" : roll < 0.85 ? "venta" : "ambas";
+    const isSale = operation === "venta" || operation === "ambas";
+
     lands.push({
       id: `land_${String(i + 1).padStart(4, "0")}`,
       ownerId: randomItem(userIds.filter((_, idx) => idx >= 3)),
       title: `${titlePrefix} ${province.name}`,
       description: `Terreno fértil en ${district}, ${province.name}. Ideal para ${allowedUses.join(" y ")}.`,
-      area: randomBetween(5, 500),
+      area,
       allowedUses,
       location: {
         province: province.name,
@@ -112,6 +149,11 @@ function generateLands(count: number, userIds: string[]) {
         pricePerMonth: randomBetween(150, 2500),
       },
       status: i < count * 0.7 ? "active" : randomItem(statuses),
+      operation,
+      salePrice: isSale ? area * randomBetween(800, 2500) : undefined,
+      water: randomItem(WATER_SOURCES),
+      access: randomItem(ACCESS_TYPES),
+      features: pickFeatures(),
       createdAt: randomDate(180),
       updatedAt: randomDate(30),
     });
@@ -277,8 +319,7 @@ function generateLeads(count: number) {
 }
 
 export async function seedDatabase() {
-  const db = getDatabase();
-  if (!db) {
+  if (mongoose.connection.readyState !== 1) {
     console.error("[seed] Database not connected");
     return;
   }
@@ -316,32 +357,36 @@ export async function seedDatabase() {
   
   const leads = generateLeads(100);
 
+  // Se inserta vía `Model.collection` (handle nativo de la conexión Mongoose):
+  // usa el nombre de colección real del modelo — corrige el desajuste
+  // rentalRequests/chatMessages/auditEvents del driver nativo (#135 A-2) — y
+  // preserva la forma de los documentos semilla sin casteo de Mongoose.
   console.log(`[seed] Inserting ${users.length} users...`);
-  await db.collection("users").insertMany(users);
-  
+  await User.collection.insertMany(users);
+
   console.log(`[seed] Inserting ${lands.length} lands...`);
-  await db.collection("lands").insertMany(lands);
-  
+  await Land.collection.insertMany(lands);
+
   console.log(`[seed] Inserting ${requests.length} rental requests...`);
-  await db.collection("rentalRequests").insertMany(requests);
-  
+  await RentalRequest.collection.insertMany(requests);
+
   console.log(`[seed] Inserting ${contracts.length} contracts...`);
-  await db.collection("contracts").insertMany(contracts);
-  
+  await Contract.collection.insertMany(contracts);
+
   console.log(`[seed] Inserting ${payments.length} payments...`);
-  await db.collection("payments").insertMany(payments);
-  
+  await Payment.collection.insertMany(payments);
+
   console.log(`[seed] Inserting ${chats.length} chats...`);
-  await db.collection("chats").insertMany(chats);
-  
+  await Chat.collection.insertMany(chats);
+
   console.log(`[seed] Inserting ${messages.length} chat messages...`);
-  await db.collection("chatMessages").insertMany(messages);
-  
+  await ChatMessage.collection.insertMany(messages);
+
   console.log(`[seed] Inserting ${auditEvents.length} audit events...`);
-  await db.collection("auditEvents").insertMany(auditEvents);
-  
+  await AuditEvent.collection.insertMany(auditEvents);
+
   console.log(`[seed] Inserting ${leads.length} leads...`);
-  await db.collection("leads").insertMany(leads);
+  await Lead.collection.insertMany(leads);
 
   console.log("[seed] Database seeded successfully!");
   console.log(`[seed] Total: ${users.length} users, ${lands.length} lands, ${requests.length} requests, ${contracts.length} contracts, ${payments.length} payments, ${chats.length} chats, ${messages.length} messages, ${auditEvents.length} events, ${leads.length} leads`);

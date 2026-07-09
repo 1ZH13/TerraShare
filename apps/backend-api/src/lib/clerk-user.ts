@@ -1,9 +1,14 @@
 import type { JWTPayload } from "jose";
 
 import { env } from "../config/env";
+import { getClerkUserProfile } from "./clerk-backend";
 import type { AppRole, AuthContextUser, UserStatus } from "../types";
 
 type ClaimRecord = Record<string, unknown>;
+
+/** Valores que devuelve el mapeo cuando el token no trae email/nombre. */
+export const FALLBACK_EMAIL = "unknown@terrashare.local";
+export const FALLBACK_NAME = "Usuario";
 
 function readClaim(claims: ClaimRecord, key: string): unknown {
   return claims[key];
@@ -44,11 +49,11 @@ function mapFullName(claims: ClaimRecord): string {
   }
 
   const email = mapEmail(claims);
-  if (email) {
-    return email.split("@")[0] || "Usuario";
+  if (email && email !== FALLBACK_EMAIL) {
+    return email.split("@")[0] || FALLBACK_NAME;
   }
 
-  return "Usuario";
+  return FALLBACK_NAME;
 }
 
 function mapEmail(claims: ClaimRecord): string {
@@ -62,7 +67,7 @@ function mapEmail(claims: ClaimRecord): string {
     return fallbackEmail.trim();
   }
 
-  return "unknown@terrashare.local";
+  return FALLBACK_EMAIL;
 }
 
 function mapPhone(claims: ClaimRecord): string | undefined {
@@ -100,4 +105,43 @@ export function mapClerkClaimsToAuthUser(payload: JWTPayload): AuthContextUser {
       phone: mapPhone(claims),
     },
   };
+}
+
+/**
+ * Igual que {@link mapClerkClaimsToAuthUser}, pero cuando el token no trae
+ * `email`/`name` (caso del token de sesión por defecto de Clerk) enriquece el
+ * usuario con un fetch a la Clerk Backend API usando el `sub` (issue #132).
+ *
+ * El perfil obtenido se superpone sobre los claims y se re-mapea, de modo que
+ * la lógica de rol (admin por email semilla) vuelve a evaluarse con el email
+ * real. Si Clerk no está configurado o el fetch falla, degrada al mapeo puro.
+ */
+export async function resolveClerkAuthUser(
+  payload: JWTPayload,
+): Promise<AuthContextUser> {
+  const base = mapClerkClaimsToAuthUser(payload);
+
+  const needsEmail = base.email === FALLBACK_EMAIL;
+  const needsName = base.profile.fullName === FALLBACK_NAME;
+  if (!needsEmail && !needsName) {
+    return base;
+  }
+
+  const profile = await getClerkUserProfile(base.clerkUserId);
+  if (!profile) {
+    return base;
+  }
+
+  const enrichedClaims: ClaimRecord = { ...(payload as ClaimRecord) };
+  if (needsEmail && profile.email) {
+    enrichedClaims.email = profile.email;
+  }
+  if (needsName && profile.fullName) {
+    enrichedClaims.full_name = profile.fullName;
+  }
+  if (!base.profile.phone && profile.phone) {
+    enrichedClaims.phone_number = profile.phone;
+  }
+
+  return mapClerkClaimsToAuthUser(enrichedClaims as JWTPayload);
 }
