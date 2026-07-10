@@ -273,6 +273,34 @@
 .adm-empty { padding: 40px 20px; text-align: center; color: var(--ts-sage-2); font-size: 14px; }
 .adm-empty--error { color: #a5573a; }
 
+/* observabilidad: sondas de salud y dependencias (#261) */
+.adm-probes { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.adm-probe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--ts-beige);
+  border-radius: 12px;
+}
+.adm-probe__dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.adm-probe__dot.is-ok { background: var(--ts-green); }
+.adm-probe__dot.is-bad { background: #a5573a; }
+.adm-probe__label { font-weight: 600; font-size: 14px; }
+.adm-probe__value { font-size: 12px; color: var(--ts-sage); }
+
+.adm-deps { display: grid; gap: 10px; }
+.adm-deps__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0e8d7;
+}
+.adm-deps__row:last-child { border-bottom: 0; padding-bottom: 0; }
+
 @media (max-width: 860px) {
   .adm { grid-template-columns: 1fr; }
   .adm-side { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; }
