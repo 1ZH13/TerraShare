@@ -4,7 +4,7 @@ import { useParams, Link } from "@tanstack/react-router";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { ArrowLeft, Sprout, Check, CreditCard, FileText, Flag, Lock, MessageCircle } from "lucide-react";
-import { confirmPayment, createPaymentIntent, getPaymentsByRequest } from "../services/api";
+import { confirmPayment, createPaymentIntent, getPaymentsByRequest, getRentalRequestById } from "../services/api";
 import "./deal.css";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -31,14 +31,14 @@ function DealNav({ requestId }: { requestId?: string }) {
   );
 }
 
-function Stepper() {
+function Stepper({ isSale = false }: { isSale?: boolean }) {
   return (
     <div className="dl-stepper">
       <div className="dl-step">
         <span className="dl-step__dot dl-step__dot--done">
           <Check size={17} />
         </span>
-        <div className="dl-step__label dl-step__label--done">Solicitud</div>
+        <div className="dl-step__label dl-step__label--done">{isSale ? "Oferta" : "Solicitud"}</div>
       </div>
       <div className="dl-line dl-line--done" />
       <div className="dl-step">
@@ -123,6 +123,7 @@ export default function PaymentPage() {
   const [error, setError] = useState("");
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [alreadyPaid, setAlreadyPaid] = useState(false);
+  const [isSale, setIsSale] = useState(false);
 
   useEffect(() => {
     if (!requestId) {
@@ -132,6 +133,9 @@ export default function PaymentPage() {
     }
     const initPayment = async () => {
       try {
+        // La operación del trato define la variante (alquiler 07 vs compra 28, #249).
+        const req = await getRentalRequestById(requestId).catch(() => null);
+        if (req?.operation === "venta") setIsSale(true);
         // Verifica contra Stripe por si ya se pagó (p. ej. sin webhook local).
         await confirmPayment(requestId).catch(() => null);
         const payments = await getPaymentsByRequest(requestId);
@@ -210,12 +214,14 @@ export default function PaymentPage() {
               <Sprout size={24} strokeWidth={1.4} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="dl-head__title">Trato de alquiler</div>
-              <div className="dl-head__meta">Solicitud #{requestId?.slice(0, 8)}</div>
+              <div className="dl-head__title">{isSale ? "Trato de compra" : "Trato de alquiler"}</div>
+              <div className="dl-head__meta">
+                {isSale ? "Oferta" : "Solicitud"} #{requestId?.slice(0, 8)}
+              </div>
             </div>
             <span className="dl-head__status">Aprobada · falta pago</span>
           </div>
-          <Stepper />
+          <Stepper isSale={isSale} />
         </div>
 
         <div className="dl-body">
@@ -223,16 +229,22 @@ export default function PaymentPage() {
             <h3 className="dl-section-title">Actividad</h3>
             <div className="dl-timeline">
               <div>
-                <div className="dl-tl__title">Solicitud enviada</div>
-                <div className="dl-tl__meta">Enviaste tu solicitud de alquiler</div>
+                <div className="dl-tl__title">{isSale ? "Oferta enviada" : "Solicitud enviada"}</div>
+                <div className="dl-tl__meta">
+                  {isSale ? "Enviaste tu oferta de compra" : "Enviaste tu solicitud de alquiler"}
+                </div>
               </div>
               <div>
-                <div className="dl-tl__title">Solicitud aprobada</div>
-                <div className="dl-tl__meta">El propietario aceptó tu solicitud</div>
+                <div className="dl-tl__title">{isSale ? "Oferta aceptada" : "Solicitud aprobada"}</div>
+                <div className="dl-tl__meta">
+                  {isSale ? "El propietario aceptó tu oferta" : "El propietario aceptó tu solicitud"}
+                </div>
               </div>
               <div>
                 <div className="dl-tl__title dl-tl__title--accent">Esperando tu pago</div>
-                <div className="dl-tl__meta">Completa el pago para activar el alquiler</div>
+                <div className="dl-tl__meta">
+                  {isSale ? "Completa el pago para cerrar la compra" : "Completa el pago para activar el alquiler"}
+                </div>
               </div>
             </div>
 
@@ -250,7 +262,9 @@ export default function PaymentPage() {
             <div className="dl-pay__card">
               <div className="dl-pay__k">Total a pagar</div>
               <div className="dl-pay__amount">${paymentData.amount}</div>
-              <div className="dl-pay__sub">Primer mes de alquiler · {paymentData.currency}</div>
+              <div className="dl-pay__sub">
+                {isSale ? "Precio de compra" : "Primer mes de alquiler"} · {paymentData.currency}
+              </div>
               <Elements
                 stripe={stripePromise}
                 options={{

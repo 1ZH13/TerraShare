@@ -34,20 +34,19 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as
     | {
         landId?: string;
+        operation?: "alquiler" | "venta";
         period?: { startDate?: string; endDate?: string };
         intendedUse?: string;
+        offerAmount?: number;
         notes?: string;
       }
     | null;
 
-  if (
-    !body?.landId ||
-    !body.period?.startDate ||
-    !body.period?.endDate ||
-    !body.intendedUse
-  ) {
+  if (!body?.landId) {
     return failure(c, 400, "VALIDATION_ERROR", "Missing required rental request fields");
   }
+
+  const operation = body.operation === "venta" ? "venta" : "alquiler";
 
   const land = await Land.findOne({ id: body.landId }).lean();
   if (!land) {
@@ -56,6 +55,53 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
 
   if (!canCreateRentalRequest(authUser, land)) {
     return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Owner cannot create request for own land");
+  }
+
+  // La operación solicitada debe estar permitida por el terreno ("ambas" acepta
+  // las dos). Evita ofertar compra sobre un terreno que solo se alquila (#249).
+  const landOperation = land.operation ?? "alquiler";
+  if (landOperation !== "ambas" && landOperation !== operation) {
+    return failure(
+      c,
+      422,
+      "BUSINESS_RULE_VIOLATION",
+      `Este terreno no admite la operación '${operation}'`,
+    );
+  }
+
+  // A new request always awaits owner approval; it must not be auto-approved.
+  const initialStatus = "pending_owner";
+
+  if (operation === "venta") {
+    const offerAmount = Number(body.offerAmount);
+    if (!Number.isFinite(offerAmount) || offerAmount <= 0) {
+      return failure(c, 400, "VALIDATION_ERROR", "offerAmount must be a positive number");
+    }
+
+    const record = await RentalRequest.create({
+      id: `rr_${crypto.randomUUID()}`,
+      landId: body.landId,
+      tenantId: authUser.id,
+      operation: "venta",
+      offerAmount,
+      notes: body.notes,
+      status: initialStatus,
+    });
+
+    await createAuditEvent({
+      actor: authUser,
+      entity: "rental_request",
+      action: "created",
+      entityId: record.id,
+      metadata: { landId: record.landId, operation: "venta", offerAmount },
+    });
+
+    return success(c, record, 201);
+  }
+
+  // ── Alquiler ──
+  if (!body.period?.startDate || !body.period?.endDate || !body.intendedUse) {
+    return failure(c, 400, "VALIDATION_ERROR", "Missing required rental request fields");
   }
 
   const allowedUses = (land.allowedUses ?? []) as string[];
@@ -76,10 +122,11 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
 
   const overlappingPaid = await RentalRequest.findOne({
     landId: body.landId,
+    operation: { $ne: "venta" },
     status: { $in: ["approved", "pending_payment", "paid"] },
   }).lean();
 
-  if (overlappingPaid) {
+  if (overlappingPaid?.period) {
     const existingStart = Date.parse(overlappingPaid.period.startDate);
     const existingEnd = Date.parse(overlappingPaid.period.endDate);
     if (periodStart < existingEnd && periodEnd > existingStart) {
@@ -92,13 +139,11 @@ rentalRequestRoutes.post("/rental-requests", requireAuth, async (c) => {
     }
   }
 
-  // A new request always awaits owner approval; it must not be auto-approved.
-  const initialStatus = "pending_owner";
-
   const record = await RentalRequest.create({
     id: `rr_${crypto.randomUUID()}`,
     landId: body.landId,
     tenantId: authUser.id,
+    operation: "alquiler",
     period: {
       startDate: body.period.startDate,
       endDate: body.period.endDate,

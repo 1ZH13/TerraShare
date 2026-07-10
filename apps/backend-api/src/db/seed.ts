@@ -168,20 +168,38 @@ function generateRentalRequests(count: number, landIds: string[], userIds: strin
   for (let i = 0; i < count; i++) {
     const startDate = randomDateFuture(90);
     const endDate = randomDateFuture(180);
-    requests.push({
-      id: `rr_${String(i + 1).padStart(4, "0")}`,
-      landId: randomItem(landIds),
-      tenantId: randomItem(userIds.filter((_, idx) => idx >= 3)),
-      period: {
-        startDate,
-        endDate,
-      },
-      intendedUse: randomItem(LAND_USES),
-      notes: `Interesado en alquilar este terreno para ${randomItem(LAND_USES)}.`,
-      status: randomItem(statuses),
-      createdAt: randomDate(90),
-      updatedAt: randomDate(30),
-    });
+    // ~20% de las solicitudes son ofertas de compra (#249): sin periodo/uso, con
+    // un monto ofertado; el resto son alquileres con periodo e uso previsto.
+    const isSale = i % 5 === 0;
+    if (isSale) {
+      requests.push({
+        id: `rr_${String(i + 1).padStart(4, "0")}`,
+        landId: randomItem(landIds),
+        tenantId: randomItem(userIds.filter((_, idx) => idx >= 3)),
+        operation: "venta",
+        offerAmount: randomBetween(20, 250) * 1000,
+        notes: "Oferta de compra por el terreno.",
+        status: randomItem(statuses),
+        createdAt: randomDate(90),
+        updatedAt: randomDate(30),
+      });
+    } else {
+      requests.push({
+        id: `rr_${String(i + 1).padStart(4, "0")}`,
+        landId: randomItem(landIds),
+        tenantId: randomItem(userIds.filter((_, idx) => idx >= 3)),
+        operation: "alquiler",
+        period: {
+          startDate,
+          endDate,
+        },
+        intendedUse: randomItem(LAND_USES),
+        notes: `Interesado en alquilar este terreno para ${randomItem(LAND_USES)}.`,
+        status: randomItem(statuses),
+        createdAt: randomDate(90),
+        updatedAt: randomDate(30),
+      });
+    }
   }
   return requests;
 }

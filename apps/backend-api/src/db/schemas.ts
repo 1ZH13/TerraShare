@@ -60,11 +60,13 @@ export interface IRentalRequest extends Document {
   id: string;
   landId: string;
   tenantId: string;
-  period: {
+  operation: "alquiler" | "venta";
+  period?: {
     startDate: string;
     endDate: string;
   };
-  intendedUse: string;
+  intendedUse?: string;
+  offerAmount?: number;
   notes?: string;
   status: RentalRequestStatus;
   createdAt: Date;
@@ -195,11 +197,16 @@ const RentalRequestSchema = new Schema<IRentalRequest>({
   id: { type: String, required: true, unique: true },
   landId: { type: String, required: true },
   tenantId: { type: String, required: true },
+  // Tipo de trato: alquiler (07) o compra/venta (28). Por defecto alquiler para
+  // compatibilidad con las solicitudes existentes (#249).
+  operation: { type: String, enum: ["alquiler", "venta"], default: "alquiler" },
+  // period/intendedUse solo aplican al alquiler; offerAmount solo a la compra.
   period: {
-    startDate: { type: String, required: true },
-    endDate: { type: String, required: true },
+    startDate: { type: String },
+    endDate: { type: String },
   },
-  intendedUse: { type: String, required: true },
+  intendedUse: { type: String },
+  offerAmount: { type: Number },
   notes: String,
   status: { type: String, enum: ["draft", "pending_owner", "approved", "rejected", "cancelled", "pending_payment", "paid"], default: "draft" },
 }, { timestamps: true });
