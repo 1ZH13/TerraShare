@@ -142,7 +142,7 @@ export interface ChatMessageRecord {
 export interface AuditEventRecord {
   id: string;
   actorId: string;
-  actorRole: AppRole;
+  actorRole: AppRole | "system";
   entity:
     | "auth"
     | "user"
@@ -151,7 +151,8 @@ export interface AuditEventRecord {
     | "contract"
     | "payment"
     | "chat"
-    | "report";
+    | "report"
+    | "webhook";
   action:
     | "created"
     | "updated"

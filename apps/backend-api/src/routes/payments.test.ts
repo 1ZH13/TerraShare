@@ -75,6 +75,41 @@ describe("payments routes", () => {
     expect(payload.data.status).toBe("paid");
   });
 
+  // HU-33 #152: en producción, un webhook con firma inválida (o sin verificación
+  // configurada) se rechaza y el intento queda registrado en auditoría. El
+  // código de estado depende del entorno: 400 si la firma es inválida (claves
+  // reales presentes) o 500 si la verificación no está configurada (CI con
+  // placeholders); en ambos casos es un rechazo y se registra.
+  it("rejects webhooks in production and records the attempt", async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      const { response, payload } = await requestJson("/api/v1/webhooks/stripe", {
+        method: "POST",
+        headers: { "stripe-signature": "t=1,v1=deadbeef" },
+        body: { type: "checkout.session.completed", data: { object: {} } },
+      });
+
+      expect([400, 500]).toContain(response.status);
+      expect(payload.ok).toBe(false);
+    } finally {
+      if (originalNodeEnv === undefined) {
+        delete process.env.NODE_ENV;
+      } else {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
+    }
+
+    const audit = await requestJson("/api/v1/audit-events?entity=webhook&action=rejected", {
+      headers: { "x-dev-user-id": "admin_wh", "x-dev-role": "admin" },
+    });
+    expect(audit.response.status).toBe(200);
+    const found = (audit.payload.data as Array<{ entity: string; action: string; actorRole: string }>).some(
+      (e) => e.entity === "webhook" && e.action === "rejected" && e.actorRole === "system",
+    );
+    expect(found).toBe(true);
+  });
+
   it("auto-creates a draft contract once payment is confirmed", async () => {
     // A fresh request on a land without a seeded contract.
     const createReq = await requestJson("/api/v1/rental-requests", {
