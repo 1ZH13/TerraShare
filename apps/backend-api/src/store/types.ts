@@ -106,6 +106,9 @@ export interface PaymentRecord {
   contractId?: string;
   amount: number;
   currency: "USD" | "PAB";
+  platformFeeAmount?: number;
+  netAmount?: number;
+  settlementCurrency?: "USD";
   status: PaymentStatus;
   stripeSessionId?: string;
   stripePaymentIntentId?: string;

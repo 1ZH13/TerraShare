@@ -75,6 +75,65 @@ describe("payments routes", () => {
     expect(payload.data.status).toBe("paid");
   });
 
+  // HU-41 #159: conciliación de pagos, solo admin.
+  it("returns a reconciliation report for admins", async () => {
+    const { response, payload } = await requestJson("/api/v1/payments/reconciliation", {
+      headers: { "x-dev-user-id": "web_dev_admin", "x-dev-role": "admin" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(Array.isArray(payload.data.totals)).toBe(true);
+    expect(Array.isArray(payload.data.discrepancies)).toBe(true);
+    expect(typeof payload.data.discrepancyCount).toBe("number");
+    expect(payload.data.paymentsByStatus).toBeDefined();
+    expect(typeof payload.data.generatedAt).toBe("string");
+  });
+
+  it("rejects reconciliation for non-admins", async () => {
+    const { response } = await requestJson("/api/v1/payments/reconciliation", {
+      headers: { "x-dev-user-id": "user_tenant_01" },
+    });
+    expect(response.status).toBe(403);
+  });
+
+  it("reflects a fresh paid payment in the reconciliation totals", async () => {
+    await requestJson("/api/v1/rental-requests/rr_seed_01/status", {
+      method: "PATCH",
+      headers: { "x-dev-user-id": "user_owner_01" },
+      body: { status: "approved" },
+    });
+
+    const checkout = await requestJson("/api/v1/payments/checkout-session", {
+      method: "POST",
+      headers: { "x-dev-user-id": "user_tenant_01" },
+      body: {
+        rentalRequestId: "rr_seed_01",
+        currency: "USD",
+        successUrl: "http://localhost:5174/payments/success",
+        cancelUrl: "http://localhost:5174/payments/cancel",
+      },
+    });
+    const paymentId = checkout.payload.data.paymentId as string;
+
+    await requestJson("/api/v1/webhooks/stripe", {
+      method: "POST",
+      body: {
+        type: "checkout.session.completed",
+        data: { object: { metadata: { paymentId }, payment_intent: "pi_reconcile" } },
+      },
+    });
+
+    const report = await requestJson("/api/v1/payments/reconciliation", {
+      headers: { "x-dev-user-id": "web_dev_admin", "x-dev-role": "admin" },
+    });
+    const usd = (report.payload.data.totals as Array<{ currency: string; paidCount: number }>).find(
+      (t) => t.currency === "USD",
+    );
+    expect(usd).toBeTruthy();
+    expect(usd!.paidCount).toBeGreaterThan(0);
+  });
+
   // HU-33 #152: en producción, un webhook con firma inválida (o sin verificación
   // configurada) se rechaza y el intento queda registrado en auditoría. El
   // código de estado depende del entorno: 400 si la firma es inválida (claves

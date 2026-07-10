@@ -234,11 +234,17 @@ function generatePayments(count: number, requestIds: string[]) {
   const statuses = ["pending", "processing", "paid", "failed", "cancelled"];
   
   for (let i = 0; i < count; i++) {
+    const amount = randomBetween(200, 3000);
+    // Comisión de plataforma del 5% (HU-41 #159), redondeada a 2 decimales.
+    const platformFeeAmount = Math.round(amount * 0.05 * 100) / 100;
     payments.push({
       id: `pay_${String(i + 1).padStart(4, "0")}`,
       rentalRequestId: randomItem(requestIds),
-      amount: randomBetween(200, 3000),
+      amount,
       currency: "USD",
+      platformFeeAmount,
+      netAmount: Math.round((amount - platformFeeAmount) * 100) / 100,
+      settlementCurrency: "USD",
       status: randomItem(statuses),
       stripeSessionId: `cs_${crypto.randomUUID()}`,
       checkoutUrl: `https://checkout.stripe.com/c/pay/cs_${crypto.randomUUID().slice(0, 8)}`,
