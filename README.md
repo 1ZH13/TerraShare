@@ -38,3 +38,19 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 | `/register` | Registro | Publico |
 | `/dashboard` | Dashboard usuario | Auth |
 | `/dashboard/admin` | Panel admin | Admin |
+
+## Acceso admin
+
+El panel `/dashboard/admin` esta protegido por rol. Un usuario se considera admin cuando (`isAdminUser`):
+
+- su email es `terradmin@gmail.com`, **o**
+- su `publicMetadata.role` en Clerk es `"admin"`.
+
+Un admin logueado ve la entrada **"Panel admin"** en el menu de usuario de la Navbar (solo visible para admins); un usuario normal no la ve.
+
+### Conceder rol admin real
+
+1. **Cuenta semilla:** inicia sesion con `terradmin@gmail.com` (coincide con `ADMIN_SEED_EMAIL` del backend).
+2. **Cualquier cuenta:** en el [Dashboard de Clerk](https://dashboard.clerk.com) → Users → (usuario) → **Metadata → Public**, agrega `{ "role": "admin" }` y guarda. Al re-loguear, el usuario tendra acceso al panel.
+
+> Nota: los usuarios `role:"admin"` creados por `apps/backend-api/src/db/seed.ts` (emails `@terrashare.test`) son datos de relleno para poblar las vistas; **no permiten iniciar sesion** porque no existen como identidades en Clerk.
