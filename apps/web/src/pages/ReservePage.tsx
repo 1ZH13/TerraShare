@@ -16,6 +16,8 @@ const USO_OPCIONES = [
   { value: "otro", label: "Otro" },
 ];
 
+type Operation = "alquiler" | "venta" | "ambas";
+
 interface ReserveLand {
   id?: string;
   type?: string;
@@ -24,6 +26,8 @@ interface ReserveLand {
   district?: string;
   areaHectares?: number;
   monthlyPrice?: number;
+  operation?: Operation;
+  salePrice?: number;
   availableFrom?: string;
   features?: string[];
 }
@@ -40,6 +44,8 @@ type LandLike = Record<string, unknown> & {
   area?: number;
   monthlyPrice?: number;
   priceRule?: { pricePerMonth?: number };
+  operation?: Operation;
+  salePrice?: number;
   availableFrom?: string;
   availability?: { availableFrom?: string };
   features?: string[];
@@ -62,6 +68,8 @@ function normalizeReserveLand(land: LandLike | null | undefined): ReserveLand | 
     district: land.district ?? land.location?.district ?? "",
     areaHectares: land.areaHectares ?? land.area ?? 0,
     monthlyPrice: land.monthlyPrice ?? land.priceRule?.pricePerMonth ?? 0,
+    operation: land.operation ?? "alquiler",
+    salePrice: land.salePrice,
     availableFrom: land.availableFrom ?? land.availability?.availableFrom ?? "",
     features: land.features,
   };
@@ -71,6 +79,7 @@ interface ReserveForm {
   startDate: string;
   endDate: string;
   intendedUse: string;
+  offerAmount: string;
   notes: string;
 }
 
@@ -103,6 +112,7 @@ export default function ReservePage() {
     startDate: "",
     endDate: "",
     intendedUse: "",
+    offerAmount: "",
     notes: "",
   });
 
@@ -133,11 +143,39 @@ export default function ReservePage() {
     setError("");
   };
 
+  const isSale = (land?.operation ?? "alquiler") !== "alquiler";
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!isSignedIn && !import.meta.env.DEV) {
       navigate({ to: "/login", replace: true });
+      return;
+    }
+
+    if (isSale) {
+      const offer = Number(form.offerAmount);
+      if (!Number.isFinite(offer) || offer <= 0) {
+        setError("Ingresa un monto de oferta válido.");
+        return;
+      }
+
+      setSubmitting(true);
+      setError("");
+      try {
+        const result = await createRentalRequest({
+          landId: landId!,
+          operation: "venta",
+          offerAmount: offer,
+          notes: form.notes || undefined,
+        });
+        setSuccess(`El propietario revisará tu oferta pronto. ID: ${result?.id ?? "—"}.`);
+        setTimeout(() => navigate({ to: "/dashboard", replace: true }), 3000);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error al enviar la oferta.");
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
@@ -159,6 +197,7 @@ export default function ReservePage() {
     try {
       const result = await createRentalRequest({
         landId: landId!,
+        operation: "alquiler",
         period: { startDate: form.startDate, endDate: form.endDate },
         intendedUse: form.intendedUse,
         notes: form.notes || undefined,
@@ -240,7 +279,16 @@ export default function ReservePage() {
                 </div>
               </div>
               <div className="rsv-summary__price">
-                {(land.monthlyPrice ?? 0) > 0 ? (
+                {isSale ? (
+                  typeof land.salePrice === "number" && land.salePrice > 0 ? (
+                    <>
+                      ${land.salePrice.toLocaleString("es-PA")}
+                      <span> venta</span>
+                    </>
+                  ) : (
+                    "Precio a consultar"
+                  )
+                ) : (land.monthlyPrice ?? 0) > 0 ? (
                   <>
                     ${land.monthlyPrice?.toLocaleString("es-PA")}
                     <span>/mes</span>
@@ -255,8 +303,12 @@ export default function ReservePage() {
 
         {/* formulario */}
         <section>
-          <h1 className="rsv-title">Solicitar alquiler</h1>
-          <p className="rsv-sub">Completa los datos para enviar tu solicitud al propietario.</p>
+          <h1 className="rsv-title">{isSale ? "Hacer oferta" : "Solicitar alquiler"}</h1>
+          <p className="rsv-sub">
+            {isSale
+              ? "Propón tu precio de compra y envíalo al propietario."
+              : "Completa los datos para enviar tu solicitud al propietario."}
+          </p>
 
           <div className="rsv-card">
             {success ? (
@@ -264,64 +316,90 @@ export default function ReservePage() {
                 <div className="rsv-success__icon">
                   <Check size={28} />
                 </div>
-                <h2>¡Solicitud enviada!</h2>
+                <h2>{isSale ? "¡Oferta enviada!" : "¡Solicitud enviada!"}</h2>
                 <p>{success}</p>
                 <p>Redirigiendo al panel…</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
-                <div className="rsv-row">
+                {isSale ? (
                   <div className="rsv-field">
-                    <label className="rsv-label" htmlFor="startDate">
-                      Fecha de inicio
+                    <label className="rsv-label" htmlFor="offerAmount">
+                      Tu oferta (USD)
                     </label>
                     <input
-                      id="startDate"
+                      id="offerAmount"
                       className="rsv-input"
-                      type="date"
-                      value={form.startDate}
-                      onChange={(e) => handleChange("startDate", e.target.value)}
-                      min={new Date().toISOString().split("T")[0]}
+                      type="number"
+                      min={1}
+                      step={100}
+                      value={form.offerAmount}
+                      onChange={(e) => handleChange("offerAmount", e.target.value)}
+                      placeholder={
+                        typeof land.salePrice === "number" && land.salePrice > 0
+                          ? `Precio pedido: $${land.salePrice.toLocaleString("es-PA")}`
+                          : "Ingresa tu oferta"
+                      }
                       required
                       disabled={submitting}
                     />
                   </div>
-                  <div className="rsv-field">
-                    <label className="rsv-label" htmlFor="endDate">
-                      Fecha de fin
-                    </label>
-                    <input
-                      id="endDate"
-                      className="rsv-input"
-                      type="date"
-                      value={form.endDate}
-                      onChange={(e) => handleChange("endDate", e.target.value)}
-                      min={form.startDate || new Date().toISOString().split("T")[0]}
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="rsv-row">
+                      <div className="rsv-field">
+                        <label className="rsv-label" htmlFor="startDate">
+                          Fecha de inicio
+                        </label>
+                        <input
+                          id="startDate"
+                          className="rsv-input"
+                          type="date"
+                          value={form.startDate}
+                          onChange={(e) => handleChange("startDate", e.target.value)}
+                          min={new Date().toISOString().split("T")[0]}
+                          required
+                          disabled={submitting}
+                        />
+                      </div>
+                      <div className="rsv-field">
+                        <label className="rsv-label" htmlFor="endDate">
+                          Fecha de fin
+                        </label>
+                        <input
+                          id="endDate"
+                          className="rsv-input"
+                          type="date"
+                          value={form.endDate}
+                          onChange={(e) => handleChange("endDate", e.target.value)}
+                          min={form.startDate || new Date().toISOString().split("T")[0]}
+                          required
+                          disabled={submitting}
+                        />
+                      </div>
+                    </div>
 
-                <div className="rsv-field">
-                  <label className="rsv-label" htmlFor="intendedUse">
-                    Uso del terreno
-                  </label>
-                  <select
-                    id="intendedUse"
-                    className="rsv-input"
-                    value={form.intendedUse}
-                    onChange={(e) => handleChange("intendedUse", e.target.value)}
-                    required
-                    disabled={submitting}
-                  >
-                    {USO_OPCIONES.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div className="rsv-field">
+                      <label className="rsv-label" htmlFor="intendedUse">
+                        Uso del terreno
+                      </label>
+                      <select
+                        id="intendedUse"
+                        className="rsv-input"
+                        value={form.intendedUse}
+                        onChange={(e) => handleChange("intendedUse", e.target.value)}
+                        required
+                        disabled={submitting}
+                      >
+                        {USO_OPCIONES.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
 
                 <div className="rsv-field">
                   <label className="rsv-label" htmlFor="notes">
@@ -332,7 +410,11 @@ export default function ReservePage() {
                     className="rsv-input"
                     value={form.notes}
                     onChange={(e) => handleChange("notes", e.target.value)}
-                    placeholder="Preséntate y cuéntale sobre tu proyecto…"
+                    placeholder={
+                      isSale
+                        ? "Cuéntale por qué te interesa el terreno…"
+                        : "Preséntate y cuéntale sobre tu proyecto…"
+                    }
                     rows={4}
                     disabled={submitting}
                   />
@@ -342,7 +424,7 @@ export default function ReservePage() {
 
                 <div className="rsv-actions">
                   <button type="submit" className="rsv-submit" disabled={submitting}>
-                    {submitting ? "Enviando…" : "Enviar solicitud"}
+                    {submitting ? "Enviando…" : isSale ? "Enviar oferta" : "Enviar solicitud"}
                   </button>
                   <Link to={landId ? "/lands/$id" : "/catalog"} params={{ id: landId }} className="rsv-cancel">
                     Cancelar
@@ -350,8 +432,10 @@ export default function ReservePage() {
                 </div>
 
                 <p className="rsv-note">
-                  <Info size={15} /> El propietario recibirá tu solicitud y podrá aceptarla o
-                  rechazarla. No se cobra nada hasta que sea aprobada.
+                  <Info size={15} />{" "}
+                  {isSale
+                    ? "El propietario recibirá tu oferta y podrá aceptarla o rechazarla. No se cobra nada hasta que sea aprobada."
+                    : "El propietario recibirá tu solicitud y podrá aceptarla o rechazarla. No se cobra nada hasta que sea aprobada."}
                 </p>
               </form>
             )}

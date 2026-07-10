@@ -3,7 +3,8 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Bell, MessageCircle, Sprout } from "lucide-react";
 import { Navbar } from "./ui";
-import { getDisplayName } from "./authDisplay";
+import type { UserMenuItem } from "./ui";
+import { getDisplayName, isAdminUser } from "./authDisplay";
 import "../pages/app-shell.css";
 
 interface UserDashboardLayoutProps {
@@ -30,6 +31,19 @@ export default function UserDashboardLayout({ children, onSignOut }: UserDashboa
 
   const handleSignOut = onSignOut ?? (() => signOut({ redirectUrl: "/" }));
 
+  const userMenuItems: UserMenuItem[] = [
+    { label: "Mi perfil", onClick: () => navigate({ to: "/dashboard/profile" }) },
+    { label: "Mis solicitudes", onClick: () => navigate({ to: "/dashboard" }) },
+    { label: "Mis terrenos", onClick: () => navigate({ to: "/dashboard/lands" }) },
+    { label: "Contratos", onClick: () => navigate({ to: "/dashboard/contracts" }) },
+    { label: "Pagos", onClick: () => navigate({ to: "/dashboard/payments" }) },
+    { label: "Privacidad", onClick: () => navigate({ to: "/dashboard/privacy" }) },
+  ];
+  // El acceso al panel admin solo se ofrece a cuentas admin (issue #251).
+  if (isAdminUser(user)) {
+    userMenuItems.push({ label: "Panel admin", onClick: () => navigate({ to: "/dashboard/admin" }) });
+  }
+
   const actions = (
     <>
       <Link to="/dashboard/notifications" className="ds-navbar__icon" aria-label="Notificaciones">
@@ -47,14 +61,7 @@ export default function UserDashboardLayout({ children, onSignOut }: UserDashboa
         brand={<BrandMark />}
         userName={getDisplayName(user)}
         actions={actions}
-        userMenuItems={[
-          { label: "Mi perfil", onClick: () => navigate({ to: "/dashboard/profile" }) },
-          { label: "Mis solicitudes", onClick: () => navigate({ to: "/dashboard" }) },
-          { label: "Mis terrenos", onClick: () => navigate({ to: "/dashboard/lands" }) },
-          { label: "Contratos", onClick: () => navigate({ to: "/dashboard/contracts" }) },
-          { label: "Pagos", onClick: () => navigate({ to: "/dashboard/payments" }) },
-          { label: "Privacidad", onClick: () => navigate({ to: "/dashboard/privacy" }) },
-        ]}
+        userMenuItems={userMenuItems}
         onSignOut={handleSignOut}
       />
       <main className="app-main">{children}</main>
