@@ -12,7 +12,18 @@ export const PaymentStatusSchema = z.enum([
   "paid",
   "failed",
   "cancelled",
+  "refunded",
+  "partially_refunded",
 ] as const);
+
+/** Cuerpo del reembolso (HU-43 #161): total si se omite `amount`. */
+export const CreateRefundSchema = z.object({
+  amount: z.number().positive("El importe debe ser positivo").optional(),
+  reason: z.string().max(500).optional(),
+});
+
+export type CreateRefundInput = z.input<typeof CreateRefundSchema>;
+export type CreateRefundOutput = z.output<typeof CreateRefundSchema>;
 
 export const CreateCheckoutSessionSchema = z.object({
   rentalRequestId: z.string().min(1, "ID de solicitud requerido"),

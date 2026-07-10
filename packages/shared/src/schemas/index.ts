@@ -67,11 +67,14 @@ export {
   IDEMPOTENCY_HEADER,
   PaymentStatusSchema,
   CreateCheckoutSessionSchema,
+  CreateRefundSchema,
   PaymentListFilterSchema,
 } from "./payments";
 export type {
   CreateCheckoutSessionInput,
   CreateCheckoutSessionOutput,
+  CreateRefundInput,
+  CreateRefundOutput,
   PaymentListFilterInput,
   PaymentListFilterOutput,
 } from "./payments";

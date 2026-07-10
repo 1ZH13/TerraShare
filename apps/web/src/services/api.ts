@@ -13,6 +13,7 @@ import type {
   ExternalContactDto,
   LandDto,
   PaymentDto,
+  ReceiptDto,
   RentalRequestDto,
 } from "@terrashare/shared";
 
@@ -211,6 +212,12 @@ export const getPaymentsByRequest = async (rentalRequestId: string): Promise<Pay
 export const getMyPayments = async (): Promise<PaymentDto[]> => {
   const res = await request<PaymentDto[]>("GET", "/api/v1/payments");
   return res?.data ?? [];
+};
+
+/** GET /api/v1/payments/:id/receipt — datos del recibo descargable (HU-43 #161) */
+export const getReceipt = async (paymentId: string): Promise<ReceiptDto | null> => {
+  const res = await request<ReceiptDto>("GET", `/api/v1/payments/${paymentId}/receipt`);
+  return res?.data ?? null;
 };
 
 /**

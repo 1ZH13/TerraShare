@@ -32,6 +32,7 @@ const actionLabels: Record<string, string> = {
   rejected: "Rechazado",
   cancelled: "Cancelado",
   paid: "Pagado",
+  refunded: "Reembolsado",
   status_changed: "Estado cambiado",
 };
 

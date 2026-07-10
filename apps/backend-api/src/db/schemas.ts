@@ -5,7 +5,15 @@ export type LandStatus = "draft" | "active" | "inactive";
 export type LandOperation = "alquiler" | "venta" | "ambas";
 export type RentalRequestStatus = "draft" | "pending_owner" | "approved" | "rejected" | "cancelled" | "pending_payment" | "paid";
 export type ContractStatus = "draft" | "active" | "completed" | "cancelled";
-export type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "cancelled";
+export type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "cancelled" | "refunded" | "partially_refunded";
+
+export interface IPaymentRefund {
+  id: string;
+  amount: number;
+  reason?: string;
+  stripeRefundId?: string;
+  createdAt: Date;
+}
 export type ChatStatus = "active" | "archived";
 export type LeadSource = "landing" | "app-web" | "admin-dashboard";
 export type UserStatus = "active" | "blocked";
@@ -102,6 +110,8 @@ export interface IPayment extends Document {
   netAmount?: number;
   settlementCurrency?: "USD";
   status: PaymentStatus;
+  refundedAmount?: number;
+  refunds?: IPaymentRefund[];
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
   checkoutUrl?: string;
@@ -137,7 +147,7 @@ export interface IAuditEvent extends Document {
   actorId: string;
   actorRole: AppRole | "system";
   entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat" | "report" | "webhook";
-  action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "status_changed";
+  action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "refunded" | "status_changed";
   entityId: string;
   metadata?: Record<string, unknown>;
   createdAt: Date;
@@ -277,7 +287,15 @@ const PaymentSchema = new Schema<IPayment>({
   platformFeeAmount: Number,
   netAmount: Number,
   settlementCurrency: { type: String, enum: ["USD"] },
-  status: { type: String, enum: ["pending", "processing", "paid", "failed", "cancelled"], default: "pending" },
+  status: { type: String, enum: ["pending", "processing", "paid", "failed", "cancelled", "refunded", "partially_refunded"], default: "pending" },
+  refundedAmount: { type: Number, default: 0 },
+  refunds: [{
+    id: { type: String, required: true },
+    amount: { type: Number, required: true },
+    reason: String,
+    stripeRefundId: String,
+    createdAt: { type: Date, default: Date.now },
+  }],
   stripeSessionId: String,
   stripePaymentIntentId: String,
   checkoutUrl: String,
@@ -307,7 +325,7 @@ const AuditEventSchema = new Schema<IAuditEvent>({
   actorId: { type: String, required: true },
   actorRole: { type: String, enum: ["user", "admin", "system"], required: true },
   entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat", "report", "webhook"], required: true },
-  action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "status_changed"], required: true },
+  action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "refunded", "status_changed"], required: true },
   entityId: { type: String, required: true },
   metadata: Schema.Types.Mixed,
 }, { timestamps: true });

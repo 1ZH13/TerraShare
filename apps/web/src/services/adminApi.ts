@@ -6,7 +6,13 @@
  * sin sesión: antes era la única identidad que se enviaba, así que en producción
  * el panel admin viajaba sin autenticación (#262).
  */
-import type { ApiSuccess, LandDto, UserSummaryDto, ReconciliationReportDto } from "@terrashare/shared";
+import type {
+  ApiSuccess,
+  LandDto,
+  UserSummaryDto,
+  PaymentDto,
+  ReconciliationReportDto,
+} from "@terrashare/shared";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -118,6 +124,20 @@ export const getAdminSummary = () => request("GET", "/api/v1/admin/summary");
 /** GET /api/v1/payments/reconciliation */
 export const getReconciliation = () =>
   request<ReconciliationReportDto>("GET", "/api/v1/payments/reconciliation");
+
+// ─── Pagos / Reembolsos (HU-43 #161) ──────────────────────────────────────────
+
+/** GET /api/v1/payments — como admin, devuelve todos los pagos. */
+export const listAdminPayments = (status?: string) => {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  return request<PaymentDto[]>("GET", `/api/v1/payments${qs}`);
+};
+
+/** POST /api/v1/payments/:id/refund — reembolso total (sin amount) o parcial. */
+export const refundPayment = (
+  paymentId: string,
+  input: { amount?: number; reason?: string } = {},
+) => request<PaymentDto>("POST", `/api/v1/payments/${paymentId}/refund`, input);
 
 // ─── Leads ───────────────────────────────────────────────────────────────────
 

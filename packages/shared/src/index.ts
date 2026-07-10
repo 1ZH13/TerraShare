@@ -54,9 +54,12 @@ export type {
 
 export type {
   CreateCheckoutSessionDto,
+  CreateRefundDto,
   PaymentDto,
   PaymentListFilterDto,
   PaymentStatus,
+  ReceiptDto,
+  RefundDto,
   StripeWebhookEventDto,
   ReconciliationDiscrepancyType,
   ReconciliationDiscrepancyDto,
