@@ -16,6 +16,18 @@ import type {
   RentalRequestDto,
 } from "@terrashare/shared";
 
+/**
+ * Nombre de la cabecera de idempotencia (HU-42 #160).
+ *
+ * Se declara aquí en vez de importarla desde `@terrashare/shared`: ese paquete
+ * se resuelve por alias a su código fuente y su `index` re-exporta los esquemas
+ * de `zod`. Un import de *valor* desde la raíz arrastraría `zod` al bundle del
+ * web —que no lo declara como dependencia— y rompería el build; los imports de
+ * tipo se borran en compilación y no lo hacen.
+ * Debe coincidir con `packages/shared/src/schemas/payments.ts`.
+ */
+const IDEMPOTENCY_HEADER = "Idempotency-Key";
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 declare global {
@@ -64,8 +76,10 @@ const request = async <T = unknown>(
   method: string,
   path: string,
   body?: unknown,
+  extraHeaders?: Record<string, string>,
 ): Promise<ApiSuccess<T>> => {
-  const opts: RequestInit = { method, headers: await buildHeaders() };
+  const headers = { ...(await buildHeaders()), ...(extraHeaders ?? {}) };
+  const opts: RequestInit = { method, headers };
   if (body != null) opts.body = JSON.stringify(body);
   const res = await fetch(`${BASE_URL}${path}`, opts);
   return (await handleResponse(res)) as ApiSuccess<T>;
@@ -151,6 +165,8 @@ interface CheckoutSessionInput {
   currency?: string;
   successUrl: string;
   cancelUrl: string;
+  /** Clave de idempotencia para evitar sesiones/cobros duplicados (HU-42 #160). */
+  idempotencyKey?: string;
 }
 
 /** POST /api/v1/payments/checkout-session */
@@ -159,13 +175,14 @@ export const createCheckoutSession = async ({
   currency = "USD",
   successUrl,
   cancelUrl,
+  idempotencyKey,
 }: CheckoutSessionInput): Promise<any> => {
-  const res = await request("POST", "/api/v1/payments/checkout-session", {
-    rentalRequestId,
-    currency,
-    successUrl,
-    cancelUrl,
-  });
+  const res = await request(
+    "POST",
+    "/api/v1/payments/checkout-session",
+    { rentalRequestId, currency, successUrl, cancelUrl },
+    idempotencyKey ? { [IDEMPOTENCY_HEADER]: idempotencyKey } : undefined,
+  );
   return res?.data ?? null;
 };
 

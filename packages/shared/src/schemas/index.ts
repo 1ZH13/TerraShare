@@ -64,6 +64,7 @@ export type {
 
 // Payment schemas
 export {
+  IDEMPOTENCY_HEADER,
   PaymentStatusSchema,
   CreateCheckoutSessionSchema,
   PaymentListFilterSchema,
