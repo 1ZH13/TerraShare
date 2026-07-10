@@ -22,6 +22,7 @@ import { analyticsRoutes } from "./routes/analytics";
 import { notificationRoutes } from "./routes/notifications";
 import { metricsRoutes } from "./routes/metrics";
 import { privacyRoutes } from "./routes/privacy";
+import { reportRoutes } from "./routes/reports";
 import type { AppEnv } from "./types";
 import { corsAllowHeaders, resolveCorsOrigin } from "./config/env";
 
@@ -52,6 +53,7 @@ export function createApp() {
   app.use("/api/v1/chats*", requireAuth, rateLimitByUser(200));
   app.use("/api/v1/admin*", requireAuth, rateLimitByUser(200));
   app.use("/api/v1/analytics*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/reports*", requireAuth, rateLimitByUser(200));
 
   app.get("/", (c) => {
     return c.json({
@@ -74,6 +76,7 @@ export function createApp() {
   app.route("/api/v1", notificationRoutes);
   app.route("/api/v1", metricsRoutes);
   app.route("/api/v1", privacyRoutes);
+  app.route("/api/v1", reportRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 

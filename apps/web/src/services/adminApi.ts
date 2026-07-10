@@ -1,14 +1,28 @@
 /**
  * Admin API client — connects to backend-api admin endpoints.
- * Always uses dev bypass headers in development.
- * No authentication tokens required.
+ *
+ * Cuando hay sesión de Clerk envía su JWT real (`Authorization: Bearer`), igual
+ * que `services/api.ts`. El bypass de dev (`x-dev-*`) solo actúa como respaldo
+ * sin sesión: antes era la única identidad que se enviaba, así que en producción
+ * el panel admin viajaba sin autenticación (#262).
  */
 import type { ApiSuccess, LandDto, UserSummaryDto } from "@terrashare/shared";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-const buildHeaders = (): Record<string, string> => {
+const buildHeaders = async (): Promise<Record<string, string>> => {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  try {
+    const token = await window.Clerk?.session?.getToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+      return headers;
+    }
+  } catch {
+    // Sin token utilizable → caemos al fallback de dev.
+  }
+
   if (import.meta.env.DEV) {
     headers["x-dev-role"] = "admin";
     headers["x-dev-user-id"] = "web_dev_admin";
@@ -20,21 +34,26 @@ const handleResponse = async (res: Response): Promise<unknown> => {
   if (!res.ok) {
     let err: any;
     try { err = await res.json(); } catch { err = {}; }
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(err?.error?.message || "No tienes permisos de administrador.");
+    }
     throw new Error(err?.error?.message || `HTTP ${res.status}`);
   }
   return res.json();
 };
 
-const request = <T = unknown>(
+const request = async <T = unknown>(
   method: string,
   path: string,
   body?: unknown,
-): Promise<ApiSuccess<T>> =>
-  fetch(`${BASE_URL}${path}`, {
+): Promise<ApiSuccess<T>> => {
+  const res = await fetch(`${BASE_URL}${path}`, {
     method,
-    headers: buildHeaders(),
+    headers: await buildHeaders(),
     body: body != null ? JSON.stringify(body) : undefined,
-  }).then(handleResponse) as Promise<ApiSuccess<T>>;
+  });
+  return (await handleResponse(res)) as ApiSuccess<T>;
+};
 
 interface AdminUserFilters {
   role?: string;
@@ -119,3 +138,56 @@ export const listAdminLeads = (filters: AdminLeadFilters = {}) => {
     `/api/v1/admin/leads${qs ? `?${qs}` : ""}`,
   );
 };
+
+// ─── Reports (moderación) ────────────────────────────────────────────────────
+
+export type ReportTargetType = "land" | "user" | "chat";
+export type ReportReason = "spam" | "fraude" | "contenido_inapropiado" | "informacion_falsa" | "otro";
+export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
+
+export interface AdminReportSummary {
+  id: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  targetLabel: string;
+  reason: ReportReason;
+  status: ReportStatus;
+  reporterId: string;
+  reporterEmail: string;
+  createdAt?: string;
+}
+
+export interface AdminReportDetail extends AdminReportSummary {
+  description?: string;
+  reporterName?: string | null;
+  resolutionNote?: string;
+  resolvedBy?: string;
+  updatedAt?: string;
+}
+
+interface AdminReportFilters {
+  status?: string;
+  targetType?: string;
+  search?: string;
+}
+
+/** GET /api/v1/admin/reports?status=&targetType=&search= */
+export const listAdminReports = (filters: AdminReportFilters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.targetType) params.set("targetType", filters.targetType);
+  if (filters.search) params.set("search", filters.search);
+  const qs = params.toString();
+  return request<{ items: AdminReportSummary[]; total: number }>(
+    "GET",
+    `/api/v1/admin/reports${qs ? `?${qs}` : ""}`,
+  );
+};
+
+/** GET /api/v1/admin/reports/:reportId */
+export const getAdminReport = (reportId: string) =>
+  request<AdminReportDetail>("GET", `/api/v1/admin/reports/${reportId}`);
+
+/** PATCH /api/v1/admin/reports/:reportId — { status, resolutionNote? } */
+export const updateReportStatus = (reportId: string, status: ReportStatus, resolutionNote?: string) =>
+  request<AdminReportDetail>("PATCH", `/api/v1/admin/reports/${reportId}`, { status, resolutionNote });

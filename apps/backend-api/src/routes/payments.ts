@@ -106,8 +106,15 @@ function getStripeClient() {
 async function computePaymentAmount(rentalRequestId: string, fallback = 1000) {
   const request = await RentalRequest.findOne({ id: rentalRequestId }).lean();
   if (!request) return fallback;
-  
+
   const land = await Land.findOne({ id: request.landId }).lean();
+
+  // Compra/venta (#249): se cobra la oferta acordada, o el precio de venta del
+  // terreno como respaldo. El alquiler cobra el precio mensual (primer mes).
+  if (request.operation === "venta") {
+    return request.offerAmount ?? land?.salePrice ?? fallback;
+  }
+
   return land?.priceRule?.pricePerMonth ?? fallback;
 }
 

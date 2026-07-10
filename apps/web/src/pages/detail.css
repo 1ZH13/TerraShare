@@ -234,6 +234,45 @@
   .det-photo--main { grid-row: auto; }
   .det-gallery__hide-sm { display: none; }
 }
+/* modal de reporte (moderación por reportes, #250) */
+.det-report {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(28, 33, 26, 0.5);
+}
+.det-report__box {
+  width: 100%;
+  max-width: 440px;
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+.det-report__title { font-family: var(--ts-font-serif); font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+.det-report__lead { color: var(--ts-text-secondary); font-size: 14px; margin: 0 0 16px; }
+.det-report__label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 6px; }
+.det-report__select,
+.det-report__textarea {
+  width: 100%;
+  border: 1px solid #cdd6c8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  background: var(--ts-surface);
+  color: var(--ts-text);
+}
+.det-report__textarea { resize: vertical; }
+.det-report__error { color: #a5573a; font-size: 13px; margin: 10px 0 0; }
+.det-report__actions { display: flex; gap: 10px; margin-top: 20px; }
+.det-report__actions .det-btn { margin-bottom: 0; }
+
 @media (max-width: 560px) {
   .det-nav, .det-wrap { padding-left: 20px; padding-right: 20px; }
   .det-title { font-size: 34px; }

@@ -62,11 +62,13 @@ export interface RentalRequestRecord {
   id: string;
   landId: string;
   tenantId: string;
-  period: {
+  operation?: "alquiler" | "venta";
+  period?: {
     startDate: string;
     endDate: string;
   };
-  intendedUse: string;
+  intendedUse?: string;
+  offerAmount?: number;
   notes?: string;
   status: RentalRequestStatus;
   createdAt: string;
@@ -149,6 +151,7 @@ export interface AuditEventRecord {
     | "contract"
     | "payment"
     | "chat"
+    | "report"
     | "webhook";
   action:
     | "created"

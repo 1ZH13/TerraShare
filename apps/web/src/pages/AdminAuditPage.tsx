@@ -54,7 +54,18 @@ export default function AdminAuditPage() {
         if (token) headers["Authorization"] = `Bearer ${token}`;
         else if (import.meta.env.DEV) { headers["x-dev-role"] = "admin"; headers["x-dev-user-id"] = "web_dev_admin"; }
         const res = await fetch(`${BASE_URL}/api/v1/audit-events`, { headers });
-        const json = await res.json();
+        const json = await res.json().catch(() => null);
+        // Un 401/403 traía `data` vacío y la pantalla mentía con "no hay eventos";
+        // ahora se distingue el error de permisos de una lista realmente vacía (#262).
+        if (!res.ok || json?.ok === false) {
+          setError(
+            res.status === 401 || res.status === 403
+              ? "No tienes permisos para ver la bitácora de auditoría."
+              : "No pudimos cargar los eventos de auditoría.",
+          );
+          setEvents([]);
+          return;
+        }
         // El endpoint de main devuelve un array plano en `data`; toleramos también
         // una eventual forma paginada { items } por si el backend cambia más adelante.
         const list: AuditEventItem[] = Array.isArray(json?.data)
@@ -63,7 +74,7 @@ export default function AdminAuditPage() {
         setEvents(list);
         setPage(1);
       } catch {
-        setError("Error loading audit events");
+        setError("No pudimos cargar los eventos de auditoría.");
       } finally {
         setLoading(false);
       }

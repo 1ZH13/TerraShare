@@ -2,6 +2,7 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { ClerkProvider } from "@clerk/clerk-react";
 import { esES } from "@clerk/localizations";
 import { clerkAppearance } from "../clerkAppearance";
+import ErrorBoundary from "../components/ErrorBoundary";
 import "../i18n";
 import "../styles.css";
 import "../styles/tokens.css";
@@ -28,7 +29,13 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  return <Outlet />;
+  // El límite vive dentro del shell (#261): así un error de página se contiene
+  // aquí y nunca alcanza a <html>/<head>, que es lo que borraba el CSS.
+  return (
+    <ErrorBoundary>
+      <Outlet />
+    </ErrorBoundary>
+  );
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {

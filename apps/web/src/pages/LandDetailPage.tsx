@@ -16,9 +16,19 @@ import {
   ImageIcon,
   ShieldCheck,
   User,
+  Flag,
 } from "lucide-react";
-import { createChat, getLandById } from "../services/api";
+import { createChat, getLandById, createReport } from "../services/api";
+import type { ReportReason } from "../services/api";
 import "./detail.css";
+
+const REPORT_REASONS: { value: ReportReason; label: string }[] = [
+  { value: "fraude", label: "Fraude o estafa" },
+  { value: "informacion_falsa", label: "Información falsa" },
+  { value: "contenido_inapropiado", label: "Contenido inapropiado" },
+  { value: "spam", label: "Spam" },
+  { value: "otro", label: "Otro" },
+];
 
 type Operation = "alquiler" | "venta" | "ambas";
 
@@ -71,6 +81,11 @@ export default function LandDetailPage() {
   const [land, setLand] = useState<DetailLand | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason>("fraude");
+  const [reportDesc, setReportDesc] = useState("");
+  const [reportState, setReportState] = useState<"idle" | "sending" | "done" | "error">("idle");
+
   useEffect(() => {
     let active = true;
     getLandById(id!)
@@ -107,6 +122,33 @@ export default function LandDetailPage() {
       console.error("No se pudo iniciar el chat:", err);
     }
     navigate({ to: "/dashboard/chats" });
+  };
+
+  const openReport = () => {
+    if (!isSignedIn) {
+      openSignIn({ redirectUrl: `/lands/${id}` });
+      return;
+    }
+    setReportState("idle");
+    setReportOpen(true);
+  };
+
+  const submitReport = async () => {
+    if (!id) return;
+    setReportState("sending");
+    try {
+      await createReport({
+        targetType: "land",
+        targetId: id,
+        reason: reportReason,
+        description: reportDesc.trim() || undefined,
+      });
+      setReportState("done");
+      setReportDesc("");
+    } catch (err) {
+      console.error("No se pudo enviar el reporte:", err);
+      setReportState("error");
+    }
   };
 
   if (status === "loading") {
@@ -189,8 +231,87 @@ export default function LandDetailPage() {
           >
             <Share2 size={17} />
           </button>
+          <button
+            type="button"
+            className="det-nav__action"
+            title="Reportar terreno"
+            aria-label="Reportar terreno"
+            onClick={openReport}
+          >
+            <Flag size={17} /> Reportar
+          </button>
         </div>
       </nav>
+
+      {reportOpen && (
+        <div className="det-report" role="dialog" aria-modal="true" aria-label="Reportar terreno">
+          <div className="det-report__box">
+            {reportState === "done" ? (
+              <>
+                <h2 className="det-report__title">Reporte enviado</h2>
+                <p className="det-report__lead">
+                  Gracias. Nuestro equipo de moderación revisará este terreno.
+                </p>
+                <div className="det-report__actions">
+                  <button type="button" className="det-btn det-btn--primary" onClick={() => setReportOpen(false)}>
+                    Cerrar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="det-report__title">Reportar «{land.title}»</h2>
+                <p className="det-report__lead">Cuéntanos qué problema tiene esta publicación.</p>
+
+                <label className="det-report__label" htmlFor="report-reason">Motivo</label>
+                <select
+                  id="report-reason"
+                  className="det-report__select"
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value as ReportReason)}
+                >
+                  {REPORT_REASONS.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+
+                <label className="det-report__label" htmlFor="report-desc">Descripción (opcional)</label>
+                <textarea
+                  id="report-desc"
+                  className="det-report__textarea"
+                  rows={3}
+                  value={reportDesc}
+                  onChange={(e) => setReportDesc(e.target.value)}
+                  placeholder="Agrega detalles que ayuden a la revisión…"
+                />
+
+                {reportState === "error" && (
+                  <p className="det-report__error">No se pudo enviar el reporte. Inténtalo de nuevo.</p>
+                )}
+
+                <div className="det-report__actions">
+                  <button
+                    type="button"
+                    className="det-btn det-btn--ghost"
+                    onClick={() => setReportOpen(false)}
+                    disabled={reportState === "sending"}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="det-btn det-btn--primary"
+                    onClick={submitReport}
+                    disabled={reportState === "sending"}
+                  >
+                    {reportState === "sending" ? "Enviando…" : "Enviar reporte"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="det-wrap">
         {/* galería */}
