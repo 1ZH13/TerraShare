@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 import { requireAdmin } from "../middleware/require-auth";
 import type { AuthContextUser } from "../types";
@@ -286,6 +286,17 @@ const mfaAdminUser = {
 };
 
 describe("requireAdmin", () => {
+  // La exigencia de MFA pasa a ser configurable (#262): activa por defecto en
+  // produccion. Estas pruebas la fuerzan para no depender de NODE_ENV.
+  const previousRequireAdminMfa = process.env.REQUIRE_ADMIN_MFA;
+  beforeEach(() => {
+    process.env.REQUIRE_ADMIN_MFA = "true";
+  });
+  afterEach(() => {
+    if (previousRequireAdminMfa === undefined) delete process.env.REQUIRE_ADMIN_MFA;
+    else process.env.REQUIRE_ADMIN_MFA = previousRequireAdminMfa;
+  });
+
   it("rechaza admin sin MFA en produccion", async () => {
     const c = {
       get: (key: string) => {

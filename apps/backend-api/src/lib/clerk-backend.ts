@@ -6,11 +6,17 @@ import { env } from "../config/env";
  * Perfil enriquecido que devuelve la Clerk Backend API.
  * Todos los campos son opcionales: el token de sesión por defecto de Clerk no
  * incluye email/nombre, así que los resolvemos aquí (issue #132, Opción B).
+ *
+ * El token tampoco incluye `public_metadata` ni el estado de 2FA, así que el rol
+ * y `twoFactorEnabled` también se resuelven aquí; sin esto el backend nunca veía
+ * como admin a un usuario que sí lo es en Clerk (issue #262).
  */
 export interface ClerkUserProfile {
   email?: string;
   fullName?: string;
   phone?: string;
+  role?: string;
+  twoFactorEnabled?: boolean;
 }
 
 interface CacheEntry {
@@ -71,10 +77,13 @@ export async function getClerkUserProfile(
 
   try {
     const user = await clerk.users.getUser(userId);
+    const metadataRole = (user.publicMetadata as Record<string, unknown> | undefined)?.role;
     const profile: ClerkUserProfile = {
       email: user.primaryEmailAddress?.emailAddress ?? undefined,
       fullName: user.fullName?.trim() || undefined,
       phone: user.primaryPhoneNumber?.phoneNumber ?? undefined,
+      role: typeof metadataRole === "string" ? metadataRole : undefined,
+      twoFactorEnabled: user.twoFactorEnabled === true,
     };
     cache.set(userId, { value: profile, expiresAt: Date.now() + CACHE_TTL_MS });
     return profile;

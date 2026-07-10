@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 import {
-  User, Land, RentalRequest, Contract, Payment, Chat, ChatMessage, AuditEvent, Lead,
+  User, Land, RentalRequest, Contract, Payment, Chat, ChatMessage, AuditEvent, Lead, Report,
 } from "./schemas";
 
 const PROVINCES = [
@@ -168,20 +168,38 @@ function generateRentalRequests(count: number, landIds: string[], userIds: strin
   for (let i = 0; i < count; i++) {
     const startDate = randomDateFuture(90);
     const endDate = randomDateFuture(180);
-    requests.push({
-      id: `rr_${String(i + 1).padStart(4, "0")}`,
-      landId: randomItem(landIds),
-      tenantId: randomItem(userIds.filter((_, idx) => idx >= 3)),
-      period: {
-        startDate,
-        endDate,
-      },
-      intendedUse: randomItem(LAND_USES),
-      notes: `Interesado en alquilar este terreno para ${randomItem(LAND_USES)}.`,
-      status: randomItem(statuses),
-      createdAt: randomDate(90),
-      updatedAt: randomDate(30),
-    });
+    // ~20% de las solicitudes son ofertas de compra (#249): sin periodo/uso, con
+    // un monto ofertado; el resto son alquileres con periodo e uso previsto.
+    const isSale = i % 5 === 0;
+    if (isSale) {
+      requests.push({
+        id: `rr_${String(i + 1).padStart(4, "0")}`,
+        landId: randomItem(landIds),
+        tenantId: randomItem(userIds.filter((_, idx) => idx >= 3)),
+        operation: "venta",
+        offerAmount: randomBetween(20, 250) * 1000,
+        notes: "Oferta de compra por el terreno.",
+        status: randomItem(statuses),
+        createdAt: randomDate(90),
+        updatedAt: randomDate(30),
+      });
+    } else {
+      requests.push({
+        id: `rr_${String(i + 1).padStart(4, "0")}`,
+        landId: randomItem(landIds),
+        tenantId: randomItem(userIds.filter((_, idx) => idx >= 3)),
+        operation: "alquiler",
+        period: {
+          startDate,
+          endDate,
+        },
+        intendedUse: randomItem(LAND_USES),
+        notes: `Interesado en alquilar este terreno para ${randomItem(LAND_USES)}.`,
+        status: randomItem(statuses),
+        createdAt: randomDate(90),
+        updatedAt: randomDate(30),
+      });
+    }
   }
   return requests;
 }
@@ -216,11 +234,17 @@ function generatePayments(count: number, requestIds: string[]) {
   const statuses = ["pending", "processing", "paid", "failed", "cancelled"];
   
   for (let i = 0; i < count; i++) {
+    const amount = randomBetween(200, 3000);
+    // Comisión de plataforma del 5% (HU-41 #159), redondeada a 2 decimales.
+    const platformFeeAmount = Math.round(amount * 0.05 * 100) / 100;
     payments.push({
       id: `pay_${String(i + 1).padStart(4, "0")}`,
       rentalRequestId: randomItem(requestIds),
-      amount: randomBetween(200, 3000),
+      amount,
       currency: "USD",
+      platformFeeAmount,
+      netAmount: Math.round((amount - platformFeeAmount) * 100) / 100,
+      settlementCurrency: "USD",
       status: randomItem(statuses),
       stripeSessionId: `cs_${crypto.randomUUID()}`,
       checkoutUrl: `https://checkout.stripe.com/c/pay/cs_${crypto.randomUUID().slice(0, 8)}`,
@@ -318,6 +342,47 @@ function generateLeads(count: number) {
   return leads;
 }
 
+function generateReports(count: number, landIds: string[], userIds: string[], chatIds: string[]) {
+  const reports = [];
+  const reasons = ["spam", "fraude", "contenido_inapropiado", "informacion_falsa", "otro"] as const;
+  const statuses = ["open", "open", "reviewing", "resolved", "dismissed"] as const;
+  const descriptions = [
+    "El anuncio parece falso o engañoso.",
+    "Precio sospechosamente bajo para la zona.",
+    "El usuario pide pagos por fuera de la plataforma.",
+    "Contenido inapropiado en la descripción.",
+    "Fotos que no corresponden al terreno.",
+    "",
+  ];
+
+  for (let i = 0; i < count; i++) {
+    const targetType = randomItem(["land", "land", "user", "chat"] as const);
+    const targetId =
+      targetType === "land"
+        ? randomItem(landIds)
+        : targetType === "user"
+          ? randomItem(userIds)
+          : randomItem(chatIds);
+    const createdAt = randomDate(45);
+    const status = randomItem(statuses);
+    const isClosing = status === "resolved" || status === "dismissed";
+    reports.push({
+      id: `report_${String(i + 1).padStart(4, "0")}`,
+      targetType,
+      targetId,
+      reason: randomItem(reasons),
+      description: randomItem(descriptions) || undefined,
+      reporterId: randomItem(userIds),
+      status,
+      resolutionNote: isClosing ? "Revisado por el equipo de moderación." : undefined,
+      resolvedBy: isClosing ? randomItem(userIds.slice(0, 3)) : undefined,
+      createdAt,
+      updatedAt: createdAt,
+    });
+  }
+  return reports;
+}
+
 export async function seedDatabase() {
   if (mongoose.connection.readyState !== 1) {
     console.error("[seed] Database not connected");
@@ -357,6 +422,8 @@ export async function seedDatabase() {
   
   const leads = generateLeads(100);
 
+  const reports = generateReports(30, landIds, userIds, chatIds);
+
   // Se inserta vía `Model.collection` (handle nativo de la conexión Mongoose):
   // usa el nombre de colección real del modelo — corrige el desajuste
   // rentalRequests/chatMessages/auditEvents del driver nativo (#135 A-2) — y
@@ -388,6 +455,9 @@ export async function seedDatabase() {
   console.log(`[seed] Inserting ${leads.length} leads...`);
   await Lead.collection.insertMany(leads);
 
+  console.log(`[seed] Inserting ${reports.length} reports...`);
+  await Report.collection.insertMany(reports);
+
   console.log("[seed] Database seeded successfully!");
-  console.log(`[seed] Total: ${users.length} users, ${lands.length} lands, ${requests.length} requests, ${contracts.length} contracts, ${payments.length} payments, ${chats.length} chats, ${messages.length} messages, ${auditEvents.length} events, ${leads.length} leads`);
+  console.log(`[seed] Total: ${users.length} users, ${lands.length} lands, ${requests.length} requests, ${contracts.length} contracts, ${payments.length} payments, ${chats.length} chats, ${messages.length} messages, ${auditEvents.length} events, ${leads.length} leads, ${reports.length} reports`);
 }

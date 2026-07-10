@@ -11,6 +11,8 @@ interface FakeUserShape {
   primaryEmailAddress: { emailAddress: string } | null;
   fullName: string | null;
   primaryPhoneNumber: { phoneNumber: string } | null;
+  publicMetadata?: Record<string, unknown>;
+  twoFactorEnabled?: boolean;
 }
 
 function makeFakeClient(
@@ -60,7 +62,29 @@ describe("getClerkUserProfile", () => {
       email: "real@example.com",
       fullName: "Real Person",
       phone: "+50761234567",
+      role: undefined,
+      twoFactorEnabled: false,
     });
+  });
+
+  it("maps role from publicMetadata and the 2FA flag (#262)", async () => {
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      makeFakeClient(
+        {
+          primaryEmailAddress: { emailAddress: "admin@example.com" },
+          fullName: "Admin Person",
+          primaryPhoneNumber: null,
+          publicMetadata: { role: "admin" },
+          twoFactorEnabled: true,
+        },
+        counter,
+      ),
+    );
+
+    const profile = await getClerkUserProfile("user_admin");
+    expect(profile?.role).toBe("admin");
+    expect(profile?.twoFactorEnabled).toBe(true);
   });
 
   it("caches the result and does not hit Clerk twice", async () => {

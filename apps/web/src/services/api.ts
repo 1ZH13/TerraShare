@@ -15,7 +15,18 @@ import type {
   PaymentDto,
   RentalRequestDto,
 } from "@terrashare/shared";
-import { IDEMPOTENCY_HEADER } from "@terrashare/shared";
+
+/**
+ * Nombre de la cabecera de idempotencia (HU-42 #160).
+ *
+ * Se declara aquí en vez de importarla desde `@terrashare/shared`: ese paquete
+ * se resuelve por alias a su código fuente y su `index` re-exporta los esquemas
+ * de `zod`. Un import de *valor* desde la raíz arrastraría `zod` al bundle del
+ * web —que no lo declara como dependencia— y rompería el build; los imports de
+ * tipo se borran en compilación y no lo hacen.
+ * Debe coincidir con `packages/shared/src/schemas/payments.ts`.
+ */
+const IDEMPOTENCY_HEADER = "Idempotency-Key";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -127,6 +138,12 @@ export const createRentalRequest = async (
 export const listRentalRequests = async (): Promise<RentalRequestDto[]> => {
   const res = await request<RentalRequestDto[]>("GET", "/api/v1/rental-requests");
   return res?.data ?? [];
+};
+
+/** GET /api/v1/rental-requests/:requestId */
+export const getRentalRequestById = async (requestId: string): Promise<RentalRequestDto | null> => {
+  const res = await request<RentalRequestDto>("GET", `/api/v1/rental-requests/${requestId}`);
+  return res?.data ?? null;
 };
 
 /** GET /api/v1/lands/:landId */
@@ -312,12 +329,29 @@ export const updateMyProfile = async (payload: UserProfile): Promise<MeResponse 
   return res?.data ?? null;
 };
 
+export type ReportTargetType = "land" | "user" | "chat";
+export type ReportReason = "spam" | "fraude" | "contenido_inapropiado" | "informacion_falsa" | "otro";
+
+export interface CreateReportInput {
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: ReportReason;
+  description?: string;
+}
+
+/** POST /api/v1/reports — reporta un terreno/usuario/chat (usuario autenticado). */
+export const createReport = async (input: CreateReportInput): Promise<{ id: string } | null> => {
+  const res = await request<{ id: string }>("POST", "/api/v1/reports", input);
+  return res?.data ?? null;
+};
+
 export const api = {
   listLands,
   getMyLands,
   getLandById,
   createRentalRequest,
   listRentalRequests,
+  getRentalRequestById,
   createCheckoutSession,
   getPaymentsByRequest,
   getMyPayments,
@@ -328,4 +362,5 @@ export const api = {
   getMessages,
   sendMessage,
   getExternalContact,
+  createReport,
 };

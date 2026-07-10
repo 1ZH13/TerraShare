@@ -62,11 +62,13 @@ export interface RentalRequestRecord {
   id: string;
   landId: string;
   tenantId: string;
-  period: {
+  operation?: "alquiler" | "venta";
+  period?: {
     startDate: string;
     endDate: string;
   };
-  intendedUse: string;
+  intendedUse?: string;
+  offerAmount?: number;
   notes?: string;
   status: RentalRequestStatus;
   createdAt: string;
@@ -104,6 +106,9 @@ export interface PaymentRecord {
   contractId?: string;
   amount: number;
   currency: "USD" | "PAB";
+  platformFeeAmount?: number;
+  netAmount?: number;
+  settlementCurrency?: "USD";
   status: PaymentStatus;
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
@@ -140,7 +145,7 @@ export interface ChatMessageRecord {
 export interface AuditEventRecord {
   id: string;
   actorId: string;
-  actorRole: AppRole;
+  actorRole: AppRole | "system";
   entity:
     | "auth"
     | "user"
@@ -148,7 +153,9 @@ export interface AuditEventRecord {
     | "rental_request"
     | "contract"
     | "payment"
-    | "chat";
+    | "chat"
+    | "report"
+    | "webhook";
   action:
     | "created"
     | "updated"
