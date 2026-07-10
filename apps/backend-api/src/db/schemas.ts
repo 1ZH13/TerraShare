@@ -18,6 +18,9 @@ export type ChatStatus = "active" | "archived";
 export type LeadSource = "landing" | "app-web" | "admin-dashboard";
 export type UserStatus = "active" | "blocked";
 export type AppRole = "user" | "admin";
+export type ReportTargetType = "land" | "user" | "chat";
+export type ReportReason = "spam" | "fraude" | "contenido_inapropiado" | "informacion_falsa" | "otro";
+export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
 
 export interface IUser extends Document {
   clerkUserId: string;
@@ -68,11 +71,13 @@ export interface IRentalRequest extends Document {
   id: string;
   landId: string;
   tenantId: string;
-  period: {
+  operation: "alquiler" | "venta";
+  period?: {
     startDate: string;
     endDate: string;
   };
-  intendedUse: string;
+  intendedUse?: string;
+  offerAmount?: number;
   notes?: string;
   status: RentalRequestStatus;
   createdAt: Date;
@@ -101,6 +106,9 @@ export interface IPayment extends Document {
   contractId?: string;
   amount: number;
   currency: "USD" | "PAB";
+  platformFeeAmount?: number;
+  netAmount?: number;
+  settlementCurrency?: "USD";
   status: PaymentStatus;
   refundedAmount?: number;
   refunds?: IPaymentRefund[];
@@ -137,8 +145,8 @@ export interface IChatMessage extends Document {
 export interface IAuditEvent extends Document {
   id: string;
   actorId: string;
-  actorRole: AppRole;
-  entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat";
+  actorRole: AppRole | "system";
+  entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat" | "report" | "webhook";
   action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "refunded" | "status_changed";
   entityId: string;
   metadata?: Record<string, unknown>;
@@ -150,6 +158,43 @@ export interface ILead extends Document {
   email: string;
   source: LeadSource;
   createdAt: Date;
+}
+
+/**
+ * Evento de webhook de Stripe ya procesado (HU-42 #160). Se registra por
+ * `eventId` (único) para que reentregas del mismo evento no repitan efectos.
+ */
+export interface IWebhookEvent extends Document {
+  eventId: string;
+  type?: string;
+  paymentId?: string;
+  createdAt: Date;
+}
+
+/**
+ * Clave de idempotencia de una operación de pago (HU-42 #160). Mapea la
+ * `Idempotency-Key` del cliente al pago creado, para que un reintento devuelva
+ * el mismo pago en vez de crear (y cobrar) uno nuevo.
+ */
+export interface IIdempotencyKey extends Document {
+  key: string;
+  scope: string;
+  paymentId: string;
+  createdAt: Date;
+}
+
+export interface IReport extends Document {
+  id: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: ReportReason;
+  description?: string;
+  reporterId: string;
+  status: ReportStatus;
+  resolutionNote?: string;
+  resolvedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -205,11 +250,16 @@ const RentalRequestSchema = new Schema<IRentalRequest>({
   id: { type: String, required: true, unique: true },
   landId: { type: String, required: true },
   tenantId: { type: String, required: true },
+  // Tipo de trato: alquiler (07) o compra/venta (28). Por defecto alquiler para
+  // compatibilidad con las solicitudes existentes (#249).
+  operation: { type: String, enum: ["alquiler", "venta"], default: "alquiler" },
+  // period/intendedUse solo aplican al alquiler; offerAmount solo a la compra.
   period: {
-    startDate: { type: String, required: true },
-    endDate: { type: String, required: true },
+    startDate: { type: String },
+    endDate: { type: String },
   },
-  intendedUse: { type: String, required: true },
+  intendedUse: { type: String },
+  offerAmount: { type: Number },
   notes: String,
   status: { type: String, enum: ["draft", "pending_owner", "approved", "rejected", "cancelled", "pending_payment", "paid"], default: "draft" },
 }, { timestamps: true });
@@ -234,6 +284,9 @@ const PaymentSchema = new Schema<IPayment>({
   contractId: String,
   amount: { type: Number, required: true },
   currency: { type: String, enum: ["USD", "PAB"], default: "USD" },
+  platformFeeAmount: Number,
+  netAmount: Number,
+  settlementCurrency: { type: String, enum: ["USD"] },
   status: { type: String, enum: ["pending", "processing", "paid", "failed", "cancelled", "refunded", "partially_refunded"], default: "pending" },
   refundedAmount: { type: Number, default: 0 },
   refunds: [{
@@ -270,8 +323,8 @@ const ChatMessageSchema = new Schema<IChatMessage>({
 const AuditEventSchema = new Schema<IAuditEvent>({
   id: { type: String, required: true, unique: true },
   actorId: { type: String, required: true },
-  actorRole: { type: String, enum: ["user", "admin"], required: true },
-  entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat"], required: true },
+  actorRole: { type: String, enum: ["user", "admin", "system"], required: true },
+  entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat", "report", "webhook"], required: true },
   action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "refunded", "status_changed"], required: true },
   entityId: { type: String, required: true },
   metadata: Schema.Types.Mixed,
@@ -281,6 +334,31 @@ const LeadSchema = new Schema<ILead>({
   id: { type: String, required: true, unique: true },
   email: { type: String, required: true },
   source: { type: String, enum: ["landing", "app-web", "admin-dashboard"], required: true },
+}, { timestamps: true });
+
+const WebhookEventSchema = new Schema<IWebhookEvent>({
+  eventId: { type: String, required: true, unique: true },
+  type: String,
+  paymentId: String,
+  createdAt: { type: Date, default: Date.now },
+});
+
+const IdempotencyKeySchema = new Schema<IIdempotencyKey>({
+  key: { type: String, required: true, unique: true },
+  scope: { type: String, required: true },
+  paymentId: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+const ReportSchema = new Schema<IReport>({
+  id: { type: String, required: true, unique: true },
+  targetType: { type: String, enum: ["land", "user", "chat"], required: true },
+  targetId: { type: String, required: true },
+  reason: { type: String, enum: ["spam", "fraude", "contenido_inapropiado", "informacion_falsa", "otro"], required: true },
+  description: String,
+  reporterId: { type: String, required: true },
+  status: { type: String, enum: ["open", "reviewing", "resolved", "dismissed"], default: "open" },
+  resolutionNote: String,
+  resolvedBy: String,
 }, { timestamps: true });
 
 // Índices secundarios (antes vivían en el driver nativo config/database.ts; se
@@ -297,6 +375,13 @@ ChatSchema.index({ landId: 1 });
 ChatMessageSchema.index({ chatId: 1, createdAt: 1 });
 AuditEventSchema.index({ entity: 1, entityId: 1 });
 LeadSchema.index({ email: 1 });
+// TTL: las claves/eventos caducan a los 30 días (Stripe recomienda conservar
+// las claves de idempotencia ≥24 h). El unique index es el guardián real. #160
+WebhookEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+IdempotencyKeySchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+ReportSchema.index({ status: 1 });
+ReportSchema.index({ targetType: 1, targetId: 1 });
+ReportSchema.index({ reporterId: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
@@ -307,3 +392,6 @@ export const Chat = mongoose.model<IChat>("Chat", ChatSchema);
 export const ChatMessage = mongoose.model<IChatMessage>("ChatMessage", ChatMessageSchema);
 export const AuditEvent = mongoose.model<IAuditEvent>("AuditEvent", AuditEventSchema);
 export const Lead = mongoose.model<ILead>("Lead", LeadSchema);
+export const WebhookEvent = mongoose.model<IWebhookEvent>("WebhookEvent", WebhookEventSchema);
+export const IdempotencyKey = mongoose.model<IIdempotencyKey>("IdempotencyKey", IdempotencyKeySchema);
+export const Report = mongoose.model<IReport>("Report", ReportSchema);

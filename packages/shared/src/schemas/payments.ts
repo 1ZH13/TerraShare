@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+/**
+ * Nombre del header de clave de idempotencia (HU-42 #160). Compartido para que
+ * frontend y backend usen exactamente el mismo nombre en operaciones de pago.
+ */
+export const IDEMPOTENCY_HEADER = "Idempotency-Key";
+
 export const PaymentStatusSchema = z.enum([
   "pending",
   "processing",

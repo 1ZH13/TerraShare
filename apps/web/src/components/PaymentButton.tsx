@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { RentalRequestDto } from "@terrashare/shared";
 import { createCheckoutSession } from "../services/api";
 
@@ -9,6 +9,11 @@ interface PaymentButtonProps {
 export default function PaymentButton({ rentalRequest }: PaymentButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Clave de idempotencia estable por intento de pago: reintentos/dobles clics
+  // reutilizan la misma clave y no crean sesiones ni cobros duplicados (HU-42 #160).
+  const idempotencyKey = useRef(
+    (globalThis.crypto?.randomUUID?.() ?? `idem_${Date.now()}_${Math.random().toString(36).slice(2)}`),
+  );
 
   const handlePay = async () => {
     if (!rentalRequest?.id) {
@@ -26,6 +31,7 @@ export default function PaymentButton({ rentalRequest }: PaymentButtonProps) {
         currency: "USD",
         successUrl: `${origin}/checkout/success?requestId=${rentalRequest.id}`,
         cancelUrl: `${origin}/checkout/cancel?requestId=${rentalRequest.id}`,
+        idempotencyKey: idempotencyKey.current,
       });
 
       if (result?.checkoutUrl) {

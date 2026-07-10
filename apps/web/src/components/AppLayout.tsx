@@ -4,7 +4,8 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Navbar } from "./ui";
 import type { BuscoOfrezcoMode } from "./ui";
-import { getDisplayName } from "./authDisplay";
+import { getDisplayName, isAdminUser } from "./authDisplay";
+import type { UserMenuItem } from "./ui";
 import "../pages/app-shell.css";
 
 const MODE_STORAGE_KEY = "terrashare-mode";
@@ -72,6 +73,16 @@ export default function AppLayout({ children }: { children?: ReactNode }) {
 
   const context: AppLayoutContext = { mode, setMode };
 
+  const userMenuItems: UserMenuItem[] = [
+    { label: "Mi perfil", onClick: () => navigate({ to: "/dashboard/profile" }) },
+    { label: "Mis terrenos", onClick: () => navigate({ to: "/dashboard/lands" }) },
+    { label: "Pagos", onClick: () => navigate({ to: "/dashboard/payments" }) },
+  ];
+  // El acceso al panel admin solo se ofrece a cuentas admin (issue #251).
+  if (isAdminUser(user)) {
+    userMenuItems.push({ label: "Panel admin", onClick: () => navigate({ to: "/dashboard/admin" }) });
+  }
+
   const actions = (
     <>
       <Link to="/dashboard/notifications" className="ds-navbar__icon" aria-label="Notificaciones">
@@ -91,11 +102,7 @@ export default function AppLayout({ children }: { children?: ReactNode }) {
         onModeChange={setMode}
         userName={getDisplayName(user)}
         actions={actions}
-        userMenuItems={[
-          { label: "Mi perfil", onClick: () => navigate({ to: "/dashboard/profile" }) },
-          { label: "Mis terrenos", onClick: () => navigate({ to: "/dashboard/lands" }) },
-          { label: "Pagos", onClick: () => navigate({ to: "/dashboard/payments" }) },
-        ]}
+        userMenuItems={userMenuItems}
         onSignOut={() => signOut({ redirectUrl: "/" })}
       />
       <main className="app-main">

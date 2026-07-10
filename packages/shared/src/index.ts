@@ -42,6 +42,7 @@ export type {
   RentalRequestDto,
   RentalRequestStatus,
   UpdateRentalRequestStatusDto,
+  DealOperation,
 } from "./dto/rental-requests";
 
 export type {
@@ -60,6 +61,10 @@ export type {
   ReceiptDto,
   RefundDto,
   StripeWebhookEventDto,
+  ReconciliationDiscrepancyType,
+  ReconciliationDiscrepancyDto,
+  ReconciliationCurrencyTotalsDto,
+  ReconciliationReportDto,
 } from "./dto/payments";
 
 export type {

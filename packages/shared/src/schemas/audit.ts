@@ -11,6 +11,7 @@ export const AuditEventFilterSchema = z.object({
     "contract",
     "payment",
     "chat",
+    "webhook",
   ] as const satisfies AuditableEntity[]).optional(),
   action: z.enum([
     "created",

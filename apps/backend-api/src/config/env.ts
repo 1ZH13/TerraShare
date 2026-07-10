@@ -7,9 +7,12 @@ export const envSchema = z.object({
   CLERK_JWKS_URL: z.string().url("CLERK_JWKS_URL must be a valid URL"),
   CLERK_ISSUER: z.string().min(1, "CLERK_ISSUER is required"),
   ALLOW_DEV_AUTH_BYPASS: z.string().optional(),
+  REQUIRE_ADMIN_MFA: z.string().optional(),
   ADMIN_SEED_EMAIL: z.string().default("terradmin@gmail.com"),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  // Comisión de plataforma en basis points (100 bps = 1%). Default 5%. (HU-41 #159)
+  STRIPE_PLATFORM_FEE_BPS: z.coerce.number().int().min(0).max(10000).default(500),
   CLERK_SECRET_KEY: z.string().optional(),
   WHATSAPP_CONTACT_ENABLED: z.string().default("false"),
   FORCE_SEED: z.string().default("false"),
@@ -22,6 +25,7 @@ const BASE_CORS_ALLOW_HEADERS = [
   "Authorization",
   "x-request-id",
   "stripe-signature",
+  "Idempotency-Key",
 ];
 
 const DEV_CORS_ALLOW_HEADERS = ["x-dev-role", "x-dev-user-id"];
@@ -36,6 +40,15 @@ export const env = {
     const fallback = process.env.NODE_ENV !== "production" ? "true" : "false";
     return (process.env.ALLOW_DEV_AUTH_BYPASS ?? fallback) === "true";
   },
+  /**
+   * Exige 2FA para los endpoints de admin. En producción va activo por defecto;
+   * fuera de producción se apaga salvo que se pida explícitamente, porque las
+   * cuentas admin locales rara vez tienen 2FA configurado en Clerk (#262).
+   */
+  get requireAdminMfa() {
+    const fallback = process.env.NODE_ENV === "production" ? "true" : "false";
+    return (process.env.REQUIRE_ADMIN_MFA ?? fallback) === "true";
+  },
   adminSeedEmail: parsed.ADMIN_SEED_EMAIL.toLowerCase(),
   clerkSecretKey: parsed.CLERK_SECRET_KEY,
   get clerkBackendConfigured() {
@@ -43,6 +56,7 @@ export const env = {
   },
   stripeSecretKey: parsed.STRIPE_SECRET_KEY,
   stripeWebhookSecret: parsed.STRIPE_WEBHOOK_SECRET,
+  platformFeeBps: parsed.STRIPE_PLATFORM_FEE_BPS,
   whatsappContactEnabled: parsed.WHATSAPP_CONTACT_ENABLED === "true",
   get isProduction() {
     return process.env.NODE_ENV === "production";

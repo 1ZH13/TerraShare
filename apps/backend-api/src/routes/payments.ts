@@ -1,15 +1,29 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import Stripe from "stripe";
 
 import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
 import { requireAuth, requireAdmin } from "../middleware/require-auth";
-import { createAuditEvent } from "../store/audit";
+import { verifyStripeWebhook, WebhookVerificationError } from "../lib/stripe-webhook";
+import { createAuditEvent, SYSTEM_ACTOR } from "../store/audit";
 import { Payment, RentalRequest, Land, Contract, User } from "../db/schemas";
 import {
   canInitiatePayment,
   canReadPayment,
 } from "../lib/auth-helpers";
+import {
+  computePaymentBreakdown,
+  stripeChargeCurrency,
+  toStripeMinorUnits,
+} from "../lib/payments-money";
+import { buildReconciliationReport } from "../lib/payments-reconciliation";
+import {
+  findPaymentIdByIdempotencyKey,
+  reserveIdempotencyKey,
+  isWebhookProcessed,
+  markWebhookProcessed,
+} from "../lib/payments-idempotency";
 import { buildReceipt } from "../lib/payments-receipt";
 import type { AppEnv } from "../types";
 
@@ -23,6 +37,7 @@ type StripeEventObject = {
 };
 
 type StripeWebhookEvent = {
+  id?: string;
   type?: string;
   data?: { object?: StripeEventObject };
 };
@@ -106,8 +121,15 @@ function getStripeClient() {
 async function computePaymentAmount(rentalRequestId: string, fallback = 1000) {
   const request = await RentalRequest.findOne({ id: rentalRequestId }).lean();
   if (!request) return fallback;
-  
+
   const land = await Land.findOne({ id: request.landId }).lean();
+
+  // Compra/venta (#249): se cobra la oferta acordada, o el precio de venta del
+  // terreno como respaldo. El alquiler cobra el precio mensual (primer mes).
+  if (request.operation === "venta") {
+    return request.offerAmount ?? land?.salePrice ?? fallback;
+  }
+
   return land?.priceRule?.pricePerMonth ?? fallback;
 }
 
@@ -172,6 +194,78 @@ async function applyPaidTransition(
   }
 }
 
+/**
+ * Respuesta idempotente de create-intent: reconstruye la forma habitual a
+ * partir del pago ya creado. Recupera el `client_secret` desde Stripe cuando es
+ * posible para que el cliente pueda continuar el pago. (HU-42 #160)
+ */
+async function existingIntentResponse(c: Context<AppEnv>, paymentId: string) {
+  const payment = await Payment.findOne({ id: paymentId }).lean();
+  if (!payment) {
+    return failure(c, 404, "NOT_FOUND", "Payment not found");
+  }
+
+  let clientSecret: string | null | undefined;
+  const stripe = getStripeClient();
+  if (stripe && payment.stripePaymentIntentId) {
+    try {
+      const intent = await stripe.paymentIntents.retrieve(payment.stripePaymentIntentId);
+      clientSecret = intent.client_secret;
+    } catch (err) {
+      console.error("Stripe intent retrieval failed on idempotent replay:", err);
+    }
+  }
+
+  return success(c, {
+    paymentId: payment.id,
+    clientSecret,
+    amount: payment.amount,
+    currency: payment.currency,
+    idempotent: true,
+  });
+}
+
+/** Respuesta idempotente de checkout-session: reutiliza la sesión ya creada. */
+async function existingSessionResponse(c: Context<AppEnv>, paymentId: string) {
+  const payment = await Payment.findOne({ id: paymentId }).lean();
+  if (!payment) {
+    return failure(c, 404, "NOT_FOUND", "Payment not found");
+  }
+
+  return success(c, {
+    paymentId: payment.id,
+    stripeSessionId: payment.stripeSessionId,
+    checkoutUrl: payment.checkoutUrl,
+    status: payment.status,
+    idempotent: true,
+  });
+}
+
+/**
+ * Registra el rechazo de un webhook de Stripe (HU-33 #152): log estructurado
+ * para observabilidad inmediata + evento de auditoría durable. El actor es el
+ * sistema porque el webhook llega sin usuario autenticado. La persistencia va
+ * envuelta en try/catch para no convertir un fallo de auditoría en un 500 que
+ * Stripe reintentaría en bucle.
+ */
+async function recordRejectedWebhook(
+  reason: string,
+  details: { hasSignature: boolean } & Record<string, unknown>,
+): Promise<void> {
+  console.error(`[stripe-webhook] rejected: ${reason}`, details);
+  try {
+    await createAuditEvent({
+      actor: SYSTEM_ACTOR,
+      entity: "webhook",
+      action: "rejected",
+      entityId: "unknown",
+      metadata: { source: "stripe", reason, ...details },
+    });
+  } catch (auditErr) {
+    console.error("[stripe-webhook] failed to persist rejection audit event:", auditErr);
+  }
+}
+
 export const paymentRoutes = new Hono<AppEnv>();
 
 paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
@@ -195,28 +289,63 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
     return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Rental request is not payable");
   }
 
+  const idempotencyKey = c.req.header("idempotency-key");
+
+  // Reintento con la misma clave → devolver el pago ya creado, sin volver a
+  // cobrar ni crear un duplicado (HU-42 #160).
+  if (idempotencyKey) {
+    const existingId = await findPaymentIdByIdempotencyKey(idempotencyKey);
+    if (existingId) {
+      return existingIntentResponse(c, existingId);
+    }
+  }
+
   const amount = await computePaymentAmount(request.id);
+  const breakdown = computePaymentBreakdown(amount, body.currency, env.platformFeeBps);
   const stripe = getStripeClient();
 
   if (!stripe) {
     return failure(c, 503, "STRIPE_NOT_CONFIGURED", "Stripe is not configured");
   }
 
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(amount * 100),
-    currency: body.currency.toLowerCase(),
-    metadata: {
-      paymentId: `pay_${crypto.randomUUID()}`,
-      rentalRequestId: request.id,
+  const paymentId = `pay_${crypto.randomUUID()}`;
+
+  // Reservar la clave antes de crear: si una petición concurrente ganó la
+  // carrera, devolvemos su pago en lugar de crear otro.
+  if (idempotencyKey) {
+    const reserved = await reserveIdempotencyKey(idempotencyKey, "create-intent", paymentId);
+    if (!reserved) {
+      const winnerId = await findPaymentIdByIdempotencyKey(idempotencyKey);
+      if (winnerId) return existingIntentResponse(c, winnerId);
+    }
+  }
+
+  const paymentIntent = await stripe.paymentIntents.create(
+    {
+      amount: toStripeMinorUnits(breakdown.grossAmount),
+      currency: stripeChargeCurrency(body.currency),
+      metadata: {
+        paymentId,
+        rentalRequestId: request.id,
+        presentmentCurrency: body.currency,
+        platformFeeAmount: String(breakdown.platformFeeAmount),
+        netAmount: String(breakdown.netAmount),
+      },
+      automatic_payment_methods: { enabled: true },
     },
-    automatic_payment_methods: { enabled: true },
-  });
+    // Clave de idempotencia hacia Stripe: la del cliente si la hay, o el propio
+    // paymentId (estable dentro de esta petición).
+    { idempotencyKey: idempotencyKey ?? paymentId },
+  );
 
   const payment = await Payment.create({
-    id: paymentIntent.metadata.paymentId,
+    id: paymentId,
     rentalRequestId: request.id,
-    amount,
+    amount: breakdown.grossAmount,
     currency: body.currency,
+    platformFeeAmount: breakdown.platformFeeAmount,
+    netAmount: breakdown.netAmount,
+    settlementCurrency: breakdown.settlementCurrency,
     status: "pending",
     stripePaymentIntentId: paymentIntent.id,
   });
@@ -270,19 +399,49 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
     return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Rental request is not payable");
   }
 
+  const idempotencyKey = c.req.header("idempotency-key");
+
+  // Reintento con la misma clave → devolver la sesión ya creada (HU-42 #160).
+  if (idempotencyKey) {
+    const existingId = await findPaymentIdByIdempotencyKey(idempotencyKey);
+    if (existingId) {
+      return existingSessionResponse(c, existingId);
+    }
+  }
+
   const amount = await computePaymentAmount(request.id);
+  const breakdown = computePaymentBreakdown(amount, body.currency, env.platformFeeBps);
+  const paymentId = `pay_${crypto.randomUUID()}`;
+
+  // Reservar la clave antes de crear: si otra petición concurrente ganó la
+  // carrera, devolvemos su sesión en lugar de crear otra.
+  if (idempotencyKey) {
+    const reserved = await reserveIdempotencyKey(idempotencyKey, "checkout-session", paymentId);
+    if (!reserved) {
+      const winnerId = await findPaymentIdByIdempotencyKey(idempotencyKey);
+      if (winnerId) return existingSessionResponse(c, winnerId);
+    }
+  }
 
   const payment = await Payment.create({
-    id: `pay_${crypto.randomUUID()}`,
+    id: paymentId,
     rentalRequestId: request.id,
-    amount,
+    amount: breakdown.grossAmount,
     currency: body.currency,
+    platformFeeAmount: breakdown.platformFeeAmount,
+    netAmount: breakdown.netAmount,
+    settlementCurrency: breakdown.settlementCurrency,
     status: "pending",
   });
 
   const stripe = getStripeClient();
 
   if (stripe) {
+    const feeMetadata = {
+      presentmentCurrency: body.currency,
+      platformFeeAmount: String(breakdown.platformFeeAmount),
+      netAmount: String(breakdown.netAmount),
+    };
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       client_reference_id: payment.id,
@@ -292,8 +451,8 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
         {
           quantity: 1,
           price_data: {
-            currency: body.currency.toLowerCase(),
-            unit_amount: Math.round(amount * 100),
+            currency: stripeChargeCurrency(body.currency),
+            unit_amount: toStripeMinorUnits(breakdown.grossAmount),
             product_data: {
               name: `TerraShare rental ${request.id}`,
             },
@@ -303,14 +462,16 @@ paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
       metadata: {
         paymentId: payment.id,
         rentalRequestId: request.id,
+        ...feeMetadata,
       },
       payment_intent_data: {
         metadata: {
           paymentId: payment.id,
           rentalRequestId: request.id,
+          ...feeMetadata,
         },
       },
-    });
+    }, { idempotencyKey: idempotencyKey ?? payment.id });
 
     const paymentIntentId = extractPaymentIntentId(session.payment_intent);
 
@@ -395,6 +556,17 @@ paymentRoutes.get("/payments", requireAuth, async (c) => {
 
   const items = await Payment.find(query).sort({ createdAt: -1 }).lean();
   return success(c, items);
+});
+
+/**
+ * Reporte de conciliación (HU-41 #159): totales por moneda (bruto/comisión/neto)
+ * y discrepancias entre pagos, solicitudes y contratos. Solo admin. Se registra
+ * antes de `/payments/:paymentId` para que "reconciliation" no se interprete
+ * como un id de pago.
+ */
+paymentRoutes.get("/payments/reconciliation", requireAuth, requireAdmin, async (c) => {
+  const report = await buildReconciliationReport();
+  return success(c, report);
 });
 
 paymentRoutes.get("/payments/:paymentId", requireAuth, async (c) => {
@@ -644,24 +816,44 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
 
   const rawBody = await c.req.text();
   const isDev = process.env.NODE_ENV !== "production";
+
+  // Solo podemos verificar cuando hay secret real y cliente Stripe. El
+  // placeholder de desarrollo/pruebas no cuenta como configuración válida.
+  const verificationConfigured =
+    !!webhookSecret && webhookSecret !== "whsec_placeholder" && !!stripe;
+
+  // En producción SIEMPRE se exige verificación (HU-33 #152). En desarrollo solo
+  // se verifica cuando llega una firma (p.ej. `stripe listen`); los eventos
+  // locales sin firma se procesan por el bypass de desarrollo, porque Stripe no
+  // alcanza `localhost`.
+  const mustVerify = !isDev || (verificationConfigured && !!signature);
+
   let event: StripeWebhookEvent;
 
-  if (signature && webhookSecret && stripe) {
-    try {
-      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret) as unknown as StripeWebhookEvent;
-    } catch (err) {
-      console.error("Stripe webhook signature verification failed:", err);
-      return failure(c, 401, "UNAUTHORIZED", "Invalid webhook signature");
-    }
-  } else {
-    if (!isDev) {
-      if (!signature) {
-        return failure(c, 401, "UNAUTHORIZED", "Missing stripe-signature header");
-      }
-
+  if (mustVerify) {
+    if (!verificationConfigured) {
+      // Producción sin verificación configurada: fallamos cerrado. Nunca se
+      // procesa un evento sin poder validar su firma.
+      await recordRejectedWebhook("verification_not_configured", { hasSignature: !!signature });
       return failure(c, 500, "INTERNAL_ERROR", "Stripe webhook verification is not configured correctly");
     }
 
+    try {
+      event = (await verifyStripeWebhook({
+        stripe: stripe!,
+        rawBody,
+        signature,
+        secret: webhookSecret!,
+      })) as unknown as StripeWebhookEvent;
+    } catch (err) {
+      if (err instanceof WebhookVerificationError) {
+        await recordRejectedWebhook(err.reason, { hasSignature: !!signature });
+        return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook signature");
+      }
+      throw err;
+    }
+  } else {
+    // Bypass de desarrollo: sin firma que validar, procesamos el JSON crudo.
     let payload: unknown;
     try {
       payload = JSON.parse(rawBody);
@@ -674,6 +866,14 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
     }
 
     event = payload as StripeWebhookEvent;
+  }
+
+  // Idempotencia de webhooks (HU-42 #160): si este mismo evento de Stripe ya se
+  // procesó, no repetimos efectos. Solo aplica cuando llega un `event.id`
+  // (siempre presente en producción; en pruebas/dev sin id se omite el dedupe).
+  const eventId = event.id;
+  if (eventId && (await isWebhookProcessed(eventId))) {
+    return success(c, { received: true, duplicate: true, eventId });
   }
 
   const paymentId = await resolvePaymentIdFromWebhook(event);
@@ -690,6 +890,7 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
   const eventType = event.type ?? "";
 
   if (!paidWebhookEvents.has(eventType) && !failedWebhookEvents.has(eventType)) {
+    if (eventId) await markWebhookProcessed(eventId, eventType, payment.id);
     return success(c, {
       received: true,
       paymentId: payment.id,
@@ -710,6 +911,15 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
     (eventType.startsWith("payment_intent") ? event.data?.object?.id : undefined);
 
   const stripeSessionId = eventType.startsWith("checkout.session") ? event.data?.object?.id : undefined;
+
+  // Reservar el eventId antes de aplicar; si otra entrega concurrente ya lo
+  // registró, no repetimos la transición.
+  if (eventId) {
+    const firstDelivery = await markWebhookProcessed(eventId, eventType, payment.id);
+    if (!firstDelivery) {
+      return success(c, { received: true, duplicate: true, eventId });
+    }
+  }
 
   await applyPaidTransition(payment, newStatus, { paymentIntentId, stripeSessionId });
 
