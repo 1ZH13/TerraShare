@@ -54,3 +54,21 @@ Un admin logueado ve la entrada **"Panel admin"** en el menu de usuario de la Na
 2. **Cualquier cuenta:** en el [Dashboard de Clerk](https://dashboard.clerk.com) → Users → (usuario) → **Metadata → Public**, agrega `{ "role": "admin" }` y guarda. Al re-loguear, el usuario tendra acceso al panel.
 
 > Nota: los usuarios `role:"admin"` creados por `apps/backend-api/src/db/seed.ts` (emails `@terrashare.test`) son datos de relleno para poblar las vistas; **no permiten iniciar sesion** porque no existen como identidades en Clerk.
+
+### Como llega el rol al backend
+
+El token de sesion por defecto de Clerk **no incluye `public_metadata`**, asi que el backend no puede leer el rol de los claims. Para resolverlo, `resolveClerkAuthUser` consulta la **Clerk Backend API** (con `CLERK_SECRET_KEY`, cacheada 5 min) y obtiene de ahi el rol y el estado de 2FA del usuario.
+
+Consecuencias practicas:
+
+- **`CLERK_SECRET_KEY` es obligatoria** para que un admin real sea reconocido por la API. Sin ella, todos los usuarios llegan como `role: "user"` y `/api/v1/admin/*` responde `403`.
+- Si prefieres evitar la llamada a Clerk, puedes anadir un claim `role` (o `public_metadata`) al token mediante una **JWT template / custom session claims** en Clerk; cuando el claim existe, el backend no consulta la API.
+
+### MFA para admins
+
+`requireAdmin` puede exigir 2FA a los endpoints `/admin/*`, controlado por `REQUIRE_ADMIN_MFA`:
+
+- **Produccion:** activo por defecto. Un admin sin 2FA recibe `403 MFA_REQUIRED`.
+- **Fuera de produccion:** desactivado por defecto (las cuentas admin locales rara vez tienen 2FA).
+
+El estado de 2FA se lee del usuario real en Clerk (`twoFactorEnabled`), no de un claim que el token nunca emitia.

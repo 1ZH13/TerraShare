@@ -109,21 +109,29 @@ export function mapClerkClaimsToAuthUser(payload: JWTPayload): AuthContextUser {
 
 /**
  * Igual que {@link mapClerkClaimsToAuthUser}, pero cuando el token no trae
- * `email`/`name` (caso del token de sesión por defecto de Clerk) enriquece el
- * usuario con un fetch a la Clerk Backend API usando el `sub` (issue #132).
+ * `email`/`name`/`role` (caso del token de sesión por defecto de Clerk)
+ * enriquece el usuario con un fetch a la Clerk Backend API usando el `sub`
+ * (issues #132 y #262).
  *
  * El perfil obtenido se superpone sobre los claims y se re-mapea, de modo que
- * la lógica de rol (admin por email semilla) vuelve a evaluarse con el email
- * real. Si Clerk no está configurado o el fetch falla, degrada al mapeo puro.
+ * la lógica de rol (admin por email semilla o por `publicMetadata.role`) vuelve
+ * a evaluarse con los datos reales. Si Clerk no está configurado o el fetch
+ * falla, degrada al mapeo puro.
  */
 export async function resolveClerkAuthUser(
   payload: JWTPayload,
 ): Promise<AuthContextUser> {
   const base = mapClerkClaimsToAuthUser(payload);
+  const claims = payload as ClaimRecord;
 
   const needsEmail = base.email === FALLBACK_EMAIL;
   const needsName = base.profile.fullName === FALLBACK_NAME;
-  if (!needsEmail && !needsName) {
+  // Sin claim de rol no podemos saber si es admin: el token de sesión por
+  // defecto de Clerk no incluye `public_metadata` (#262).
+  const hasRoleClaim =
+    readClaim(claims, "role") !== undefined || readPublicMetadata(claims, "role") !== undefined;
+
+  if (!needsEmail && !needsName && hasRoleClaim) {
     return base;
   }
 
@@ -132,7 +140,7 @@ export async function resolveClerkAuthUser(
     return base;
   }
 
-  const enrichedClaims: ClaimRecord = { ...(payload as ClaimRecord) };
+  const enrichedClaims: ClaimRecord = { ...claims };
   if (needsEmail && profile.email) {
     enrichedClaims.email = profile.email;
   }
@@ -141,6 +149,15 @@ export async function resolveClerkAuthUser(
   }
   if (!base.profile.phone && profile.phone) {
     enrichedClaims.phone_number = profile.phone;
+  }
+  if (!hasRoleClaim && profile.role) {
+    const metadata = (claims.public_metadata as ClaimRecord | undefined) ?? {};
+    enrichedClaims.public_metadata = { ...metadata, role: profile.role };
+  }
+  // El 2FA real de Clerk sustituye al claim `mfa_verified`, que el token de
+  // sesión tampoco emite: sin esto la exigencia de MFA para admins era inerte.
+  if (readClaim(claims, "mfa_verified") === undefined && profile.twoFactorEnabled !== undefined) {
+    enrichedClaims.mfa_verified = profile.twoFactorEnabled;
   }
 
   return mapClerkClaimsToAuthUser(enrichedClaims as JWTPayload);
