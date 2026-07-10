@@ -12,12 +12,16 @@ export interface RentalPeriodDto {
   endDate: string;
 }
 
+export type DealOperation = "alquiler" | "venta";
+
 export interface RentalRequestDto {
   id: string;
   landId: string;
   tenantId: string;
-  period: RentalPeriodDto;
-  intendedUse: string;
+  operation?: DealOperation;
+  period?: RentalPeriodDto;
+  intendedUse?: string;
+  offerAmount?: number;
   notes?: string;
   status: RentalRequestStatus;
   createdAt: string;
@@ -26,8 +30,10 @@ export interface RentalRequestDto {
 
 export interface CreateRentalRequestDto {
   landId: string;
-  period: RentalPeriodDto;
-  intendedUse: string;
+  operation?: DealOperation;
+  period?: RentalPeriodDto;
+  intendedUse?: string;
+  offerAmount?: number;
   notes?: string;
 }
 

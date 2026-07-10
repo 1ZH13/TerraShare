@@ -1,161 +1,220 @@
 import { useEffect, useState } from "react";
-import { useAuth, useUser } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/clerk-react";
+import "./admin.css";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
+/** GET /api/v1/metrics — ver `middleware/metrics.ts#getMetrics`. */
 interface Metrics {
-  requests: { total: number; errors: number };
-  responseTimeP99: number;
+  totalRequests?: number;
+  totalErrors?: number;
+  averageLatency?: number;
+  requestsByPath?: Record<string, number>;
 }
 
-interface HealthStatus {
-  status: string;
-  timestamp: string;
+/** GET /api/v1/health */
+interface Health {
+  status?: string;
+  service?: string;
+  version?: string;
+  timestamp?: string;
   uptime?: number;
-  checks?: Record<string, boolean>;
 }
 
-interface LiveStatus {
-  status: string;
+/** GET /api/v1/health/live */
+interface Live {
+  status?: string;
+}
+
+/** GET /api/v1/health/ready — `checks` son strings ("ok" | "fail" | "not_configured"). */
+interface Ready {
+  status?: string;
+  checks?: Record<string, string>;
+  timestamp?: string;
+}
+
+const CHECK_LABELS: Record<string, string> = {
+  database: "Base de datos",
+  stripe: "Stripe",
+};
+
+function formatUptime(seconds?: number): string {
+  if (typeof seconds !== "number" || !Number.isFinite(seconds)) return "—";
+  const total = Math.floor(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function Probe({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className="adm-probe">
+      <span className={`adm-probe__dot ${ok ? "is-ok" : "is-bad"}`} aria-hidden="true" />
+      <div>
+        <div className="adm-probe__label">{label}</div>
+        <div className="adm-probe__value">{value}</div>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminObservabilityPage() {
-  const { user } = useUser();
   const { getToken } = useAuth();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [live, setLive] = useState<LiveStatus | null>(null);
-  const [ready, setReady] = useState<HealthStatus | null>(null);
+  const [health, setHealth] = useState<Health | null>(null);
+  const [live, setLive] = useState<Live | null>(null);
+  const [ready, setReady] = useState<Ready | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const buildHeaders = async (): Promise<Record<string, string>> => {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    const token = await getToken();
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    else if (import.meta.env.DEV) { headers["x-dev-role"] = "admin"; headers["x-dev-user-id"] = "web_dev_admin"; }
-    return headers;
-  };
-
-  const fetchData = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const headers = await buildHeaders();
-      const [metricsRes, healthRes, liveRes, readyRes] = await Promise.allSettled([
-        fetch(`${BASE_URL}/api/v1/metrics`, { headers }).then((r) => r.json()),
-        fetch(`${BASE_URL}/api/v1/health`, { headers }).then((r) => r.json()),
-        fetch(`${BASE_URL}/api/v1/health/live`, { headers }).then((r) => r.json()),
-        fetch(`${BASE_URL}/api/v1/health/ready`, { headers }).then((r) => r.json()),
-      ]);
-
-      if (metricsRes.status === "fulfilled") {
-        const raw = metricsRes.value?.data || metricsRes.value;
-        setMetrics(raw?.metrics || raw);
-      }
-      if (healthRes.status === "fulfilled") setHealth(healthRes.value?.data || healthRes.value);
-      if (liveRes.status === "fulfilled") setLive(liveRes.value?.data || liveRes.value);
-      if (readyRes.status === "fulfilled") setReady(readyRes.value?.data || readyRes.value);
-    } catch {
-      setError("Error fetching observability data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let active = true;
+
+    const buildHeaders = async (): Promise<Record<string, string>> => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const token = await getToken().catch(() => null);
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      } else if (import.meta.env.DEV) {
+        headers["x-dev-role"] = "admin";
+        headers["x-dev-user-id"] = "web_dev_admin";
+      }
+      return headers;
+    };
+
+    // Desenvuelve `{ ok, data }` y devuelve null si la respuesta no fue exitosa,
+    // para que un 401/403 se muestre como error y no como pantalla vacía.
+    const fetchJson = async <T,>(path: string, headers: Record<string, string>): Promise<T | null> => {
+      const res = await fetch(`${BASE_URL}${path}`, { headers });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.ok === false) return null;
+      return (body?.data ?? body) as T;
+    };
+
+    const fetchData = async () => {
+      try {
+        const headers = await buildHeaders();
+        const [m, h, l, r] = await Promise.all([
+          fetchJson<Metrics>("/api/v1/metrics", headers).catch(() => null),
+          fetchJson<Health>("/api/v1/health", headers).catch(() => null),
+          fetchJson<Live>("/api/v1/health/live", headers).catch(() => null),
+          fetchJson<Ready>("/api/v1/health/ready", headers).catch(() => null),
+        ]);
+        if (!active) return;
+
+        setMetrics(m);
+        setHealth(h);
+        setLive(l);
+        setReady(r);
+        // `/metrics` exige rol admin: si no llega, avisamos en vez de mostrar ceros.
+        setError(m ? "" : "No pudimos cargar las métricas. Verifica que tu cuenta tenga permisos de admin.");
+      } catch {
+        if (active) setError("No pudimos cargar los datos de observabilidad.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
     fetchData();
     const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [getToken]);
 
+  const totalRequests = metrics?.totalRequests ?? 0;
+  const totalErrors = metrics?.totalErrors ?? 0;
   const errorRate = metrics
-    ? metrics.requests.total > 0
-      ? ((metrics.requests.errors / metrics.requests.total) * 100).toFixed(1)
+    ? totalRequests > 0
+      ? ((totalErrors / totalRequests) * 100).toFixed(1)
       : "0.0"
     : "—";
+  const avgLatency =
+    typeof metrics?.averageLatency === "number" ? `${Math.round(metrics.averageLatency)}ms` : "—";
+
+  const healthOk = health?.status === "ok";
+  const liveOk = live?.status === "ok";
+  const readyOk = ready?.status === "ok";
+  const checks = Object.entries(ready?.checks ?? {});
 
   return (
-    <div>
-      <div className="section-header">
-        <h1>Observabilidad</h1>
-        <p>Métricas, salud del sistema y estado en tiempo real</p>
-      </div>
+    <>
+      <h1 className="adm-title">Observabilidad</h1>
+      <p className="adm-sub">Métricas, salud del sistema y estado en tiempo real.</p>
 
-      {loading && <div style={{ marginTop: "1.5rem", textAlign: "center", opacity: 0.6 }}>Cargando...</div>}
-      {error && <div style={{ marginTop: "1.5rem", color: "var(--danger)" }}>{error}</div>}
+      {loading && <div className="adm-empty">Cargando…</div>}
+      {error && <div className="adm-empty adm-empty--error">{error}</div>}
 
-      <div className="stats-grid" style={{ marginTop: "1.5rem" }}>
-        <div className="glass-card">
-          <div className="stat-value" style={{ color: "var(--leaf-700)" }}>{metrics?.requests.total ?? "—"}</div>
-          <div className="stat-label">Requests totales</div>
+      <div className="adm-stats">
+        <div className="adm-stat">
+          <div className="adm-stat__value">{metrics ? totalRequests : "—"}</div>
+          <div className="adm-stat__label">Solicitudes totales</div>
         </div>
-        <div className="glass-card">
-          <div className="stat-value" style={{ color: "var(--danger)" }}>{errorRate}%</div>
-          <div className="stat-label">Tasa de errores</div>
+        <div className="adm-stat">
+          <div className="adm-stat__value">{errorRate}{metrics ? "%" : ""}</div>
+          <div className="adm-stat__label">Tasa de errores</div>
         </div>
-        <div className="glass-card">
-          <div className="stat-value" style={{ color: "var(--river-500)" }}>{metrics?.responseTimeP99 ?? "—"}ms</div>
-          <div className="stat-label">P99 latencia</div>
+        <div className="adm-stat">
+          <div className="adm-stat__value">{avgLatency}</div>
+          <div className="adm-stat__label">Latencia media</div>
         </div>
-        <div className="glass-card">
-          <div className="stat-value" style={{ color: health?.status === "ok" ? "var(--leaf-700)" : "var(--danger)" }}>
-            {health?.status === "ok" ? "✓" : "✗"}
-          </div>
-          <div className="stat-label">Health status</div>
+        <div className="adm-stat adm-stat--dark">
+          <div className="adm-stat__value">{health ? (healthOk ? "OK" : "Falla") : "—"}</div>
+          <div className="adm-stat__label">Estado del servicio</div>
         </div>
       </div>
 
-      <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
-        <h3 style={{ margin: "0 0 1rem" }}>Sondas de salud</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-          <div className="glass-card" style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "2rem", color: live?.status === "alive" ? "var(--leaf-700)" : "var(--danger)" }}>
-              {live?.status === "alive" ? "●" : "○"}
-            </div>
-            <div style={{ fontWeight: 600 }}>Liveness</div>
-            <div style={{ fontSize: "0.8rem", opacity: 0.6 }}>{live?.status || "Unknown"}</div>
+      <div className="adm-row">
+        <section className="adm-panel">
+          <h2 className="adm-panel__title">Sondas de salud</h2>
+          <div className="adm-probes">
+            <Probe label="Liveness" value={live?.status ?? "desconocido"} ok={liveOk} />
+            <Probe label="Readiness" value={ready?.status ?? "desconocido"} ok={readyOk} />
+            <Probe label="Health" value={health?.status ?? "desconocido"} ok={healthOk} />
           </div>
-          <div className="glass-card" style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "2rem", color: ready?.status === "ready" ? "var(--leaf-700)" : "var(--danger)" }}>
-              {ready?.status === "ready" ? "●" : "○"}
-            </div>
-            <div style={{ fontWeight: 600 }}>Readiness</div>
-            <div style={{ fontSize: "0.8rem", opacity: 0.6 }}>{ready?.status || "Unknown"}</div>
-          </div>
-          <div className="glass-card" style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "2rem", color: health?.status === "ok" ? "var(--leaf-700)" : "var(--danger)" }}>
-              {health?.status === "ok" ? "●" : "○"}
-            </div>
-            <div style={{ fontWeight: 600 }}>Health</div>
-            <div style={{ fontSize: "0.8rem", opacity: 0.6 }}>{health?.status || "Unknown"}</div>
-          </div>
-        </div>
-      </div>
 
-      {health?.checks && (
-        <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
-          <h3 style={{ margin: "0 0 1rem" }}>Dependencias</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {Object.entries(health.checks).map(([key, ok]) => (
-              <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span>{key}</span>
-                <span style={{ color: ok ? "var(--leaf-700)" : "var(--danger)", fontWeight: 600 }}>
-                  {ok ? "✓ OK" : "✗ FAIL"}
-                </span>
+          {checks.length > 0 && (
+            <>
+              <h3 className="adm-panel__title" style={{ fontSize: 15, marginTop: 22 }}>Dependencias</h3>
+              <div className="adm-deps">
+                {checks.map(([key, value]) => (
+                  <div key={key} className="adm-deps__row">
+                    <span>{CHECK_LABELS[key] ?? key}</span>
+                    <span className={`adm-badge ${value === "ok" ? "adm-badge--green" : "adm-badge--amber"}`}>
+                      {value}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </section>
 
-      <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
-        <h3 style={{ margin: "0 0 0.5rem" }}>Información del sistema</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.9rem" }}>
-          <div><strong>Uptime:</strong> {health?.uptime ? `${Math.floor(health.uptime / 60)}m` : "—"}</div>
-          <div><strong>Última actualización:</strong> {health?.timestamp ? new Date(health.timestamp).toLocaleTimeString() : "—"}</div>
-        </div>
+        <section className="adm-panel">
+          <h2 className="adm-panel__title">Información del sistema</h2>
+          <div className="adm-deps">
+            <div className="adm-deps__row">
+              <span>Servicio</span>
+              <span className="adm-cell--muted">{health?.service ?? "—"}</span>
+            </div>
+            <div className="adm-deps__row">
+              <span>Versión</span>
+              <span className="adm-cell--muted">{health?.version ?? "—"}</span>
+            </div>
+            <div className="adm-deps__row">
+              <span>Uptime</span>
+              <span className="adm-cell--muted">{formatUptime(health?.uptime)}</span>
+            </div>
+            <div className="adm-deps__row">
+              <span>Última actualización</span>
+              <span className="adm-cell--muted">
+                {health?.timestamp ? new Date(health.timestamp).toLocaleTimeString("es-PA") : "—"}
+              </span>
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
+    </>
   );
 }

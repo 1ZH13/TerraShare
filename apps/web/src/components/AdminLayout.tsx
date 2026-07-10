@@ -11,6 +11,7 @@ interface AdminLayoutProps {
 
 const NAV = [
   { to: "/dashboard/admin", label: "Resumen", icon: LayoutDashboard },
+  { to: "/dashboard/admin/reports", label: "Reportes", icon: Flag },
   { to: "/dashboard/admin/lands", label: "Terrenos", icon: Map },
   { to: "/dashboard/admin/users", label: "Usuarios", icon: Users },
   { to: "/dashboard/admin/leads", label: "Leads", icon: Mail },
@@ -43,10 +44,6 @@ export default function AdminLayout({ children, onSignOut }: AdminLayoutProps) {
               <Icon size={17} /> {label}
             </Link>
           ))}
-          {/* TODO(#134): moderación de reportes pendiente de backend. */}
-          <span className="adm-side__link" style={{ opacity: 0.55, cursor: "default" }}>
-            <Flag size={17} /> Reportes
-          </span>
           <button
             type="button"
             className="adm-side__link"

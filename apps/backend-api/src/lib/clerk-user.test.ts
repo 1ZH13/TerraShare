@@ -53,6 +53,8 @@ interface FakeUserShape {
   primaryEmailAddress: { emailAddress: string } | null;
   fullName: string | null;
   primaryPhoneNumber: { phoneNumber: string } | null;
+  publicMetadata?: Record<string, unknown>;
+  twoFactorEnabled?: boolean;
 }
 
 function fakeClerkClient(
@@ -75,7 +77,7 @@ describe("resolveClerkAuthUser", () => {
     __clearClerkUserProfileCache();
   });
 
-  it("does not call Clerk when the token already has email and name", async () => {
+  it("does not call Clerk when the token already has email, name and role", async () => {
     const counter = { calls: 0 };
     __setClerkClientForTests(
       fakeClerkClient(
@@ -92,10 +94,79 @@ describe("resolveClerkAuthUser", () => {
       sub: "user_present",
       email: "present@example.com",
       full_name: "Present User",
+      role: "user",
     });
 
     expect(user.email).toBe("present@example.com");
     expect(user.profile.fullName).toBe("Present User");
+    expect(counter.calls).toBe(0);
+  });
+
+  it("resolves the admin role from Clerk publicMetadata when the token lacks it (#262)", async () => {
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: "real.admin@example.com" },
+          fullName: "Real Admin",
+          primaryPhoneNumber: null,
+          publicMetadata: { role: "admin" },
+          twoFactorEnabled: true,
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({ sub: "user_meta_admin" });
+
+    expect(user.role).toBe("admin");
+    expect(user.mfaVerified).toBe(true);
+    expect(counter.calls).toBe(1);
+  });
+
+  it("keeps a non-admin as user and reflects 2FA disabled", async () => {
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: "plain@example.com" },
+          fullName: "Plain User",
+          primaryPhoneNumber: null,
+          publicMetadata: {},
+          twoFactorEnabled: false,
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({ sub: "user_plain" });
+
+    expect(user.role).toBe("user");
+    expect(user.mfaVerified).toBe(false);
+  });
+
+  it("does not let Clerk metadata override an explicit role claim", async () => {
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: "claim@example.com" },
+          fullName: "Claim User",
+          primaryPhoneNumber: null,
+          publicMetadata: { role: "admin" },
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({
+      sub: "user_claim",
+      email: "claim@example.com",
+      full_name: "Claim User",
+      role: "user",
+    });
+
+    expect(user.role).toBe("user");
     expect(counter.calls).toBe(0);
   });
 

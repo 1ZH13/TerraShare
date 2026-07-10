@@ -42,6 +42,7 @@ export type {
   RentalRequestDto,
   RentalRequestStatus,
   UpdateRentalRequestStatusDto,
+  DealOperation,
 } from "./dto/rental-requests";
 
 export type {

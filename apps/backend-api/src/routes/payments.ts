@@ -4,7 +4,8 @@ import Stripe from "stripe";
 import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
 import { requireAuth, requireAdmin } from "../middleware/require-auth";
-import { createAuditEvent } from "../store/audit";
+import { verifyStripeWebhook, WebhookVerificationError } from "../lib/stripe-webhook";
+import { createAuditEvent, SYSTEM_ACTOR } from "../store/audit";
 import { Payment, RentalRequest, Land, Contract } from "../db/schemas";
 import {
   canInitiatePayment,
@@ -111,8 +112,15 @@ function getStripeClient() {
 async function computePaymentAmount(rentalRequestId: string, fallback = 1000) {
   const request = await RentalRequest.findOne({ id: rentalRequestId }).lean();
   if (!request) return fallback;
-  
+
   const land = await Land.findOne({ id: request.landId }).lean();
+
+  // Compra/venta (#249): se cobra la oferta acordada, o el precio de venta del
+  // terreno como respaldo. El alquiler cobra el precio mensual (primer mes).
+  if (request.operation === "venta") {
+    return request.offerAmount ?? land?.salePrice ?? fallback;
+  }
+
   return land?.priceRule?.pricePerMonth ?? fallback;
 }
 
@@ -174,6 +182,31 @@ async function applyPaidTransition(
         });
       }
     }
+  }
+}
+
+/**
+ * Registra el rechazo de un webhook de Stripe (HU-33 #152): log estructurado
+ * para observabilidad inmediata + evento de auditoría durable. El actor es el
+ * sistema porque el webhook llega sin usuario autenticado. La persistencia va
+ * envuelta en try/catch para no convertir un fallo de auditoría en un 500 que
+ * Stripe reintentaría en bucle.
+ */
+async function recordRejectedWebhook(
+  reason: string,
+  details: { hasSignature: boolean } & Record<string, unknown>,
+): Promise<void> {
+  console.error(`[stripe-webhook] rejected: ${reason}`, details);
+  try {
+    await createAuditEvent({
+      actor: SYSTEM_ACTOR,
+      entity: "webhook",
+      action: "rejected",
+      entityId: "unknown",
+      metadata: { source: "stripe", reason, ...details },
+    });
+  } catch (auditErr) {
+    console.error("[stripe-webhook] failed to persist rejection audit event:", auditErr);
   }
 }
 
@@ -543,24 +576,44 @@ paymentRoutes.post("/webhooks/stripe", async (c) => {
 
   const rawBody = await c.req.text();
   const isDev = process.env.NODE_ENV !== "production";
+
+  // Solo podemos verificar cuando hay secret real y cliente Stripe. El
+  // placeholder de desarrollo/pruebas no cuenta como configuración válida.
+  const verificationConfigured =
+    !!webhookSecret && webhookSecret !== "whsec_placeholder" && !!stripe;
+
+  // En producción SIEMPRE se exige verificación (HU-33 #152). En desarrollo solo
+  // se verifica cuando llega una firma (p.ej. `stripe listen`); los eventos
+  // locales sin firma se procesan por el bypass de desarrollo, porque Stripe no
+  // alcanza `localhost`.
+  const mustVerify = !isDev || (verificationConfigured && !!signature);
+
   let event: StripeWebhookEvent;
 
-  if (signature && webhookSecret && stripe) {
-    try {
-      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret) as unknown as StripeWebhookEvent;
-    } catch (err) {
-      console.error("Stripe webhook signature verification failed:", err);
-      return failure(c, 401, "UNAUTHORIZED", "Invalid webhook signature");
-    }
-  } else {
-    if (!isDev) {
-      if (!signature) {
-        return failure(c, 401, "UNAUTHORIZED", "Missing stripe-signature header");
-      }
-
+  if (mustVerify) {
+    if (!verificationConfigured) {
+      // Producción sin verificación configurada: fallamos cerrado. Nunca se
+      // procesa un evento sin poder validar su firma.
+      await recordRejectedWebhook("verification_not_configured", { hasSignature: !!signature });
       return failure(c, 500, "INTERNAL_ERROR", "Stripe webhook verification is not configured correctly");
     }
 
+    try {
+      event = (await verifyStripeWebhook({
+        stripe: stripe!,
+        rawBody,
+        signature,
+        secret: webhookSecret!,
+      })) as unknown as StripeWebhookEvent;
+    } catch (err) {
+      if (err instanceof WebhookVerificationError) {
+        await recordRejectedWebhook(err.reason, { hasSignature: !!signature });
+        return failure(c, 400, "VALIDATION_ERROR", "Invalid webhook signature");
+      }
+      throw err;
+    }
+  } else {
+    // Bypass de desarrollo: sin firma que validar, procesamos el JSON crudo.
     let payload: unknown;
     try {
       payload = JSON.parse(rawBody);
