@@ -150,7 +150,8 @@ export interface AuditEventRecord {
     | "rental_request"
     | "contract"
     | "payment"
-    | "chat";
+    | "chat"
+    | "report";
   action:
     | "created"
     | "updated"
