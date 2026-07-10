@@ -20,6 +20,7 @@ export const AuditEventFilterSchema = z.object({
     "rejected",
     "cancelled",
     "paid",
+    "refunded",
     "status_changed",
   ] as const satisfies AuditAction[]).optional(),
   entityId: z.string().optional(),

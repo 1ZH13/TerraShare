@@ -21,6 +21,7 @@ export type AuditAction =
   | "rejected"
   | "cancelled"
   | "paid"
+  | "refunded"
   | "status_changed";
 
 export type Resource =

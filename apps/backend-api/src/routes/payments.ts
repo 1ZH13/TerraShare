@@ -3,13 +3,14 @@ import Stripe from "stripe";
 
 import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
-import { requireAuth } from "../middleware/require-auth";
+import { requireAuth, requireAdmin } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
-import { Payment, RentalRequest, Land, Contract } from "../db/schemas";
+import { Payment, RentalRequest, Land, Contract, User } from "../db/schemas";
 import {
   canInitiatePayment,
   canReadPayment,
 } from "../lib/auth-helpers";
+import { buildReceipt } from "../lib/payments-receipt";
 import type { AppEnv } from "../types";
 
 let stripeClient: Stripe | null = null;
@@ -499,6 +500,141 @@ paymentRoutes.post("/payments/confirm", requireAuth, async (c) => {
     rentalRequestId: payment.rentalRequestId,
     status: paidAtStripe ? "paid" : payment.status,
   });
+});
+
+/**
+ * Reembolso total o parcial de un pago (HU-43 #161). Solo admin. Valida el
+ * importe reembolsable, ejecuta el reembolso en Stripe (si está configurado),
+ * actualiza el estado/acumulado del pago y registra auditoría.
+ */
+paymentRoutes.post("/payments/:paymentId/refund", requireAuth, requireAdmin, async (c) => {
+  const authUser = c.get("authUser");
+  const paymentId = c.req.param("paymentId");
+  const body = (await c.req.json().catch(() => null)) as { amount?: number; reason?: string } | null;
+
+  const payment = await Payment.findOne({ id: paymentId }).lean();
+  if (!payment) {
+    return failure(c, 404, "NOT_FOUND", "Payment not found");
+  }
+
+  if (payment.status !== "paid" && payment.status !== "partially_refunded") {
+    return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Only paid payments can be refunded");
+  }
+
+  const alreadyRefunded = payment.refundedAmount ?? 0;
+  const refundable = Math.round((payment.amount - alreadyRefunded) * 100) / 100;
+  if (refundable <= 0) {
+    return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Payment is already fully refunded");
+  }
+
+  const requested = body?.amount != null ? Math.round(body.amount * 100) / 100 : refundable;
+  if (requested <= 0) {
+    return failure(c, 400, "VALIDATION_ERROR", "Refund amount must be positive");
+  }
+  if (requested > refundable) {
+    return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Refund amount exceeds refundable balance");
+  }
+
+  const refundId = `rf_${crypto.randomUUID()}`;
+  let stripeRefundId: string | undefined;
+
+  const stripe = getStripeClient();
+  if (stripe && payment.stripePaymentIntentId) {
+    try {
+      const refund = await stripe.refunds.create(
+        {
+          payment_intent: payment.stripePaymentIntentId,
+          amount: Math.round(requested * 100),
+          reason: "requested_by_customer",
+          metadata: { paymentId: payment.id, note: body?.reason ?? "" },
+        },
+        // Idempotencia hacia Stripe: el propio id del reembolso.
+        { idempotencyKey: refundId },
+      );
+      stripeRefundId = refund.id;
+    } catch (err) {
+      console.error("Stripe refund failed:", err);
+      return failure(c, 500, "INTERNAL_ERROR", "No se pudo procesar el reembolso en Stripe");
+    }
+  }
+
+  const newRefundedAmount = Math.round((alreadyRefunded + requested) * 100) / 100;
+  const newStatus = newRefundedAmount >= payment.amount ? "refunded" : "partially_refunded";
+
+  await Payment.updateOne(
+    { id: payment.id },
+    {
+      status: newStatus,
+      refundedAmount: newRefundedAmount,
+      updatedAt: new Date(),
+      $push: {
+        refunds: {
+          id: refundId,
+          amount: requested,
+          reason: body?.reason,
+          stripeRefundId,
+          createdAt: new Date(),
+        },
+      },
+    },
+  );
+
+  await createAuditEvent({
+    actor: authUser,
+    entity: "payment",
+    action: "refunded",
+    entityId: payment.id,
+    metadata: {
+      refundId,
+      amount: requested,
+      reason: body?.reason,
+      refundedAmount: newRefundedAmount,
+      status: newStatus,
+      stripeRefundId,
+    },
+  });
+
+  const updated = await Payment.findOne({ id: payment.id }).lean();
+  return success(c, updated);
+});
+
+/**
+ * Recibo/factura descargable de un pago (HU-43 #161). Accesible por el
+ * arrendatario, el propietario del terreno o un admin. El frontend renderiza e
+ * imprime/descarga a partir de estos datos.
+ */
+paymentRoutes.get("/payments/:paymentId/receipt", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  const paymentId = c.req.param("paymentId");
+
+  const payment = await Payment.findOne({ id: paymentId }).lean();
+  if (!payment) {
+    return failure(c, 404, "NOT_FOUND", "Payment not found");
+  }
+
+  const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
+  if (!request) {
+    return failure(c, 404, "NOT_FOUND", "Related rental request not found");
+  }
+
+  const land = await Land.findOne({ id: request.landId }).lean();
+  if (!canReadPayment(authUser, request, land ?? { ownerId: "" })) {
+    return failure(c, 403, "FORBIDDEN", "Not allowed to access this receipt");
+  }
+
+  const customerDoc = await User.findOne({ clerkUserId: request.tenantId }).lean();
+
+  const receipt = buildReceipt({
+    payment,
+    land: land ? { id: land.id, title: land.title } : undefined,
+    customer: {
+      id: request.tenantId,
+      name: customerDoc?.profile?.fullName,
+      email: customerDoc?.email,
+    },
+  });
+
+  return success(c, receipt);
 });
 
 paymentRoutes.post("/webhooks/stripe", async (c) => {

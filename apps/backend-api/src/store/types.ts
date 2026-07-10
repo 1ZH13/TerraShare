@@ -96,7 +96,17 @@ export type PaymentStatus =
   | "processing"
   | "paid"
   | "failed"
-  | "cancelled";
+  | "cancelled"
+  | "refunded"
+  | "partially_refunded";
+
+export interface PaymentRefundRecord {
+  id: string;
+  amount: number;
+  reason?: string;
+  stripeRefundId?: string;
+  createdAt: string;
+}
 
 export interface PaymentRecord {
   id: string;
@@ -105,6 +115,8 @@ export interface PaymentRecord {
   amount: number;
   currency: "USD" | "PAB";
   status: PaymentStatus;
+  refundedAmount?: number;
+  refunds?: PaymentRefundRecord[];
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
   checkoutUrl?: string;
@@ -157,6 +169,7 @@ export interface AuditEventRecord {
     | "rejected"
     | "cancelled"
     | "paid"
+    | "refunded"
     | "signed"
     | "completed"
     | "status_changed";

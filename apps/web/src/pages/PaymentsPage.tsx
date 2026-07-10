@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { PaymentDto } from "@terrashare/shared";
 import { CreditCard } from "lucide-react";
-import { getMyPayments } from "../services/api";
+import { getMyPayments, getReceipt } from "../services/api";
+import { downloadReceipt } from "../lib/receipt";
 import EmptyState from "../components/EmptyState";
 import "./payments.css";
 
@@ -15,7 +16,11 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   paid: { label: "Pagado", cls: "pay-badge--paid" },
   failed: { label: "Fallido", cls: "pay-badge--failed" },
   cancelled: { label: "Cancelado", cls: "pay-badge--neutral" },
+  refunded: { label: "Reembolsado", cls: "pay-badge--neutral" },
+  partially_refunded: { label: "Reembolso parcial", cls: "pay-badge--neutral" },
 };
+
+const RECEIPT_STATUSES = new Set(["paid", "refunded", "partially_refunded"]);
 
 function formatDate(iso?: string): string {
   if (!iso) return "—";
@@ -29,6 +34,19 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [receiptLoading, setReceiptLoading] = useState<string | null>(null);
+
+  const handleReceipt = async (paymentId: string) => {
+    setReceiptLoading(paymentId);
+    try {
+      const receipt = await getReceipt(paymentId);
+      if (receipt) downloadReceipt(receipt);
+    } catch (err) {
+      console.error("Error downloading receipt:", err);
+    } finally {
+      setReceiptLoading(null);
+    }
+  };
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -121,10 +139,15 @@ export default function PaymentsPage() {
                     <Link to="/pay/$requestId" params={{ requestId: p.rentalRequestId }} className="pay-action pay-action--pay">
                       Pagar
                     </Link>
-                  ) : p.receiptUrl ? (
-                    <a href={p.receiptUrl} className="pay-action" target="_blank" rel="noreferrer">
-                      Recibo
-                    </a>
+                  ) : RECEIPT_STATUSES.has(p.status) ? (
+                    <button
+                      type="button"
+                      className="pay-action"
+                      onClick={() => handleReceipt(p.id)}
+                      disabled={receiptLoading === p.id}
+                    >
+                      {receiptLoading === p.id ? "Generando…" : "Recibo"}
+                    </button>
                   ) : (
                     <span />
                   )}

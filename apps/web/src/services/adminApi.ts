@@ -3,7 +3,7 @@
  * Always uses dev bypass headers in development.
  * No authentication tokens required.
  */
-import type { ApiSuccess, LandDto, UserSummaryDto } from "@terrashare/shared";
+import type { ApiSuccess, LandDto, UserSummaryDto, PaymentDto } from "@terrashare/shared";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -93,6 +93,20 @@ export const listAdminRentalRequests = (filters: AdminLandFilters = {}) => {
 
 /** GET /api/v1/admin/summary */
 export const getAdminSummary = () => request("GET", "/api/v1/admin/summary");
+
+// ─── Pagos / Reembolsos (HU-43 #161) ──────────────────────────────────────────
+
+/** GET /api/v1/payments — como admin, devuelve todos los pagos. */
+export const listAdminPayments = (status?: string) => {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  return request<PaymentDto[]>("GET", `/api/v1/payments${qs}`);
+};
+
+/** POST /api/v1/payments/:id/refund — reembolso total (sin amount) o parcial. */
+export const refundPayment = (
+  paymentId: string,
+  input: { amount?: number; reason?: string } = {},
+) => request<PaymentDto>("POST", `/api/v1/payments/${paymentId}/refund`, input);
 
 // ─── Leads ───────────────────────────────────────────────────────────────────
 
