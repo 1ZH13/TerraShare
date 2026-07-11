@@ -21,6 +21,7 @@ export type {
 
 export type {
   AuthMeResponseDto,
+  PublicOwnerProfileDto,
   UserStatus,
   UserSummaryDto,
 } from "./dto/auth";

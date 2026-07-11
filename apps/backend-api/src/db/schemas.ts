@@ -28,6 +28,8 @@ export interface IUser extends Document {
   role: AppRole;
   status: UserStatus;
   profile: { fullName: string; phone?: string; province?: string; marketPreference?: "busco" | "ofrezco" };
+  /** Identidad verificada por TerraShare (#150). Alimenta el banner de confianza. */
+  verified?: boolean;
   deletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -63,6 +65,8 @@ export interface ILand extends Document {
   water?: string;
   access?: string;
   features?: string[];
+  /** Terreno verificado por TerraShare (identidad y linderos) (#150). */
+  verified?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -208,6 +212,7 @@ const UserSchema = new Schema<IUser>({
     province: String,
     marketPreference: { type: String, enum: ["busco", "ofrezco"] },
   },
+  verified: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
 }, { timestamps: true });
 
@@ -241,6 +246,7 @@ const LandSchema = new Schema<ILand>({
   water: String,
   access: String,
   features: [String],
+  verified: { type: Boolean, default: false },
 }, { timestamps: true });
 
 LandSchema.index({ title: "text", description: "text" });

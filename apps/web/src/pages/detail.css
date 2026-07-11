@@ -83,6 +83,13 @@
   border-radius: 999px;
 }
 .det-badge--sale { color: var(--ts-bg); background: var(--ts-green-ink); }
+.det-badge--verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ts-green-ink);
+  background: var(--ts-tint-green);
+}
 .det-flag {
   display: inline-flex;
   align-items: center;
@@ -201,7 +208,15 @@
   justify-content: center;
   flex: 0 0 auto;
 }
-.det-owner__name { font-family: var(--ts-font-serif); font-weight: 600; font-size: 17px; }
+.det-owner__name {
+  font-family: var(--ts-font-serif);
+  font-weight: 600;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.det-owner__check { color: var(--ts-green); flex: 0 0 auto; }
 .det-owner__role { font-size: 12.5px; color: var(--ts-sage); }
 
 .det-note {
@@ -214,6 +229,11 @@
   background: var(--ts-tint-green);
   border-radius: 10px;
   padding: 10px 12px;
+}
+.det-note--verified {
+  color: var(--ts-green-ink);
+  background: var(--ts-tint-green);
+  font-weight: 600;
 }
 
 /* ── estados ─────────────────────────────────────────────────────────────── */

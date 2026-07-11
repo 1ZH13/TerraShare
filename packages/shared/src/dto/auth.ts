@@ -15,3 +15,16 @@ export interface UserSummaryDto {
 }
 
 export type AuthMeResponseDto = UserSummaryDto;
+
+/**
+ * Perfil público de un propietario (#150). Solo datos no sensibles para la
+ * tarjeta de confianza del detalle de terreno.
+ */
+export interface PublicOwnerProfileDto {
+  id: string;
+  displayName: string;
+  verified: boolean;
+  /** ISO date; null si no se conoce. */
+  memberSince: string | null;
+  activeLandsCount: number;
+}

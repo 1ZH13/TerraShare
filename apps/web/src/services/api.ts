@@ -13,6 +13,7 @@ import type {
   ExternalContactDto,
   LandDto,
   PaymentDto,
+  PublicOwnerProfileDto,
   ReceiptDto,
   RentalRequestDto,
 } from "@terrashare/shared";
@@ -150,6 +151,14 @@ export const getRentalRequestById = async (requestId: string): Promise<RentalReq
 /** GET /api/v1/lands/:landId */
 export const getLandById = async (landId: string): Promise<LandDto | null> => {
   const res = await request<LandDto>("GET", `/api/v1/lands/${landId}`);
+  return res?.data ?? null;
+};
+
+/** GET /api/v1/users/:userId/public — perfil público del propietario (#150). */
+export const getOwnerPublicProfile = async (
+  userId: string,
+): Promise<PublicOwnerProfileDto | null> => {
+  const res = await request<PublicOwnerProfileDto>("GET", `/api/v1/users/${userId}/public`);
   return res?.data ?? null;
 };
 
