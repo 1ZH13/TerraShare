@@ -25,6 +25,7 @@ import {
   markWebhookProcessed,
 } from "../lib/payments-idempotency";
 import { buildReceipt } from "../lib/payments-receipt";
+import { mapStripeError } from "../lib/stripe-errors";
 import type { AppEnv } from "../types";
 
 let stripeClient: Stripe | null = null;
@@ -653,7 +654,8 @@ paymentRoutes.post("/payments/confirm", requireAuth, async (c) => {
     }
   } catch (err) {
     console.error("Stripe confirm retrieval failed:", err);
-    return failure(c, 503, "INTERNAL_ERROR", "No se pudo verificar el pago con Stripe");
+    const mapped = mapStripeError(err);
+    return failure(c, mapped.status, mapped.code, mapped.message);
   }
 
   if (paidAtStripe) {
@@ -726,7 +728,8 @@ paymentRoutes.post("/payments/:paymentId/refund", requireAuth, requireAdmin, asy
       stripeRefundId = refund.id;
     } catch (err) {
       console.error("Stripe refund failed:", err);
-      return failure(c, 500, "INTERNAL_ERROR", "No se pudo procesar el reembolso en Stripe");
+      const mapped = mapStripeError(err);
+      return failure(c, mapped.status, mapped.code, mapped.message);
     }
   }
 
