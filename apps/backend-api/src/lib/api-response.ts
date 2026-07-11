@@ -14,6 +14,7 @@ type ErrorCode =
   | "BUSINESS_RULE_VIOLATION"
   | "INVALID_TRANSITION"
   | "STRIPE_NOT_CONFIGURED"
+  | "STRIPE_UPSTREAM_ERROR"
   | "MFA_REQUIRED"
   | "INTERNAL_ERROR";
 
@@ -26,6 +27,7 @@ export const ERROR_CATALOG = {
   BUSINESS_RULE_VIOLATION: { status: 422, message: "Business rule violated" },
   INVALID_TRANSITION: { status: 422, message: "Invalid state transition" },
   STRIPE_NOT_CONFIGURED: { status: 503, message: "Payment service unavailable" },
+  STRIPE_UPSTREAM_ERROR: { status: 503, message: "Payment provider temporarily unavailable" },
   INTERNAL_ERROR: { status: 500, message: "Internal server error" },
   RATE_LIMIT_EXCEEDED: { status: 429, message: "Rate limit exceeded" },
 } as const;
