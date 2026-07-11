@@ -147,7 +147,7 @@ export interface IAuditEvent extends Document {
   actorId: string;
   actorRole: AppRole | "system";
   entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat" | "report" | "webhook";
-  action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "refunded" | "status_changed";
+  action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "refunded" | "signed" | "completed" | "status_changed";
   entityId: string;
   metadata?: Record<string, unknown>;
   createdAt: Date;
@@ -332,7 +332,7 @@ const AuditEventSchema = new Schema<IAuditEvent>({
   actorId: { type: String, required: true },
   actorRole: { type: String, enum: ["user", "admin", "system"], required: true },
   entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat", "report", "webhook"], required: true },
-  action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "refunded", "status_changed"], required: true },
+  action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "refunded", "signed", "completed", "status_changed"], required: true },
   entityId: { type: String, required: true },
   metadata: Schema.Types.Mixed,
 }, { timestamps: true });

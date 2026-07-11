@@ -31,12 +31,51 @@ export const RentalPeriodSchema = z
 export type RentalPeriodInput = z.input<typeof RentalPeriodSchema>;
 export type RentalPeriodOutput = z.output<typeof RentalPeriodSchema>;
 
-export const CreateRentalRequestSchema = z.object({
-  landId: z.string().min(1, "ID de terreno requerido"),
-  period: RentalPeriodSchema,
-  intendedUse: z.string().min(3, "Uso propuesto debe tener al menos 3 caracteres"),
-  notes: z.string().optional(),
-});
+/** Operación de una solicitud/trato: alquiler o venta (#249/#140). */
+export const DealOperationSchema = z.enum(["alquiler", "venta"] as const);
+
+/**
+ * Solicitud de alquiler o compra (#140). Modela ambas operaciones para coincidir
+ * con el backend y con `CreateRentalRequestDto`:
+ *  - `venta`  → requiere `offerAmount` (> 0); sin period/intendedUse.
+ *  - `alquiler` (por defecto) → requiere `period` y `intendedUse`.
+ */
+export const CreateRentalRequestSchema = z
+  .object({
+    landId: z.string().min(1, "ID de terreno requerido"),
+    operation: DealOperationSchema.optional(),
+    period: RentalPeriodSchema.optional(),
+    intendedUse: z.string().min(3, "Uso propuesto debe tener al menos 3 caracteres").optional(),
+    offerAmount: z.number().positive("La oferta debe ser mayor a 0").optional(),
+    notes: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const operation = data.operation ?? "alquiler";
+    if (operation === "venta") {
+      if (data.offerAmount === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["offerAmount"],
+          message: "offerAmount es requerido para una operación de venta",
+        });
+      }
+    } else {
+      if (data.period === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["period"],
+          message: "period es requerido para una operación de alquiler",
+        });
+      }
+      if (data.intendedUse === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["intendedUse"],
+          message: "intendedUse es requerido para una operación de alquiler",
+        });
+      }
+    }
+  });
 
 export type CreateRentalRequestInput = z.input<typeof CreateRentalRequestSchema>;
 export type CreateRentalRequestOutput = z.output<typeof CreateRentalRequestSchema>;

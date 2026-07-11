@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { LandSortField, LandStatus, LandUse } from "../dto/lands";
+import type { LandOperation, LandSortField, LandStatus, LandUse } from "../dto/lands";
 
 export const LandUseSchema = z.enum([
   "agricultura",
@@ -15,6 +15,13 @@ export type LandUseOutput = z.output<typeof LandUseSchema>;
 export const LandStatusSchema = z.enum(["draft", "active", "inactive"] as const);
 export type LandStatusInput = z.input<typeof LandStatusSchema>;
 export type LandStatusOutput = z.output<typeof LandStatusSchema>;
+
+/** Tipo de operación de una publicación: alquiler, venta o ambas (#138/#140). */
+export const LandOperationSchema = z.enum([
+  "alquiler",
+  "venta",
+  "ambas",
+] as const satisfies readonly LandOperation[]);
 
 export const LandLocationSchema = z.object({
   province: z.string().min(1, "Provincia requerida"),
@@ -43,6 +50,13 @@ export const CreateLandSchema = z.object({
   location: LandLocationSchema,
   availability: LandAvailabilitySchema.optional(),
   priceRule: LandPriceRuleSchema,
+  // Operación y campos de detalle (#138/#140). Alineados con LandDto/CreateLandDto
+  // y con el schema Mongoose del backend.
+  operation: LandOperationSchema.optional(),
+  salePrice: z.number().positive("Precio de venta debe ser mayor a 0").optional(),
+  water: z.string().optional(),
+  access: z.string().optional(),
+  features: z.array(z.string()).optional(),
 });
 
 export type CreateLandInput = z.input<typeof CreateLandSchema>;
@@ -63,6 +77,11 @@ export const UpdateLandSchema = z.object({
   }).optional(),
   availability: LandAvailabilitySchema.optional(),
   priceRule: LandPriceRuleSchema.optional(),
+  operation: LandOperationSchema.optional(),
+  salePrice: z.number().positive().optional(),
+  water: z.string().optional(),
+  access: z.string().optional(),
+  features: z.array(z.string()).optional(),
 });
 
 export type UpdateLandInput = z.input<typeof UpdateLandSchema>;

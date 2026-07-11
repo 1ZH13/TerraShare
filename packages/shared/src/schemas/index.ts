@@ -19,6 +19,7 @@ export type { CreateLeadInput, CreateLeadOutput } from "./leads";
 export {
   LandUseSchema,
   LandStatusSchema,
+  LandOperationSchema,
   LandLocationSchema,
   LandAvailabilitySchema,
   LandPriceRuleSchema,
@@ -44,6 +45,7 @@ export type {
 export {
   RentalRequestStatusSchema,
   RentalPeriodSchema,
+  DealOperationSchema,
   CreateRentalRequestSchema,
   UpdateRentalRequestStatusSchema,
 } from "./rental-requests";
