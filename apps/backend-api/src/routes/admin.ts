@@ -1,14 +1,33 @@
 import { Hono } from "hono";
+import mongoose from "mongoose";
 
 import { failure, success } from "../lib/api-response";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
 import { getStore } from "../store/in-memory-db";
+import { migrationStatus } from "../lib/migrator";
 import { User, Land, RentalRequest, Lead } from "../db/schemas";
 import type { UserStatus } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 export const adminRoutes = new Hono<AppEnv>();
+
+/**
+ * Estado de las migraciones de BD (#173). Da visibilidad al equipo sobre qué
+ * migraciones se han aplicado sin abrir la base de datos.
+ */
+adminRoutes.get("/admin/migrations", requireAuth, requireAdmin, async (c) => {
+  const db = mongoose.connection.db;
+  if (!db) {
+    return failure(c, 503, "INTERNAL_ERROR", "Database connection not available");
+  }
+  const status = await migrationStatus(db);
+  return success(c, {
+    migrations: status,
+    applied: status.filter((m) => m.applied).length,
+    pending: status.filter((m) => !m.applied).length,
+  });
+});
 
 adminRoutes.get("/admin/users", requireAuth, requireAdmin, async (c) => {
   const role = c.req.query("role") as "user" | "admin" | undefined;

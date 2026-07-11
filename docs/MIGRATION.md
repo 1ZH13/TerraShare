@@ -4,6 +4,47 @@
 
 ---
 
+## Migraciones versionadas de esquema (#173 / HU-55)
+
+Sistema de migraciones **reproducibles y reversibles** para evolucionar el
+esquema sin pérdida de datos. Las migraciones aplicadas se registran en la
+colección `_migrations`.
+
+### Estructura
+- `src/migrations/` — una migración por archivo (`NNN-nombre.ts`) que exporta un
+  objeto `Migration` con `id`, `name`, `up(db)` y `down(db)`. Se registran en
+  orden en `src/migrations/index.ts`.
+- `src/lib/migrator.ts` — runner: `migrateUp`, `migrateDown`, `migrationStatus`.
+  Idempotente (solo aplica pendientes) y reversible (`down` de las más recientes).
+- `scripts/migrate.ts` — CLI.
+
+### Uso
+
+```bash
+cd apps/backend-api
+bun run migrate status     # lista migraciones y su estado (✓ aplicada / · pendiente)
+bun run migrate up         # aplica las pendientes
+bun run migrate down [n]   # revierte las últimas n (por defecto 1)
+```
+
+Al **arrancar** el backend, las migraciones pendientes se aplican
+automáticamente (idempotente). Desactivable con `RUN_MIGRATIONS=false` para
+correrlas en un paso de despliegue aparte. El estado también se consulta vía
+`GET /api/v1/admin/migrations` (admin).
+
+### Añadir una migración
+1. Crear `src/migrations/NNN-descripcion.ts` con `id` mayor que el último.
+2. Implementar `up` (idempotente) y `down` (tolerante a que no exista lo revertido).
+3. Registrarla en `src/migrations/index.ts`.
+
+### Migraciones existentes
+- **001 unique-indexes** — índices únicos consistentes en la identidad de cada
+  entidad (`id`, y `clerkUserId`/`eventId`/`key` donde aplica). Los nombres de
+  colección se derivan de los modelos Mongoose para apuntar siempre a la
+  colección real (evita el desajuste de nombres del hallazgo A-2).
+
+---
+
 ## TAREA 1: MongoDB - Migración Completa
 
 ### Estado Actual
