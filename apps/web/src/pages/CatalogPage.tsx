@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { LandDto } from "@terrashare/shared";
-import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX } from "lucide-react";
+import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX, Heart } from "lucide-react";
 import { listLands } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
 import EmptyState from "../components/EmptyState";
+import { useFavorites } from "../hooks/useFavorites";
 import "./catalog.css";
 
 type LoadState = "loading" | "ready" | "error";
@@ -36,6 +37,9 @@ export default function CatalogPage() {
 
   const [lands, setLands] = useState<LandDto[]>([]);
   const [status, setStatus] = useState<LoadState>("loading");
+
+  // Favoritos (#147): el catálogo vive tras login, así que siempre habilitado.
+  const { isFavorite, toggle: toggleFavorite } = useFavorites();
 
   const [query, setQuery] = useState("");
   const [use, setUse] = useState("todos");
@@ -222,6 +226,30 @@ export default function CatalogPage() {
                     <div className="cat-card__thumb" aria-hidden="true">
                       <ImageIcon size={24} strokeWidth={1.5} />
                     </div>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className={`cat-card__fav${isFavorite(land.id) ? " is-active" : ""}`}
+                      aria-label={isFavorite(land.id) ? "Quitar de guardados" : "Guardar terreno"}
+                      aria-pressed={isFavorite(land.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(land.id).catch((err) =>
+                          console.error("No se pudo actualizar el guardado:", err),
+                        );
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleFavorite(land.id).catch((err) =>
+                            console.error("No se pudo actualizar el guardado:", err),
+                          );
+                        }
+                      }}
+                    >
+                      <Heart size={16} fill={isFavorite(land.id) ? "currentColor" : "none"} />
+                    </span>
                     <div className="cat-card__body">
                       <div className="cat-card__top">
                         <span className="cat-card__title">{land.title}</span>

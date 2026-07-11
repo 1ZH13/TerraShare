@@ -197,6 +197,13 @@ export interface IReport extends Document {
   updatedAt: Date;
 }
 
+export interface IFavorite extends Document {
+  userId: string;
+  landId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const UserSchema = new Schema<IUser>({
   clerkUserId: { type: String, required: true, unique: true },
   email: { type: String, required: true },
@@ -361,6 +368,11 @@ const ReportSchema = new Schema<IReport>({
   resolvedBy: String,
 }, { timestamps: true });
 
+const FavoriteSchema = new Schema<IFavorite>({
+  userId: { type: String, required: true },
+  landId: { type: String, required: true },
+}, { timestamps: true });
+
 // Índices secundarios (antes vivían en el driver nativo config/database.ts; se
 // migran aquí para que Mongoose sea la única fuente de índices — #135 A-1/A-6).
 LandSchema.index({ ownerId: 1 });
@@ -382,6 +394,8 @@ IdempotencyKeySchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 
 ReportSchema.index({ status: 1 });
 ReportSchema.index({ targetType: 1, targetId: 1 });
 ReportSchema.index({ reporterId: 1 });
+// Un usuario no puede guardar el mismo terreno dos veces (guardián de idempotencia).
+FavoriteSchema.index({ userId: 1, landId: 1 }, { unique: true });
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
@@ -394,4 +408,5 @@ export const AuditEvent = mongoose.model<IAuditEvent>("AuditEvent", AuditEventSc
 export const Lead = mongoose.model<ILead>("Lead", LeadSchema);
 export const WebhookEvent = mongoose.model<IWebhookEvent>("WebhookEvent", WebhookEventSchema);
 export const IdempotencyKey = mongoose.model<IIdempotencyKey>("IdempotencyKey", IdempotencyKeySchema);
+export const Favorite = mongoose.model<IFavorite>("Favorite", FavoriteSchema);
 export const Report = mongoose.model<IReport>("Report", ReportSchema);

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { createChat, getLandById, createReport } from "../services/api";
 import type { ReportReason } from "../services/api";
+import { useFavorites } from "../hooks/useFavorites";
 import "./detail.css";
 
 const REPORT_REASONS: { value: ReportReason; label: string }[] = [
@@ -80,6 +81,17 @@ export default function LandDetailPage() {
 
   const [land, setLand] = useState<DetailLand | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  // Favoritos (#147): solo consultamos el backend si hay sesión.
+  const { isFavorite, toggle: toggleFavorite } = useFavorites({ enabled: Boolean(isSignedIn) });
+
+  const handleToggleFavorite = () => {
+    if (!isSignedIn) {
+      openSignIn({ redirectUrl: `/lands/${id}` });
+      return;
+    }
+    toggleFavorite(id!).catch((err) => console.error("No se pudo actualizar el guardado:", err));
+  };
 
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState<ReportReason>("fraude");
@@ -217,9 +229,15 @@ export default function LandDetailPage() {
         </Link>
         <BrandMark />
         <div className="det-nav__actions">
-          {/* TODO(#137): guardar/favoritos y compartir aún no tienen backend. */}
-          <button type="button" className="det-nav__action" title="Guardar (próximamente)">
-            <Heart size={18} /> Guardar
+          <button
+            type="button"
+            className={`det-nav__action${isFavorite(id!) ? " is-active" : ""}`}
+            title={isFavorite(id!) ? "Quitar de guardados" : "Guardar"}
+            aria-pressed={isFavorite(id!)}
+            onClick={handleToggleFavorite}
+          >
+            <Heart size={18} fill={isFavorite(id!) ? "currentColor" : "none"} />{" "}
+            {isFavorite(id!) ? "Guardado" : "Guardar"}
           </button>
           <button
             type="button"
