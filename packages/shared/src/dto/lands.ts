@@ -56,6 +56,8 @@ export interface LandDto {
   access?: string;
   /** Características destacadas del terreno (#138). */
   features?: string[];
+  /** Verificado por TerraShare (identidad y linderos) (#150). */
+  verified?: boolean;
   createdAt: string;
   updatedAt: string;
 }

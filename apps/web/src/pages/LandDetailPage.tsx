@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
-import type { LandDto } from "@terrashare/shared";
+import type { LandDto, PublicOwnerProfileDto } from "@terrashare/shared";
 import {
   ArrowLeft,
   Heart,
@@ -15,10 +15,11 @@ import {
   ArrowRight,
   ImageIcon,
   ShieldCheck,
+  BadgeCheck,
   User,
   Flag,
 } from "lucide-react";
-import { createChat, getLandById, createReport } from "../services/api";
+import { createChat, getLandById, createReport, getOwnerPublicProfile } from "../services/api";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
 import "./detail.css";
@@ -48,6 +49,13 @@ const USE_LABELS: Record<string, string> = {
 function formatUse(use?: string): string {
   if (!use) return "Terreno";
   return USE_LABELS[use] ?? use;
+}
+
+/** "julio de 2026" a partir de una fecha ISO; cadena vacía si es inválida (#150). */
+function formatMemberSince(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("es-PA", { month: "long", year: "numeric" });
 }
 
 function formatAvailable(iso?: string): string {
@@ -81,6 +89,7 @@ export default function LandDetailPage() {
 
   const [land, setLand] = useState<DetailLand | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [owner, setOwner] = useState<PublicOwnerProfileDto | null>(null);
 
   // Favoritos (#147): solo consultamos el backend si hay sesión.
   const { isFavorite, toggle: toggleFavorite } = useFavorites({ enabled: Boolean(isSignedIn) });
@@ -105,6 +114,12 @@ export default function LandDetailPage() {
         if (!active) return;
         setLand(data);
         setStatus(data ? "ready" : "error");
+        // Perfil público del propietario (#150) para la tarjeta de confianza.
+        if (data?.ownerId) {
+          getOwnerPublicProfile(data.ownerId)
+            .then((profile) => active && setOwner(profile))
+            .catch(() => active && setOwner(null));
+        }
       })
       .catch((err) => {
         console.error("Error cargando terreno:", err);
@@ -353,6 +368,11 @@ export default function LandDetailPage() {
               <span className={`det-badge ${isSale ? "det-badge--sale" : ""}`}>
                 {isSale ? "En venta" : formatUse(land.allowedUses?.[0])}
               </span>
+              {land.verified && (
+                <span className="det-badge det-badge--verified">
+                  <BadgeCheck size={13} /> Verificado
+                </span>
+              )}
             </div>
             <h1 className="det-title">{land.title}</h1>
             <p className="det-loc">
@@ -425,16 +445,36 @@ export default function LandDetailPage() {
                   <User size={20} />
                 </span>
                 <div>
-                  <div className="det-owner__name">Propietario</div>
-                  {/* TODO(#138): perfil del propietario (nombre, tiempo de respuesta). */}
-                  <div className="det-owner__role">Publica en TerraShare</div>
+                  <div className="det-owner__name">
+                    {owner?.displayName ?? "Propietario"}
+                    {owner?.verified && (
+                      <BadgeCheck size={15} className="det-owner__check" aria-label="Verificado" />
+                    )}
+                  </div>
+                  <div className="det-owner__role">
+                    {owner
+                      ? [
+                          owner.memberSince ? `Miembro desde ${formatMemberSince(owner.memberSince)}` : null,
+                          owner.activeLandsCount > 0
+                            ? `${owner.activeLandsCount} ${owner.activeLandsCount === 1 ? "terreno" : "terrenos"}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "Publica en TerraShare"
+                      : "Publica en TerraShare"}
+                  </div>
                 </div>
               </div>
 
-              {/* TODO(#138): verificación de identidad/linderos aún no existe en backend. */}
-              <div className="det-note">
-                <ShieldCheck size={15} /> Coordina y acuerda de forma segura dentro de TerraShare
-              </div>
+              {owner?.verified ? (
+                <div className="det-note det-note--verified">
+                  <ShieldCheck size={15} /> Identidad del propietario verificada por TerraShare
+                </div>
+              ) : (
+                <div className="det-note">
+                  <ShieldCheck size={15} /> Coordina y acuerda de forma segura dentro de TerraShare
+                </div>
+              )}
             </div>
           </aside>
         </div>
