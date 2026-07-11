@@ -1,7 +1,9 @@
 import { Hono } from "hono";
+import { CreateChatSchema, CreateChatMessageSchema } from "@terrashare/shared";
 
 import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
+import { validateBody } from "../lib/validate";
 import { canReadChat } from "../lib/auth-helpers";
 import { requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
@@ -77,17 +79,9 @@ chatRoutes.get("/chats", requireAuth, async (c) => {
 
 chatRoutes.post("/chats", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const body = (await c.req.json().catch(() => null)) as
-    | {
-        landId?: string;
-        rentalRequestId?: string;
-        participants?: { userId: string; role: "owner" | "tenant" | "admin" }[];
-      }
-    | null;
-
-  if (!body?.participants?.length) {
-    return failure(c, 400, "VALIDATION_ERROR", "Participants are required");
-  }
+  const parsed = await validateBody(c, CreateChatSchema);
+  if (!parsed.success) return parsed.response;
+  const body = parsed.data;
 
   if (!body.participants.some((participant) => participant.userId === authUser.id)) {
     return failure(c, 403, "FORBIDDEN", "Current user must be part of chat participants");
@@ -146,8 +140,10 @@ chatRoutes.post("/chats/:chatId/messages", requireAuth, async (c) => {
     return failure(c, 403, "FORBIDDEN", "Not allowed to send messages in this chat");
   }
 
-  const body = (await c.req.json().catch(() => null)) as { text?: string } | null;
-  if (!body?.text?.trim()) {
+  const parsed = await validateBody(c, CreateChatMessageSchema);
+  if (!parsed.success) return parsed.response;
+  const text = parsed.data.text.trim();
+  if (!text) {
     return failure(c, 400, "VALIDATION_ERROR", "Message text is required");
   }
 
@@ -155,7 +151,7 @@ chatRoutes.post("/chats/:chatId/messages", requireAuth, async (c) => {
     id: `msg_${crypto.randomUUID()}`,
     chatId: chat.id,
     senderId: authUser.id,
-    text: body.text.trim(),
+    text,
   });
 
   await createAuditEvent({

@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { CreateContractSchema, UpdateContractStatusSchema } from "@terrashare/shared";
 
 import { failure, success } from "../lib/api-response";
+import { validateBody } from "../lib/validate";
 import {
   canCreateContract,
   canMutateContract,
@@ -11,22 +13,13 @@ import { createAuditEvent } from "../store/audit";
 import { Contract, AuditEvent, RentalRequest, Land } from "../db/schemas";
 import type { AppEnv } from "../types";
 
-const allowedContractStatus = new Set(["active", "completed", "cancelled"]);
-
 export const contractRoutes = new Hono<AppEnv>();
 
 contractRoutes.post("/contracts", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const body = (await c.req.json().catch(() => null)) as
-    | {
-        rentalRequestId?: string;
-        terms?: { summary?: string; signedAt?: string; startsAt?: string; endsAt?: string };
-      }
-    | null;
-
-  if (!body?.rentalRequestId || !body.terms?.summary || !body.terms?.startsAt || !body.terms?.endsAt) {
-    return failure(c, 400, "VALIDATION_ERROR", "Missing contract fields");
-  }
+  const parsed = await validateBody(c, CreateContractSchema);
+  if (!parsed.success) return parsed.response;
+  const body = parsed.data;
 
   const request = await RentalRequest.findOne({ id: body.rentalRequestId }).lean();
   if (!request) {
@@ -109,12 +102,10 @@ contractRoutes.patch("/contracts/:contractId/status", requireAuth, async (c) => 
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can update contract status");
   }
 
-  const body = (await c.req.json().catch(() => null)) as { status?: string; reason?: string } | null;
-  const status = body?.status;
-
-  if (!status || !allowedContractStatus.has(status)) {
-    return failure(c, 400, "VALIDATION_ERROR", "Invalid contract status");
-  }
+  const parsed = await validateBody(c, UpdateContractStatusSchema);
+  if (!parsed.success) return parsed.response;
+  const status = parsed.data.status;
+  const body = parsed.data;
 
   await Contract.updateOne(
     { id: contractId },

@@ -2,8 +2,18 @@
 export {
   UserStatusSchema,
   UserSummarySchema,
+  UpdateProfileSchema,
 } from "./auth";
-export type { UserSummaryInput, UserSummaryOutput } from "./auth";
+export type {
+  UserSummaryInput,
+  UserSummaryOutput,
+  UpdateProfileInput,
+  UpdateProfileOutput,
+} from "./auth";
+
+// Lead schemas
+export { CreateLeadSchema } from "./leads";
+export type { CreateLeadInput, CreateLeadOutput } from "./leads";
 
 // Land schemas
 export {
@@ -66,11 +76,14 @@ export type {
 export {
   IDEMPOTENCY_HEADER,
   PaymentStatusSchema,
+  CreatePaymentIntentSchema,
   CreateCheckoutSessionSchema,
   CreateRefundSchema,
   PaymentListFilterSchema,
 } from "./payments";
 export type {
+  CreatePaymentIntentInput,
+  CreatePaymentIntentOutput,
   CreateCheckoutSessionInput,
   CreateCheckoutSessionOutput,
   CreateRefundInput,

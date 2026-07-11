@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { UpdateProfileSchema } from "@terrashare/shared";
 
-import { failure, success } from "../lib/api-response";
+import { success } from "../lib/api-response";
+import { validateBody } from "../lib/validate";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { getStore } from "../store/in-memory-db";
 import { User } from "../db/schemas";
@@ -15,29 +17,10 @@ authRoutes.get("/auth/me", requireAuth, (c) => {
 
 authRoutes.patch("/auth/profile", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const body = (await c.req.json().catch(() => null)) as
-    | { fullName?: string; phone?: string; province?: string; marketPreference?: "busco" | "ofrezco" }
-    | null;
 
-  const hasAnyField =
-    body &&
-    (body.fullName !== undefined ||
-      body.phone !== undefined ||
-      body.province !== undefined ||
-      body.marketPreference !== undefined);
-
-  if (!hasAnyField) {
-    return failure(
-      c,
-      400,
-      "VALIDATION_ERROR",
-      "Provide fullName, phone, province and/or marketPreference",
-    );
-  }
-
-  if (body.marketPreference !== undefined && !["busco", "ofrezco"].includes(body.marketPreference)) {
-    return failure(c, 400, "VALIDATION_ERROR", "marketPreference must be 'busco' or 'ofrezco'");
-  }
+  const parsed = await validateBody(c, UpdateProfileSchema);
+  if (!parsed.success) return parsed.response;
+  const body = parsed.data;
 
   const store = getStore();
   const existing = store.users.get(authUser.id) ?? authUser;
