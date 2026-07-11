@@ -364,7 +364,7 @@
   font-weight: 600;
   color: var(--ts-clay);
 }
-.lp-card__price span { font-size: 13px; color: #c3a89a; font-family: var(--ts-font-sans); }
+.lp-card__price span { font-size: 13px; color: #8f5f4b; font-family: var(--ts-font-sans); }
 .lp-card__go {
   width: 36px;
   height: 36px;
@@ -475,7 +475,7 @@
 .lp-foot__links { display: flex; gap: 28px; font-size: 14px; color: var(--ts-sage-2); }
 .lp-foot__links a { text-decoration: none; color: inherit; }
 .lp-foot__links a:hover { color: var(--ts-green-ink); }
-.lp-foot__copy { font-size: 13px; color: #9aa792; }
+.lp-foot__copy { font-size: 13px; color: #59684f; }
 
 /* ── placeholder de foto (el modelo aún no tiene imágenes reales) ─────────── */
 .lp-photo {

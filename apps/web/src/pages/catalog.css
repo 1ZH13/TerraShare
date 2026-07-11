@@ -172,7 +172,7 @@
   color: var(--ts-clay);
   margin-top: 10px;
 }
-.cat-card__price span { font-size: 12px; color: #c3a89a; font-family: var(--ts-font-sans); }
+.cat-card__price span { font-size: 12px; color: #8f5f4b; font-family: var(--ts-font-sans); }
 
 /* ── columna del mapa ────────────────────────────────────────────────────── */
 .cat-mapcol {

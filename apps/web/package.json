@@ -29,12 +29,14 @@
     "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.55.0",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^26.0.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5",
+    "axe-core": "^4.12.1",
     "typescript": "^6.0.3",
     "vite": "^7"
   }

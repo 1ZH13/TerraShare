@@ -19,6 +19,48 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Accesibilidad (#178) ──────────────────────────────────────────────────
+   Foco visible por teclado en todos los controles. Se muestra solo cuando el
+   foco llega por teclado (:focus-visible), no al hacer click con el ratón. */
+:focus-visible {
+  outline: 2px solid var(--ts-green);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Enlace "saltar al contenido": oculto hasta recibir foco por teclado. */
+.ts-skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 1000;
+  background: var(--ts-green);
+  color: var(--ts-on-green);
+  padding: 10px 16px;
+  border-radius: var(--ts-radius);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.ts-skip-link:focus {
+  top: 12px;
+}
+
+/* Contenido solo para lectores de pantalla. */
+.ts-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Títulos en serif con tracking negativo (fuera de las páginas legacy, que
    fijan sus propios estilos). */
 .ts-title,

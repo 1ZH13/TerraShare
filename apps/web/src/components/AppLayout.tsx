@@ -96,6 +96,7 @@ export default function AppLayout({ children }: { children?: ReactNode }) {
 
   return (
     <div className="app-shell">
+      <a href="#contenido" className="ts-skip-link">Saltar al contenido</a>
       <Navbar
         brand={<BrandMark />}
         mode={mode}
@@ -105,7 +106,7 @@ export default function AppLayout({ children }: { children?: ReactNode }) {
         userMenuItems={userMenuItems}
         onSignOut={() => signOut({ redirectUrl: "/" })}
       />
-      <main className="app-main">
+      <main id="contenido" className="app-main">
         <AppModeContext.Provider value={context}>{children}</AppModeContext.Provider>
       </main>
     </div>
