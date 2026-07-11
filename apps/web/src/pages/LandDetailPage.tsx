@@ -313,7 +313,7 @@ export default function LandDetailPage() {
         </div>
       )}
 
-      <div className="det-wrap">
+      <main id="contenido" className="det-wrap">
         {/* galería */}
         <div className="det-gallery" aria-hidden="true">
           <div className="det-photo det-photo--main">
@@ -420,7 +420,7 @@ export default function LandDetailPage() {
             </div>
           </aside>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

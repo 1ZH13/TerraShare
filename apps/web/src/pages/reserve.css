@@ -85,7 +85,7 @@
   color: var(--ts-clay);
   font-family: var(--ts-font-serif);
 }
-.rsv-summary__price span { font-size: 14px; color: #c3a89a; font-family: var(--ts-font-sans); }
+.rsv-summary__price span { font-size: 14px; color: #8f5f4b; font-family: var(--ts-font-sans); }
 
 /* formulario */
 .rsv-title {

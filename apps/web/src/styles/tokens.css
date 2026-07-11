@@ -13,8 +13,11 @@
   --ts-green: #2f5138;         /* primario: botones, activo, marca */
   --ts-green-ink: #24312a;     /* verde muy oscuro: sidebar admin, tinta fuerte */
   --ts-green-soft: #55654f;
-  --ts-sage: #8a9784;          /* verde-gris apagado */
-  --ts-sage-2: #7c8a76;
+  /* verde-gris apagado. Oscurecidos para cumplir contraste WCAG AA (4.5:1) al
+     usarse como texto tenue sobre fondos claros (#178). sage-3 permanece claro:
+     se usa en iconos/bordes/placeholders (contraste no-texto 3:1). */
+  --ts-sage: #59684f;
+  --ts-sage-2: #55634c;
   --ts-sage-3: #a0ad98;
 
   /* tintes claros (chips, éxito, hover) */
@@ -23,7 +26,7 @@
   --ts-tint-green-3: #c9d3c4;
 
   /* acento */
-  --ts-clay: #b8623f;          /* terracota: acentos, badges, punto de notificación */
+  --ts-clay: #a24a2c;          /* terracota: acentos, badges, punto de notificación. Oscurecido para contraste AA como texto (#178) */
   --ts-clay-tint: #f3e4dc;
 
   /* neutros cálidos */
@@ -34,7 +37,7 @@
   /* texto */
   --ts-text: #24312a;          /* principal */
   --ts-text-secondary: #55654f;
-  --ts-text-muted: #8a9784;
+  --ts-text-muted: #59684f;    /* AA 4.5:1 sobre fondos claros (#178) */
 
   /* texto sobre relleno verde */
   --ts-on-green: #f4efe4;

@@ -155,7 +155,7 @@
   color: var(--ts-clay);
   margin: 2px 0 20px;
 }
-.det-price span { font-size: 17px; color: #c3a89a; font-family: var(--ts-font-sans); }
+.det-price span { font-size: 17px; color: #8f5f4b; font-family: var(--ts-font-sans); }
 
 .det-btn {
   display: flex;

@@ -138,6 +138,7 @@ export default function LandingPage() {
 
   return (
     <div className="lp">
+      <a href="#contenido" className="ts-skip-link">Saltar al contenido</a>
       {/* ── 01 · Header ─────────────────────────────────────────────── */}
       <nav className="lp-nav">
         <Link to="/" className="lp-brand" aria-label="TerraShare, inicio">
@@ -168,6 +169,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
+      <main id="contenido">
       {/* ── Hero ────────────────────────────────────────────────────── */}
       <header className="lp-hero">
         <div>
@@ -274,7 +276,7 @@ export default function LandingPage() {
             <div key={step.num}>
               <div className="lp-step__num">{step.num}</div>
               <div className="lp-step__rule" />
-              <h4 className="lp-step__title">{step.title}</h4>
+              <h3 className="lp-step__title">{step.title}</h3>
               <p className="lp-step__desc">{step.desc}</p>
             </div>
           ))}
@@ -307,6 +309,7 @@ export default function LandingPage() {
           </Link>
         </div>
       </section>
+      </main>
 
       {/* ── Footer ──────────────────────────────────────────────────── */}
       <footer className="lp-foot">
