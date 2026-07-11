@@ -42,6 +42,7 @@
   font-family: var(--ts-font-sans);
 }
 .det-nav__action:hover { color: var(--ts-clay); }
+.det-nav__action.is-active { color: var(--ts-clay); }
 
 /* ── contenido ───────────────────────────────────────────────────────────── */
 .det-wrap { max-width: 1200px; margin: 0 auto; padding: 34px 40px 70px; }

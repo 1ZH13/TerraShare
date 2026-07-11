@@ -246,6 +246,48 @@
 }
 .hm-dot { width: 9px; height: 9px; background: var(--ts-green); border-radius: 50%; flex: 0 0 auto; }
 
+/* ── Guardados (#147) ─────────────────────────────────────────────────────── */
+.hm-favlist {
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-beige);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.hm-favcard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #f0e8d7;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s ease;
+}
+.hm-favcard:last-child { border-bottom: 0; }
+.hm-favcard:hover { background: #f7f1e5; }
+.hm-favcard__thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--ts-tint-green);
+  color: var(--ts-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.hm-favcard__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hm-favcard__title {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hm-favcard__meta { font-size: 12.5px; color: var(--ts-sage); }
+.hm-favcard__price { font-size: 14px; font-weight: 700; color: var(--ts-green); flex: 0 0 auto; }
+.hm-favcard__price span { font-size: 11px; font-weight: 500; color: var(--ts-sage); }
+
 /* ── Ofrezco: stats ──────────────────────────────────────────────────────── */
 .hm-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 40px; }
 .hm-stat {

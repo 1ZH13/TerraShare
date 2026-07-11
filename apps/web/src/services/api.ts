@@ -159,6 +159,24 @@ export const createLand = async (dto: CreateLandDto): Promise<LandDto> => {
   return res.data;
 };
 
+// ─── Favorites (#147) ─────────────────────────────────────────────────────────
+
+/** GET /api/v1/users/me/favorites — terrenos guardados por el usuario. */
+export const getMyFavorites = async (): Promise<LandDto[]> => {
+  const res = await request<LandDto[]>("GET", "/api/v1/users/me/favorites");
+  return res?.data ?? [];
+};
+
+/** POST /api/v1/users/me/favorites/:landId — guarda un terreno (idempotente). */
+export const addFavorite = async (landId: string): Promise<void> => {
+  await request("POST", `/api/v1/users/me/favorites/${landId}`);
+};
+
+/** DELETE /api/v1/users/me/favorites/:landId — quita un terreno de guardados. */
+export const removeFavorite = async (landId: string): Promise<void> => {
+  await request("DELETE", `/api/v1/users/me/favorites/${landId}`);
+};
+
 // ─── Payments ─────────────────────────────────────────────────────────────────
 
 interface CheckoutSessionInput {
@@ -370,4 +388,7 @@ export const api = {
   sendMessage,
   getExternalContact,
   createReport,
+  getMyFavorites,
+  addFavorite,
+  removeFavorite,
 };

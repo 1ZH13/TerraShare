@@ -17,7 +17,7 @@ import {
   Heart,
   MessageCircle,
 } from "lucide-react";
-import { getChats, getMyLands, listRentalRequests } from "../services/api";
+import { getChats, getMyFavorites, getMyLands, listRentalRequests } from "../services/api";
 import { getDisplayName } from "../components/authDisplay";
 import { useAppMode } from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
@@ -70,6 +70,8 @@ function BuscoHome({ name }: { name: string }) {
   const [reqState, setReqState] = useState<LoadState>("loading");
   const [chats, setChats] = useState<ChatDto[]>([]);
   const [chatsState, setChatsState] = useState<LoadState>("loading");
+  const [favorites, setFavorites] = useState<LandDto[]>([]);
+  const [favState, setFavState] = useState<LoadState>("loading");
 
   useEffect(() => {
     let active = true;
@@ -80,6 +82,13 @@ function BuscoHome({ name }: { name: string }) {
         setReqState("ready");
       })
       .catch(() => active && setReqState("error"));
+    getMyFavorites()
+      .then((data) => {
+        if (!active) return;
+        setFavorites(data);
+        setFavState("ready");
+      })
+      .catch(() => active && setFavState("error"));
     getChats()
       .then((data) => {
         if (!active) return;
@@ -184,14 +193,51 @@ function BuscoHome({ name }: { name: string }) {
         <section>
           <div className="hm-sec__head">
             <h2 className="hm-sec__title">Guardados</h2>
+            {favorites.length > 0 && (
+              <Link to="/catalog" className="hm-link">
+                Ver catálogo
+              </Link>
+            )}
           </div>
-          {/* TODO(#137): no existe endpoint de favoritos/guardados todavía. */}
-          <EmptyState
-            compact
-            icon={Heart}
-            title="Todavía no guardas terrenos"
-            description="Toca el corazón en un terreno para guardarlo aquí."
-          />
+          {favState === "loading" ? (
+            <div className="hm-empty">Cargando guardados…</div>
+          ) : favState === "error" ? (
+            <div className="hm-empty hm-empty--error">No pudimos cargar tus guardados.</div>
+          ) : favorites.length === 0 ? (
+            <EmptyState
+              compact
+              icon={Heart}
+              title="Todavía no guardas terrenos"
+              description="Toca el corazón en un terreno para guardarlo aquí."
+            />
+          ) : (
+            <div className="hm-favlist">
+              {favorites.slice(0, 4).map((land) => (
+                <Link
+                  key={land.id}
+                  to="/lands/$id"
+                  params={{ id: land.id }}
+                  className="hm-favcard"
+                >
+                  <span className="hm-favcard__thumb" aria-hidden="true">
+                    <Heart size={16} />
+                  </span>
+                  <span className="hm-favcard__body">
+                    <span className="hm-favcard__title">{land.title}</span>
+                    <span className="hm-favcard__meta">
+                      {land.location?.province ?? "—"} · {land.area} ha
+                    </span>
+                  </span>
+                  {typeof land.priceRule?.pricePerMonth === "number" && (
+                    <span className="hm-favcard__price">
+                      ${land.priceRule.pricePerMonth.toLocaleString("es-PA")}
+                      <span>/mes</span>
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         <section>
