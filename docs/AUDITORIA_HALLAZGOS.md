@@ -159,12 +159,15 @@ El PRD describe firma de ambas partes; `contracts.ts::sign` solo pasa `draft →
 ### G-1 🟠 CORS abierto y headers de bypass en producción
 `app.ts:22` usa `origin: "*"` y acepta `x-dev-role`/`x-dev-user-id`. El bypass se desactiva en prod vía `ALLOW_DEV_AUTH_BYPASS`, pero el CORS abierto queda. Revisar antes de desplegar.
 **Propuesta:** CORS por allowlist y confirmar que el bypass esté apagado en prod.
+**✅ Resuelto (#141):** CORS por allowlist (`resolveCorsOrigin` + `CORS_ALLOWED_ORIGINS`; `localhost` solo fuera de prod; nunca `*`). Nuevo guard `config/security-check.ts` que **aborta el arranque** en producción si `ALLOW_DEV_AUTH_BYPASS` está activo. Ver `docs/DEPLOYMENT_SECURITY.md`.
 
 ### G-2 🟡 Credenciales de admin en el PRD
 El PRD §16 incluye `terradmin@gmail.com / 123`. El propio doc dice rotar antes de producción; dejar registrado como pendiente de despliegue.
+**✅ Resuelto (#141):** eliminada la contraseña en claro del PRD §16; sustituida por reglas de rotación/config (`ADMIN_SEED_EMAIL`).
 
 ### G-3 🟡 Webhook de Stripe acepta eventos sin firma en dev
 `payments.ts:368-389` acepta payload sin verificar firma cuando `NODE_ENV !== production`. Correcto para dev, pero conviene documentarlo.
+**✅ Resuelto (#141):** comportamiento por entorno documentado en `docs/DEPLOYMENT_SECURITY.md` (producción = verificación estricta siempre). El guard avisa si falta `STRIPE_WEBHOOK_SECRET` con Stripe activo en prod.
 
 ---
 
