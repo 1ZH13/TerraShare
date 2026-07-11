@@ -589,12 +589,16 @@ metadata?: Record<string, any>;
 
 ## 16. Cuenta admin desarrollo
 
-- **Email:** terradmin@gmail.com
-- **Password:** 123
+La contraseña de la cuenta admin de desarrollo **no se documenta aquí** (G-2 #141):
+las credenciales en claro no deben vivir en documentación versionada. La cuenta
+la gestiona Clerk; el rol admin se asigna por email (`ADMIN_SEED_EMAIL`) o por
+`public_metadata.role`.
 
-**Regla obligatoria:**
-- No usar credenciales temporales en producción
-- Rotar password antes del primer despliegue real
+**Reglas obligatorias antes de producción:**
+- Configurar `ADMIN_SEED_EMAIL` con una cuenta real y controlada.
+- Rotar cualquier contraseña de desarrollo antes del primer despliegue.
+- No usar credenciales temporales ni compartirlas en documentación/pública.
+- Verificar que `ALLOW_DEV_AUTH_BYPASS=false` en producción (ver §Despliegue y `docs/AUDITORIA_HALLAZGOS.md` G-1).
 
 ## 17. Índice de archivos del proyecto
 

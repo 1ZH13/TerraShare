@@ -1,8 +1,19 @@
 import { env } from "./config/env";
+import { enforceProductionSecurity } from "./config/security-check";
 import { connectMongoose } from "./db/mongoose";
 import { createApp } from "./app";
 import { seedDatabase } from "./db/seed";
 import { Land } from "./db/schemas";
+
+// Verificación de seguridad de despliegue (#141): aborta el arranque si la
+// configuración de producción es insegura (p. ej. bypass de auth activo).
+enforceProductionSecurity({
+  isProduction: env.isProduction,
+  allowDevAuthBypass: env.allowDevAuthBypass,
+  corsAllowedOrigins: env.corsAllowedOrigins,
+  stripeConfigured: env.stripeConfigured,
+  webhookSecretConfigured: !!env.stripeWebhookSecret && env.stripeWebhookSecret !== "whsec_placeholder",
+});
 
 const app = createApp();
 
