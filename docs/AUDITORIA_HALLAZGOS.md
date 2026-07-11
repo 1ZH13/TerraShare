@@ -140,17 +140,21 @@ Ejemplos: `lands POST` no valida tipos de `location`/`priceRule` a fondo; `leads
 - `ContractStatus`: PRD describe flujo de doble firma (`pending_owner_signature`, `pending_tenant_signature`, `signed`); el código usa `draft/active/completed/cancelled`.
 - `PaymentStatus`: PRD `pending/completed/failed/refunded`; código `pending/processing/paid/failed/cancelled`.
 **Propuesta:** definir la fuente de verdad única y alinear PRD + schema + DTOs compartidos.
+**✅ Resuelto (#140):** fuente única = código (enums en español). PRD.md §8 alineado; schemas Zod de `shared` extendidos con `operation`/`salePrice` (lands) y `operation`/`offerAmount` (rental-requests) para coincidir con DTOs y Mongoose.
 
 ### F-2 🟠 Flujo de firma de contrato simplificado
 El PRD describe firma de ambas partes; `contracts.ts::sign` solo pasa `draft → active` con una firma (`terms.signedAt`). No hay firma separada de owner/tenant.
 **Propuesta:** decidir si se implementa el flujo de doble firma (Fase 2) o se documenta el flujo simplificado actual.
+**✅ Resuelto (#140):** documentado el flujo de **firma única** (`draft→active→completed`) en PRD.md §8 y RN-06; eliminada la referencia a doble firma y al objeto `signatures`.
 
 ### F-3 🟡 Acciones de auditoría fuera del enum
 `contracts.ts` emite `action: "signed"` y `"completed"`, que **no** están en el `enum` de `AuditEventSchema` (`db/schemas.ts:239`). Como hoy la auditoría es en memoria (A-5) no falla en runtime, pero si se persiste con Mongoose (deseable) Mongoose lo rechazaría.
 **Propuesta:** ampliar el enum o normalizar las acciones.
+**✅ Resuelto (#140):** con A-5 ya persistiendo en Mongoose, firmar reventaba (500). Añadidos `signed`/`completed` al enum de `AuditEventSchema`, a `IAuditEvent` y a `AuditAction` de `shared`. Test de regresión: firmar contrato → 200 + evento `signed`.
 
 ### F-4 🟡 `/analytics/requests` puede dividir por cero
 `approvalRate` divide por `recentRequests.length` (`analytics.ts:170`); si no hay solicitudes recientes → `NaN`.
+**✅ Resuelto (#140):** el guard ahora es sobre `recentRequests.length` (antes sobre `requests.length`). Test: `approvalRate` es siempre un número finito en [0,100].
 
 ---
 

@@ -180,8 +180,8 @@ Dolores principales:
 | RN-03 | Solo el propietario de un terreno puede aprobar o rechazar solicitudes de ese terreno |
 | RN-04 | Usuarios bloqueados no pueden publicar terrenos ni solicitar alquiler |
 | RN-05 | Solicitudes deben tener estado: draft, pending_owner, approved, rejected, cancelled, pending_payment, paid |
-| RN-06 | Contratos deben tener estado: draft, pending_owner_signature, pending_tenant_signature, signed, completed, cancelled |
-| RN-07 | Pagos deben tener estado: pending, completed, failed, refunded |
+| RN-06 | Contratos deben tener estado: draft, active, completed, cancelled (firma única: draft→active→completed) |
+| RN-07 | Pagos deben tener estado: pending, processing, paid, failed, cancelled, refunded, partially_refunded |
 
 ## 7. Stack tecnológico
 
@@ -222,47 +222,52 @@ Dolores principales:
 
 ### 8.1 Enums y tipos auxiliares
 
+> **Fuente única de verdad (#140):** estos enums reflejan el código real
+> (`packages/shared` + schema Mongoose del backend). Los valores son en español
+> y coinciden entre PRD, DTOs (`packages/shared/src/dto`), schemas Zod
+> (`packages/shared/src/schemas`) y el modelo Mongoose (`apps/backend-api`).
+
 ```typescript
-enum LandUse {
-  AGRICULTURE = 'agriculture';
-  LIVESTOCK = 'livestock';
-  FORESTRY = 'forestry';
-  TOURISM = 'tourism';
-  OTHER = 'other';
-}
+// Usos permitidos de un terreno
+type LandUse =
+  | 'agricultura'
+  | 'ganaderia'
+  | 'forestal'
+  | 'acuicultura'
+  | 'mixto'
+  | 'otro';
 
-enum LandStatus {
-  DRAFT = 'draft';
-  PUBLISHED = 'published';
-  PAUSED = 'paused';
-  DELETED = 'deleted';
-}
+// Estado de publicación de un terreno
+type LandStatus = 'draft' | 'active' | 'inactive';
 
-enum RentalRequestStatus {
-  DRAFT = 'draft';
-  PENDING_OWNER = 'pending_owner';
-  APPROVED = 'approved';
-  REJECTED = 'rejected';
-  CANCELLED = 'cancelled';
-  PENDING_PAYMENT = 'pending_payment';
-  PAID = 'paid';
-}
+// Tipo de operación de una publicación (#138): alquiler, venta o ambas
+type LandOperation = 'alquiler' | 'venta' | 'ambas';
 
-enum ContractStatus {
-  DRAFT = 'draft';
-  PENDING_OWNER_SIGNATURE = 'pending_owner_signature';
-  PENDING_TENANT_SIGNATURE = 'pending_tenant_signature';
-  SIGNED = 'signed';
-  COMPLETED = 'completed';
-  CANCELLED = 'cancelled';
-}
+// Operación de una solicitud/trato (#249)
+type DealOperation = 'alquiler' | 'venta';
 
-enum PaymentStatus {
-  PENDING = 'pending';
-  COMPLETED = 'completed';
-  FAILED = 'failed';
-  REFUNDED = 'refunded';
-}
+type RentalRequestStatus =
+  | 'draft'
+  | 'pending_owner'
+  | 'approved'
+  | 'rejected'
+  | 'cancelled'
+  | 'pending_payment'
+  | 'paid';
+
+// Contrato: firma única (draft -> active) + cierre (active -> completed).
+// El PRD original describía doble firma; el flujo implementado es de una firma
+// (ver 8.x "Flujo de contrato").
+type ContractStatus = 'draft' | 'active' | 'completed' | 'cancelled';
+
+type PaymentStatus =
+  | 'pending'
+  | 'processing'
+  | 'paid'
+  | 'failed'
+  | 'cancelled'
+  | 'refunded'
+  | 'partially_refunded';
 ```
 
 ### User
@@ -296,20 +301,26 @@ enum PaymentStatus {
   location: {
     province: string;
     district: string;
-    lat: number;
-    lng: number;
-    address?: string;
+    corregimiento?: string;
+    addressLine?: string;
+    lat?: number;
+    lng?: number;
   };
-  images: string[];
+  photos: string[];
   availability: {
-    available: boolean;
-    availableFrom?: Date;
+    availableFrom?: string;
+    availableTo?: string;
   };
   priceRule: {
     currency: 'USD' | 'PAB';
     pricePerMonth: number;
   };
   status: LandStatus;
+  operation: LandOperation;       // #138: alquiler | venta | ambas
+  salePrice?: number;             // aplica cuando operation es venta/ambas
+  water?: string;
+  access?: string;
+  features?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -322,12 +333,15 @@ enum PaymentStatus {
   id: string;
   landId: string;
   tenantId: string;
-  period: {
-    startDate: Date;
-    endDate: Date;
+  operation?: DealOperation;      // por defecto 'alquiler'
+  // Alquiler: period + intendedUse requeridos. Venta: offerAmount requerido.
+  period?: {
+    startDate: string;
+    endDate: string;
   };
-  intendedUse: LandUse;
-  message?: string;
+  intendedUse?: string;
+  offerAmount?: number;           // solo en operación de venta
+  notes?: string;
   status: RentalRequestStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -344,18 +358,22 @@ enum PaymentStatus {
   tenantId: string;
   terms: {
     summary: string;
+    signedAt?: string;   // se fija al firmar (draft -> active)
     startsAt: Date;
     endsAt: Date;
   };
   status: ContractStatus;
-  signatures: {
-    owner?: { signedAt: Date };
-    tenant?: { signedAt: Date };
-  };
   createdAt: Date;
   updatedAt: Date;
 }
 ```
+
+> **Flujo de contrato (#140 F-2):** el sistema implementa **firma única**, no la
+> doble firma que describía el PRD original. Transiciones:
+> `draft → active` (`POST /contracts/:id/sign`, fija `terms.signedAt`) y
+> `active → completed` (`POST /contracts/:id/complete`). `cancelled` es un
+> estado terminal alternativo. No existen estados `pending_owner_signature` /
+> `pending_tenant_signature` ni un objeto `signatures` con doble firma.
 
 ### Payment
 

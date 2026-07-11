@@ -23,6 +23,8 @@ export type AuditAction =
   | "cancelled"
   | "paid"
   | "refunded"
+  | "signed"
+  | "completed"
   | "status_changed";
 
 export type Resource =

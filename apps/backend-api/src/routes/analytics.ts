@@ -172,7 +172,11 @@ analyticsRoutes.get("/analytics/requests", requireAdmin, async (c) => {
     byStatus,
     byIntendedUse,
     avgTimeToApprovalHours: Math.round(avgDecisionTimeMs / (1000 * 60 * 60) * 10) / 10,
-    approvalRate: requests.length > 0 ? Math.round((approvedLast30Days.length / recentRequests.length) * 100 * 10) / 10 : 0,
+    // Guarda contra división por cero (#140 F-4): la tasa se calcula sobre las
+    // solicitudes *recientes*, así que el guard debe ser sobre `recentRequests`
+    // (había un `requests.length > 0` que dejaba pasar NaN cuando había
+    // solicitudes históricas pero ninguna en los últimos 30 días).
+    approvalRate: recentRequests.length > 0 ? Math.round((approvedLast30Days.length / recentRequests.length) * 100 * 10) / 10 : 0,
   });
 });
 

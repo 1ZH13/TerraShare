@@ -32,6 +32,24 @@ describe("analytics routes", () => {
     expect(payload.data.totalLands).toBeGreaterThan(0);
   });
 
+  // #140 F-4: approvalRate dividía por las solicitudes recientes pero el guard
+  // era sobre el total, así que devolvía NaN (→ null en JSON) cuando había
+  // solicitudes históricas pero ninguna en los últimos 30 días. Debe ser
+  // siempre un número finito.
+  it("returns a finite approvalRate, never NaN/null (F-4)", async () => {
+    const { response, payload } = await requestJson("/api/v1/analytics/requests", {
+      headers: { "x-dev-user-id": "admin_analytics", "x-dev-role": "admin" },
+    });
+
+    expect(response.status).toBe(200);
+    const rate = payload.data.approvalRate;
+    expect(rate).not.toBeNull();
+    expect(typeof rate).toBe("number");
+    expect(Number.isFinite(rate)).toBe(true);
+    expect(rate).toBeGreaterThanOrEqual(0);
+    expect(rate).toBeLessThanOrEqual(100);
+  });
+
   it("forbids owner analytics for a different, non-admin user", async () => {
     const { response, payload } = await requestJson("/api/v1/analytics/owner/user_owner_01", {
       headers: { "x-dev-user-id": "user_tenant_99" },
