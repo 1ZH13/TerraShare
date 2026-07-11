@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { CreateLandSchema, UpdateLandSchema, UpdateLandStatusSchema } from "@terrashare/shared";
 
 import { failure, success } from "../lib/api-response";
+import { validateBody } from "../lib/validate";
 import { canMutateLand } from "../lib/auth-helpers";
 import { getNumericQuery, getOptionalNumericQuery } from "../lib/request-utils";
 import { requireAuth } from "../middleware/require-auth";
@@ -179,32 +181,33 @@ landRoutes.get("/lands/:landId", async (c) => {
 
 landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
-  const body = (await c.req.json().catch(() => null)) as Partial<LandRecord> | null;
 
-  if (!body || !body.title || !body.area || !body.location || !body.priceRule || !body.allowedUses?.length) {
-    return failure(c, 400, "VALIDATION_ERROR", "Missing required land fields", [
-      { field: "title|area|location|priceRule|allowedUses", message: "Required" },
-    ]);
-  }
+  const parsed = await validateBody(c, CreateLandSchema);
+  if (!parsed.success) return parsed.response;
+  // `data`: campos validados y tipados por el schema compartido. `extra`: el
+  // cuerpo original, para los campos aún no cubiertos por el schema
+  // (operation/salePrice/water/access/features/photos).
+  const data = parsed.data;
+  const extra = parsed.raw as Partial<LandRecord>;
 
   const now = new Date().toISOString();
   const land: LandRecord = {
     id: `land_${crypto.randomUUID()}`,
     ownerId: authUser.id,
-    title: body.title,
-    description: body.description,
-    area: Number(body.area),
-    allowedUses: body.allowedUses,
-    photos: body.photos ?? [],
-    location: body.location,
-    availability: body.availability ?? {},
-    priceRule: body.priceRule,
+    title: data.title,
+    description: data.description,
+    area: data.area,
+    allowedUses: data.allowedUses,
+    photos: extra.photos ?? [],
+    location: data.location,
+    availability: data.availability ?? {},
+    priceRule: data.priceRule,
     status: "draft",
-    operation: body.operation ?? "alquiler",
-    salePrice: body.salePrice,
-    water: body.water,
-    access: body.access,
-    features: body.features ?? [],
+    operation: extra.operation ?? "alquiler",
+    salePrice: extra.salePrice,
+    water: extra.water,
+    access: extra.access,
+    features: extra.features ?? [],
     createdAt: now,
     updatedAt: now,
   };
@@ -236,10 +239,9 @@ landRoutes.patch("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) 
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can update this land");
   }
 
-  const body = (await c.req.json().catch(() => null)) as Partial<LandRecord> | null;
-  if (!body) {
-    return failure(c, 400, "VALIDATION_ERROR", "Invalid JSON payload");
-  }
+  const parsed = await validateBody(c, UpdateLandSchema);
+  if (!parsed.success) return parsed.response;
+  const body = parsed.raw as Partial<LandRecord>;
 
   const updated: LandRecord = {
     ...current,
@@ -276,12 +278,9 @@ landRoutes.patch("/lands/:landId/status", requireAuth, rateLimitByUser(200), asy
     return failure(c, 403, "FORBIDDEN", "Only owner or admin can update status");
   }
 
-  const body = (await c.req.json().catch(() => null)) as { status?: LandRecord["status"] } | null;
-  const status = body?.status;
-
-  if (!status || !["draft", "active", "inactive"].includes(status)) {
-    return failure(c, 400, "VALIDATION_ERROR", "Invalid land status");
-  }
+  const parsed = await validateBody(c, UpdateLandStatusSchema);
+  if (!parsed.success) return parsed.response;
+  const status = parsed.data.status;
 
   const updated: LandRecord = {
     ...current,

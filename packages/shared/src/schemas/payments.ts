@@ -25,6 +25,14 @@ export const CreateRefundSchema = z.object({
 export type CreateRefundInput = z.input<typeof CreateRefundSchema>;
 export type CreateRefundOutput = z.output<typeof CreateRefundSchema>;
 
+export const CreatePaymentIntentSchema = z.object({
+  rentalRequestId: z.string().min(1, "ID de solicitud requerido"),
+  currency: z.enum(["USD", "PAB"]),
+});
+
+export type CreatePaymentIntentInput = z.input<typeof CreatePaymentIntentSchema>;
+export type CreatePaymentIntentOutput = z.output<typeof CreatePaymentIntentSchema>;
+
 export const CreateCheckoutSessionSchema = z.object({
   rentalRequestId: z.string().min(1, "ID de solicitud requerido"),
   currency: z.enum(["USD", "PAB"]),

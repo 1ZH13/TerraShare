@@ -1,6 +1,8 @@
 import { Hono } from "hono";
+import { UpdateRentalRequestStatusSchema } from "@terrashare/shared";
 
 import { failure, success } from "../lib/api-response";
+import { validateBody } from "../lib/validate";
 import {
   canCreateRentalRequest,
   canListRentalRequests,
@@ -227,14 +229,10 @@ rentalRequestRoutes.patch("/rental-requests/:requestId/status", requireAuth, asy
     return failure(c, 404, "NOT_FOUND", "Related land not found");
   }
 
-  const body = (await c.req.json().catch(() => null)) as
-    | { status?: RentalRequestStatus; reason?: string }
-    | null;
-
-  const nextStatus = body?.status;
-  if (!nextStatus) {
-    return failure(c, 400, "VALIDATION_ERROR", "Missing status");
-  }
+  const parsed = await validateBody(c, UpdateRentalRequestStatusSchema);
+  if (!parsed.success) return parsed.response;
+  const nextStatus = parsed.data.status as RentalRequestStatus;
+  const body = parsed.data;
 
   if (!canTransition(current.status, nextStatus)) {
     return failure(c, 409, "CONFLICT", `Invalid status transition ${current.status} -> ${nextStatus}`);

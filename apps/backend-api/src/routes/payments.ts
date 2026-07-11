@@ -1,9 +1,15 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import Stripe from "stripe";
+import {
+  CreatePaymentIntentSchema,
+  CreateCheckoutSessionSchema,
+  CreateRefundSchema,
+} from "@terrashare/shared";
 
 import { env } from "../config/env";
 import { failure, success } from "../lib/api-response";
+import { validateBody } from "../lib/validate";
 import { requireAuth, requireAdmin } from "../middleware/require-auth";
 import { verifyStripeWebhook, WebhookVerificationError } from "../lib/stripe-webhook";
 import { createAuditEvent, SYSTEM_ACTOR } from "../store/audit";
@@ -271,11 +277,10 @@ export const paymentRoutes = new Hono<AppEnv>();
 
 paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const body = (await c.req.json().catch(() => null)) as { rentalRequestId?: string; currency?: "USD" | "PAB" } | null;
 
-  if (!body?.rentalRequestId || !body.currency) {
-    return failure(c, 400, "VALIDATION_ERROR", "Missing rentalRequestId or currency");
-  }
+  const parsed = await validateBody(c, CreatePaymentIntentSchema);
+  if (!parsed.success) return parsed.response;
+  const body = parsed.data;
 
   const request = await RentalRequest.findOne({ id: body.rentalRequestId }).lean();
   if (!request) {
@@ -374,18 +379,10 @@ paymentRoutes.post("/payments/create-intent", requireAuth, async (c) => {
 
 paymentRoutes.post("/payments/checkout-session", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const body = (await c.req.json().catch(() => null)) as
-    | {
-        rentalRequestId?: string;
-        currency?: "USD" | "PAB";
-        successUrl?: string;
-        cancelUrl?: string;
-      }
-    | null;
 
-  if (!body?.rentalRequestId || !body.currency || !body.successUrl || !body.cancelUrl) {
-    return failure(c, 400, "VALIDATION_ERROR", "Missing checkout session fields");
-  }
+  const parsed = await validateBody(c, CreateCheckoutSessionSchema);
+  if (!parsed.success) return parsed.response;
+  const body = parsed.data;
 
   const request = await RentalRequest.findOne({ id: body.rentalRequestId }).lean();
   if (!request) {
@@ -684,7 +681,10 @@ paymentRoutes.post("/payments/confirm", requireAuth, async (c) => {
 paymentRoutes.post("/payments/:paymentId/refund", requireAuth, requireAdmin, async (c) => {
   const authUser = c.get("authUser");
   const paymentId = c.req.param("paymentId");
-  const body = (await c.req.json().catch(() => null)) as { amount?: number; reason?: string } | null;
+
+  const parsed = await validateBody(c, CreateRefundSchema);
+  if (!parsed.success) return parsed.response;
+  const body = parsed.data;
 
   const payment = await Payment.findOne({ id: paymentId }).lean();
   if (!payment) {

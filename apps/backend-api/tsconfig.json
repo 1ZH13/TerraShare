@@ -6,7 +6,11 @@
     "strict": true,
     "skipLibCheck": true,
     "types": ["node", "bun"],
-    "outDir": "dist"
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@terrashare/shared": ["../../packages/shared/src/index.ts"]
+    }
   },
   "include": [
     "src/**/*.ts"
