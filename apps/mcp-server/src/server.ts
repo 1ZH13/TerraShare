@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { config } from "./config";
 import type { ToolContext } from "./context";
 import { registerTool } from "./tools/define-tool";
+import { createLandTool } from "./tools/create-land";
 import { createPaymentSessionTool } from "./tools/create-payment-session";
 import { refundPaymentTool } from "./tools/refund-payment";
 import { searchLandsTool } from "./tools/search-lands";
@@ -15,6 +16,7 @@ import { searchLandsTool } from "./tools/search-lands";
  */
 const TOOLS = [
   searchLandsTool,
+  createLandTool,
   createPaymentSessionTool,
   refundPaymentTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
@@ -26,8 +28,9 @@ export function createServer(ctx: ToolContext): McpServer {
     {
       instructions:
         "Servidor MCP de TerraShare: expone el dominio de terrenos/alquileres. " +
-        "Usa search_lands para buscar publicaciones activas y create_payment_session " +
-        "para generar un enlace de pago de una solicitud pagable.",
+        "Usa search_lands para buscar publicaciones activas; hay tools adicionales " +
+        "para publicar terrenos, solicitar alquileres, generar contratos, pagos, " +
+        "reembolsos y moderación (según el rol del usuario).",
     },
   );
 
