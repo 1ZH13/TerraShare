@@ -35,9 +35,7 @@ export function getLandPosition(
       const normalized = location.province.normalize("NFD").replace(/\p{Diacritic}/gu, "");
       coords = PROVINCE_CENTERS[normalized];
     }
-    console.log("[getLandPosition]", location.province, "->", coords);
     return coords || null;
   }
-  console.log("[getLandPosition] no location:", location);
   return null;
 }

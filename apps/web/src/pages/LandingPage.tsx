@@ -321,8 +321,6 @@ export default function LandingPage() {
         </div>
         <div className="lp-foot__links">
           <Link to={catalogTo}>Catálogo</Link>
-          <a href="#">Términos</a>
-          <a href="#">Privacidad</a>
         </div>
         <div className="lp-foot__copy">© {new Date().getFullYear()} TerraShare · Hecho en Panamá</div>
       </footer>
