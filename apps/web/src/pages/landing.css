@@ -5,7 +5,7 @@
 .lp {
   width: 100%;
   overflow-x: hidden;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
   background: var(--ts-bg);
   font-family: var(--ts-font-serif);
 }
@@ -75,11 +75,11 @@
   text-decoration: none;
   font-weight: 500;
 }
-.lp-nav__link:hover { color: var(--ts-green-ink); }
+.lp-nav__link:hover { color: var(--ts-text); }
 .lp-nav__link--accent { color: var(--ts-green); font-weight: 600; }
 .lp-nav__cta {
   font-size: 15px;
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   background: var(--ts-green);
   text-decoration: none;
   font-weight: 600;
@@ -114,7 +114,7 @@
   line-height: 1.02;
   letter-spacing: -0.025em;
   margin: 22px 0 26px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .lp-hero__title em {
   font-style: italic;
@@ -150,7 +150,7 @@
 }
 .lp-btn--primary {
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   padding: 16px 28px;
 }
 .lp-btn--primary:hover { transform: translateY(-2px); background: var(--ts-green-ink); }
@@ -160,7 +160,7 @@
   border: 1px solid #d8cfb8;
   background: transparent;
 }
-.lp-btn--ghost:hover { background: #f1ebdd; }
+.lp-btn--ghost:hover { background: var(--ts-paper-tint); }
 .lp-btn--clay {
   background: var(--ts-clay);
   color: #fff;
@@ -226,12 +226,12 @@
   justify-content: center;
 }
 .lp-chip--water__k { font-size: 12px; color: var(--ts-sage); }
-.lp-chip--water__v { font-weight: 700; color: var(--ts-green-ink); font-size: 15px; }
+.lp-chip--water__v { font-weight: 700; color: var(--ts-text); font-size: 15px; }
 .lp-chip--price {
   right: -26px;
   top: 42px;
   background: var(--ts-green-ink);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   border-radius: 16px;
   padding: 15px 20px;
   box-shadow: 0 26px 46px -24px rgba(36, 49, 42, 0.5);
@@ -247,7 +247,7 @@
   grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--ts-border);
   border-bottom: 1px solid var(--ts-border);
-  background: #f2ecdf;
+  background: var(--ts-paper-tint);
 }
 .lp-band__cell {
   padding: 32px;
@@ -281,7 +281,7 @@
   font-size: 42px;
   letter-spacing: -0.02em;
   margin: 10px 0 0;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .lp-seeall {
   color: var(--ts-green);
@@ -340,7 +340,7 @@
   font-weight: 600;
   font-size: 23px;
   margin: 0 0 4px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .lp-card__loc {
   font-family: var(--ts-font-sans);
@@ -364,13 +364,13 @@
   font-weight: 600;
   color: var(--ts-clay);
 }
-.lp-card__price span { font-size: 13px; color: #8f5f4b; font-family: var(--ts-font-sans); }
+.lp-card__price span { font-size: 13px; color: var(--ts-clay); font-family: var(--ts-font-sans); }
 .lp-card__go {
   width: 36px;
   height: 36px;
   border-radius: 10px;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -385,7 +385,7 @@
   font-size: 42px;
   letter-spacing: -0.02em;
   margin: 0 0 44px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .lp-how__grid {
   display: grid;
@@ -420,7 +420,7 @@
   grid-template-columns: 1.3fr 0.7fr;
   gap: 52px;
   align-items: center;
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
 }
 .lp-cta__quote-icon { opacity: 0.45; }
 .lp-cta__quote {
@@ -439,7 +439,7 @@
   align-items: center;
   justify-content: center;
   background: rgba(244, 239, 228, 0.12);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
 }
 .lp-cta__author-name { font-family: var(--ts-font-sans); font-weight: 700; font-size: 15px; }
 .lp-cta__author-role { font-family: var(--ts-font-sans); font-size: 13px; opacity: 0.65; }
@@ -474,8 +474,8 @@
 .lp-foot__brand-name { font-family: var(--ts-font-serif); font-weight: 600; font-size: 18px; color: var(--ts-green); }
 .lp-foot__links { display: flex; gap: 28px; font-size: 14px; color: var(--ts-sage-2); }
 .lp-foot__links a { text-decoration: none; color: inherit; }
-.lp-foot__links a:hover { color: var(--ts-green-ink); }
-.lp-foot__copy { font-size: 13px; color: #59684f; }
+.lp-foot__links a:hover { color: var(--ts-text); }
+.lp-foot__copy { font-size: 13px; color: var(--ts-text-muted); }
 
 /* ── placeholder de foto (el modelo aún no tiene imágenes reales) ─────────── */
 .lp-photo {

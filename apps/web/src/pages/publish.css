@@ -1,6 +1,6 @@
 /* TerraShare — Publicar terreno, wizard 4 pasos (prototipo · pantallas 06/20-22). Prefijo `pub-`. */
 
-.pub { min-height: 100vh; background: var(--ts-bg); font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+.pub { min-height: 100vh; background: var(--ts-bg); font-family: var(--ts-font-sans); color: var(--ts-text); }
 
 @keyframes pubUp {
   from { opacity: 0; transform: translateY(12px); }
@@ -51,7 +51,7 @@
   font-size: 34px;
   letter-spacing: -0.02em;
   margin: 0 0 26px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 
 .pub-card {
@@ -72,7 +72,7 @@
   border-radius: 11px;
   padding: 13px 15px;
   font-size: 15px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
   font-family: var(--ts-font-sans);
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -84,7 +84,7 @@ textarea.pub-input { min-height: 92px; resize: vertical; }
 .pub-grid-loc { display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px; margin-top: 18px; }
 
 /* segmento (operación / moneda) */
-.pub-seg { display: inline-flex; background: #efe7d6; border-radius: 11px; padding: 4px; gap: 3px; width: 100%; }
+.pub-seg { display: inline-flex; background: var(--ts-beige); border-radius: 11px; padding: 4px; gap: 3px; width: 100%; }
 .pub-seg__btn {
   flex: 1;
   text-align: center;
@@ -98,7 +98,7 @@ textarea.pub-input { min-height: 92px; resize: vertical; }
   cursor: pointer;
   font-family: var(--ts-font-sans);
 }
-.pub-seg__btn.is-active { background: var(--ts-green); color: var(--ts-bg); }
+.pub-seg__btn.is-active { background: var(--ts-green); color: var(--ts-on-ink); }
 .pub-seg--sm { width: auto; }
 .pub-seg--sm .pub-seg__btn { padding: 9px 12px; font-size: 13px; }
 
@@ -110,7 +110,7 @@ textarea.pub-input { min-height: 92px; resize: vertical; }
   gap: 6px;
   font-size: 13.5px;
   color: var(--ts-text-secondary);
-  background: #f2ecdf;
+  background: var(--ts-paper-tint);
   border: 1px solid var(--ts-border);
   border-radius: 999px;
   padding: 8px 15px;
@@ -121,7 +121,7 @@ textarea.pub-input { min-height: 92px; resize: vertical; }
 
 .pub-hint { font-size: 12.5px; color: var(--ts-sage); margin-top: 14px; display: flex; align-items: center; gap: 6px; line-height: 1.5; }
 .pub-price-suffix { font-size: 12px; color: var(--ts-sage); }
-.pub-subtitle { font-size: 15px; font-weight: 600; color: var(--ts-green-ink); margin: 24px 0 12px; font-family: var(--ts-font-serif); }
+.pub-subtitle { font-size: 15px; font-weight: 600; color: var(--ts-text); margin: 24px 0 12px; font-family: var(--ts-font-serif); }
 .pub-subtitle span { font-size: 12.5px; color: var(--ts-sage); font-weight: 400; font-family: var(--ts-font-sans); }
 
 /* paso 4 fotos */
@@ -132,7 +132,7 @@ textarea.pub-input { min-height: 92px; resize: vertical; }
   text-align: center;
   color: var(--ts-sage);
   margin-bottom: 16px;
-  background: #faf5ea;
+  background: var(--ts-surface-alt);
 }
 .pub-drop__main { font-size: 14.5px; margin-top: 8px; }
 .pub-drop__main b { color: var(--ts-green); font-weight: 600; }
@@ -165,13 +165,13 @@ textarea.pub-input { min-height: 92px; resize: vertical; }
   cursor: pointer;
   font-family: var(--ts-font-sans);
 }
-.pub-back:hover { color: var(--ts-green-ink); }
+.pub-back:hover { color: var(--ts-text); }
 .pub-next {
   display: inline-flex;
   align-items: center;
   gap: 9px;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-weight: 600;
   font-size: 15px;
   padding: 14px 26px;

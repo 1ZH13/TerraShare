@@ -1,6 +1,6 @@
 /* TerraShare — Pagos (paridad con el prototipo · pantalla 17). Prefijo `pay-`. */
 
-.pay { max-width: 960px; margin: 0 auto; padding: 44px 40px 70px; font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+.pay { max-width: 960px; margin: 0 auto; padding: 44px 40px 70px; font-family: var(--ts-font-sans); color: var(--ts-text); }
 
 @keyframes payUp {
   from { opacity: 0; transform: translateY(14px); }
@@ -13,7 +13,7 @@
   font-size: 38px;
   letter-spacing: -0.02em;
   margin: 0 0 4px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
   animation: payUp 0.6s ease both;
 }
 .pay-sub { color: var(--ts-sage-2); font-size: 16px; margin: 0 0 28px; animation: payUp 0.6s ease both 0.04s; }
@@ -87,7 +87,7 @@
   display: inline-block;
   margin-top: 14px;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-weight: 600;
   padding: 11px 20px;
   border-radius: 10px;

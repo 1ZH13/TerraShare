@@ -31,7 +31,7 @@
   align-items: center;
   gap: 0.55rem;
   text-decoration: none;
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-family: var(--ts-font-serif);
   font-size: 1.6rem;
   font-weight: 600;
@@ -45,7 +45,7 @@
 
 .au-intro h1 {
   margin: 0 0 0.35rem;
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
 }
 
 .au-intro p {

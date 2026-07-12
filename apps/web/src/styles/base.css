@@ -115,3 +115,44 @@ h3.ts-title {
     animation: none;
   }
 }
+
+/* ── Toggle de tema claro/oscuro (#278) ────────────────────────────────────
+   Botón solo-ícono que hereda el color del contexto (currentColor), por lo que
+   funciona igual en la navbar clara, el landing y el sidebar admin oscuro. */
+.ts-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--ts-radius-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.ts-theme-toggle:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* En el nav del landing, alineado con los enlaces. */
+.lp-nav__theme {
+  color: var(--ts-text);
+}
+
+/* En el footer del sidebar admin (siempre oscuro): ícono crema. */
+.adm-side__theme {
+  color: var(--ts-on-ink);
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--ts-radius);
+  margin-bottom: 4px;
+}
+.adm-side__theme:hover {
+  background: rgba(244, 239, 228, 0.07);
+}

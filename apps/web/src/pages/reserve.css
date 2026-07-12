@@ -1,6 +1,6 @@
 /* TerraShare — Solicitar alquiler (paridad con el prototipo · pantalla 14). Prefijo `rsv-`. */
 
-.rsv { width: 100%; font-family: var(--ts-font-sans); color: var(--ts-green-ink); min-height: 100vh; background: var(--ts-bg); }
+.rsv { width: 100%; font-family: var(--ts-font-sans); color: var(--ts-text); min-height: 100vh; background: var(--ts-bg); }
 
 @keyframes rsvUp {
   from { opacity: 0; transform: translateY(16px); }
@@ -28,7 +28,7 @@
   font-size: 14px;
   text-decoration: none;
 }
-.rsv-nav__back:hover { color: var(--ts-green-ink); }
+.rsv-nav__back:hover { color: var(--ts-text); }
 .rsv-nav__brand { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .rsv-nav__brand-mark { color: var(--ts-green); display: inline-flex; }
 .rsv-nav__brand-name { font-family: var(--ts-font-serif); font-weight: 600; font-size: 19px; color: var(--ts-green); }
@@ -94,7 +94,7 @@
   font-size: 38px;
   letter-spacing: -0.02em;
   margin: 0 0 6px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .rsv-sub { color: var(--ts-sage-2); font-size: 16px; margin: 0 0 26px; }
 .rsv-card {
@@ -115,7 +115,7 @@
   border-radius: 11px;
   padding: 13px 15px;
   font-size: 15px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
   font-family: var(--ts-font-sans);
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -129,7 +129,7 @@ textarea.rsv-input { min-height: 88px; resize: vertical; }
   flex: 1;
   text-align: center;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-weight: 600;
   font-size: 16px;
   padding: 14px;
@@ -153,7 +153,7 @@ textarea.rsv-input { min-height: 88px; resize: vertical; }
   display: inline-flex;
   align-items: center;
 }
-.rsv-cancel:hover { background: #f1ebdd; }
+.rsv-cancel:hover { background: var(--ts-paper-tint); }
 
 .rsv-note {
   font-size: 12.5px;

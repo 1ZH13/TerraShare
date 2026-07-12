@@ -462,7 +462,7 @@
 
 .ds-sidebar__item.is-active {
   background: var(--ts-surface);
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
   font-weight: 600;
 }
 

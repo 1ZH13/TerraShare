@@ -1,6 +1,6 @@
 /* TerraShare — Trato / pago (paridad con el prototipo · pantalla 07). Prefijo `dl-`. */
 
-.dl { min-height: 100vh; background: var(--ts-bg); font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+.dl { min-height: 100vh; background: var(--ts-bg); font-family: var(--ts-font-sans); color: var(--ts-text); }
 
 @keyframes dlUp {
   from { opacity: 0; transform: translateY(14px); }
@@ -27,7 +27,7 @@
   font-size: 14px;
   text-decoration: none;
 }
-.dl-nav__back:hover { color: var(--ts-green-ink); }
+.dl-nav__back:hover { color: var(--ts-text); }
 .dl-nav__right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
 .dl-nav__id { font-size: 13px; color: var(--ts-sage); }
 .dl-nav__brand-mark { color: var(--ts-green); display: inline-flex; }
@@ -75,7 +75,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #f2ecdf;
+  background: var(--ts-paper-tint);
   color: var(--ts-sage-3);
 }
 .dl-step__dot--done { background: var(--ts-green); color: #fff; }
@@ -114,11 +114,11 @@
   font-size: 14px;
   text-decoration: none;
 }
-.dl-chat-link:hover { color: var(--ts-green-ink); }
+.dl-chat-link:hover { color: var(--ts-text); }
 
 /* panel de pago sticky */
 .dl-pay { position: sticky; top: 100px; animation: dlUp 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) both 0.12s; }
-.dl-pay__card { background: var(--ts-green-ink); color: var(--ts-bg); border-radius: 18px; padding: 24px; }
+.dl-pay__card { background: var(--ts-green-ink); color: var(--ts-on-ink); border-radius: 18px; padding: 24px; }
 .dl-pay__k { font-size: 13px; opacity: 0.7; }
 .dl-pay__amount { font-family: var(--ts-font-serif); font-weight: 600; font-size: 36px; margin: 2px 0; }
 .dl-pay__sub { font-size: 12.5px; opacity: 0.6; margin-bottom: 18px; }
@@ -190,7 +190,7 @@
   display: inline-block;
   margin-top: 16px;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-weight: 600;
   padding: 12px 22px;
   border-radius: 11px;

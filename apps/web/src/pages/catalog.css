@@ -1,7 +1,7 @@
 /* TerraShare — Catálogo (paridad con el prototipo · pantalla 04).
    Barra de filtros + lista de tarjetas horizontales + mapa sticky. Prefijo `cat-`. */
 
-.cat { font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+.cat { font-family: var(--ts-font-sans); color: var(--ts-text); }
 
 /* ── barra de filtros ────────────────────────────────────────────────────── */
 .cat-filters {
@@ -30,7 +30,7 @@
   border: 0;
   background: transparent;
   font-size: 14.5px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
   font-family: var(--ts-font-sans);
   outline: none;
 }
@@ -88,7 +88,7 @@
   min-width: 0;
 }
 .cat-listhead { font-size: 13.5px; color: var(--ts-sage); margin-bottom: 18px; }
-.cat-listhead strong { color: var(--ts-green-ink); font-weight: 600; }
+.cat-listhead strong { color: var(--ts-text); font-weight: 600; }
 .cat-list { display: grid; gap: 16px; }
 
 .cat-card {
@@ -154,7 +154,7 @@
   white-space: nowrap;
   flex: 0 0 auto;
 }
-.cat-card__badge--sale { color: var(--ts-bg); background: var(--ts-green-ink); }
+.cat-card__badge--sale { color: var(--ts-on-ink); background: var(--ts-green-ink); }
 .cat-card__meta {
   font-size: 13px;
   color: var(--ts-sage);
@@ -207,7 +207,7 @@
 .cat-mapcard__go {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   background: var(--ts-green);
   padding: 9px 16px;
   border-radius: 9px;
