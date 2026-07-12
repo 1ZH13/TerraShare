@@ -107,6 +107,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `search_lands` | HU-63 | #180 | ✅ implementada |
 | `create_land` | HU-65 | #182 | ✅ implementada |
 | `create_rental_request` | HU-70 | #187 | ✅ implementada |
+| `create_contract` | HU-73 | #190 | ✅ implementada |
 | `create_payment_session` | HU-77 | #194 | ✅ implementada |
 | `refund_payment` | HU-80 | #197 | ✅ implementada |
 
@@ -148,6 +149,23 @@ Ejemplo de argumentos (alquiler):
   "landId": "land_a",
   "period": { "startDate": "2026-08-01", "endDate": "2026-12-01" },
   "intendedUse": "agricultura"
+}
+```
+
+`create_contract` (`requires: user`): genera un contrato en `draft` vinculado a
+una solicitud, con términos, fechas y partes. Solo el dueño del terreno (o un
+admin) puede crearlo; reusa `CreateContractSchema` y `canCreateContract`.
+
+Ejemplo de argumentos:
+
+```json
+{
+  "rentalRequestId": "rr_123",
+  "terms": {
+    "summary": "Arrendamiento por 12 meses del terreno.",
+    "startsAt": "2026-08-01",
+    "endsAt": "2027-08-01"
+  }
 }
 ```
 
