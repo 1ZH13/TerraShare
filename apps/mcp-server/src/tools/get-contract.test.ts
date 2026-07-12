@@ -48,11 +48,22 @@ describe("get_contract tool (HU-76 #193)", () => {
     ).rejects.toThrow("Contrato no encontrado");
   });
 
-  it("lanza error cuando el usuario no es parte del contrato", async () => {
+  it("permite a un administrador ver contratos que no le pertenecen", async () => {
+    const result = await getContract({
+      contractId: "contract_seed_01",
+      actingUserId: "user_admin",
+      actingUserRole: "admin",
+    });
+    expect(result).toBeDefined();
+    expect((result as { id: string }).id).toBe("contract_seed_01");
+  });
+
+  it("lanza error cuando el usuario no es parte del contrato ni administrador", async () => {
     await expect(
       getContract({
         contractId: "contract_seed_01",
         actingUserId: "user_other",
+        actingUserRole: "user",
       })
     ).rejects.toThrow("No autorizado");
   });

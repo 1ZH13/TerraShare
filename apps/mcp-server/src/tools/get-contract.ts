@@ -22,6 +22,7 @@ export type GetContractInput = z.infer<z.ZodObject<typeof getContractInput>>;
 export async function getContract(rawInput: {
   contractId: string;
   actingUserId: string | null;
+  actingUserRole?: string;
 }): Promise<Record<string, unknown>> {
   if (!rawInput.actingUserId) {
     throw new ToolError("Se requiere un usuario autenticado");
@@ -31,7 +32,7 @@ export async function getContract(rawInput: {
   if (!contract) throw new ToolError("Contrato no encontrado");
 
   // Check permission: only parties (owner/tenant) or admin can read
-  if (!canReadContract({ id: rawInput.actingUserId } as any, contract as any)) {
+  if (!canReadContract({ id: rawInput.actingUserId, role: rawInput.actingUserRole ?? "user" } as any, contract as any)) {
     throw new ToolError("No autorizado para ver este contrato");
   }
 
@@ -53,5 +54,6 @@ export const getContractTool: ToolDefinition<typeof getContractInput> = {
     getContract({
       contractId: args.contractId as string,
       actingUserId: ctx.actingUser?.id ?? null,
+      actingUserRole: ctx.actingUser?.role,
     }),
 };
