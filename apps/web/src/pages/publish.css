@@ -134,9 +134,59 @@ textarea.pub-input { min-height: 92px; resize: vertical; }
   margin-bottom: 16px;
   background: var(--ts-surface-alt);
 }
+.pub-drop:hover { border-color: var(--ts-green); }
 .pub-drop__main { font-size: 14.5px; margin-top: 8px; }
 .pub-drop__main b { color: var(--ts-green); font-weight: 600; }
 .pub-drop__sub { font-size: 12.5px; margin-top: 2px; }
+
+/* Miniaturas de fotos subidas (#148). */
+.pub-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin: 4px 0 8px;
+}
+.pub-thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ts-beige);
+  background: var(--ts-surface-alt);
+}
+.pub-thumb.is-cover { border-color: var(--ts-green); box-shadow: 0 0 0 2px var(--ts-green); }
+.pub-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pub-thumb__cover {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--ts-green);
+  color: var(--ts-on-ink, #fff);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.pub-thumb__actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 5px;
+}
+.pub-thumb__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(20, 20, 18, 0.62);
+  color: #fff;
+  cursor: pointer;
+}
+.pub-thumb__actions button:hover { background: rgba(20, 20, 18, 0.85); }
 .pub-note {
   margin-top: 18px;
   background: var(--ts-tint-green);

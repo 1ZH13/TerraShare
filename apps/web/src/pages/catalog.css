@@ -138,7 +138,10 @@
   justify-content: center;
   background: linear-gradient(135deg, #e9e3d3, #dfe4d6);
   color: var(--ts-sage-3);
+  overflow: hidden;
 }
+/* Foto de portada real (#148). */
+.cat-card__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cat-card__body { flex: 1; min-width: 0; }
 .cat-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .cat-card__title { font-family: var(--ts-font-serif); font-weight: 600; font-size: 20px; }

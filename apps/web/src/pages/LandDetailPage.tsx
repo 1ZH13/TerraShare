@@ -19,7 +19,7 @@ import {
   User,
   Flag,
 } from "lucide-react";
-import { createChat, getLandById, createReport, getOwnerPublicProfile } from "../services/api";
+import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc } from "../services/api";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
 import "./detail.css";
@@ -348,18 +348,40 @@ export default function LandDetailPage() {
 
       <main id="contenido" className="det-wrap">
         {/* galería */}
-        <div className="det-gallery" aria-hidden="true">
-          <div className="det-photo det-photo--main">
-            <ImageIcon size={40} strokeWidth={1.4} />
-            <span>Foto principal — vista del terreno</span>
+        {land.photos && land.photos.length > 0 ? (
+          <div className="det-gallery">
+            <div className="det-photo det-photo--main det-photo--img">
+              <img src={photoSrc(land.photos[0])} alt={`${land.title} — foto principal`} />
+            </div>
+            <div className="det-photo det-photo--img">
+              {land.photos[1] ? (
+                <img src={photoSrc(land.photos[1])} alt={`${land.title} — foto 2`} />
+              ) : (
+                <ImageIcon size={24} strokeWidth={1.4} aria-hidden="true" />
+              )}
+            </div>
+            <div className="det-photo det-photo--img det-gallery__hide-sm">
+              {land.photos[2] ? (
+                <img src={photoSrc(land.photos[2])} alt={`${land.title} — foto 3`} />
+              ) : (
+                <ImageIcon size={24} strokeWidth={1.4} aria-hidden="true" />
+              )}
+            </div>
           </div>
-          <div className="det-photo">
-            <ImageIcon size={24} strokeWidth={1.4} />
+        ) : (
+          <div className="det-gallery" aria-hidden="true">
+            <div className="det-photo det-photo--main">
+              <ImageIcon size={40} strokeWidth={1.4} />
+              <span>Foto principal — vista del terreno</span>
+            </div>
+            <div className="det-photo">
+              <ImageIcon size={24} strokeWidth={1.4} />
+            </div>
+            <div className="det-photo det-gallery__hide-sm">
+              <ImageIcon size={24} strokeWidth={1.4} />
+            </div>
           </div>
-          <div className="det-photo det-gallery__hide-sm">
-            <ImageIcon size={24} strokeWidth={1.4} />
-          </div>
-        </div>
+        )}
 
         <div className="det-body">
           {/* columna izquierda */}

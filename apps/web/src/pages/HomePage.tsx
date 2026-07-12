@@ -17,7 +17,7 @@ import {
   Heart,
   MessageCircle,
 } from "lucide-react";
-import { getChats, getMyFavorites, getMyLands, listRentalRequests } from "../services/api";
+import { getChats, getMyFavorites, getMyLands, listRentalRequests, photoSrc } from "../services/api";
 import { getDisplayName } from "../components/authDisplay";
 import { useAppMode } from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
@@ -220,7 +220,11 @@ function BuscoHome({ name }: { name: string }) {
                   className="hm-favcard"
                 >
                   <span className="hm-favcard__thumb" aria-hidden="true">
-                    <Heart size={16} />
+                    {land.photos?.[0] ? (
+                      <img src={photoSrc(land.photos[0])} alt="" />
+                    ) : (
+                      <Heart size={16} />
+                    )}
                   </span>
                   <span className="hm-favcard__body">
                     <span className="hm-favcard__title">{land.title}</span>

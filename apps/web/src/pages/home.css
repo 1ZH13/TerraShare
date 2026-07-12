@@ -275,7 +275,9 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  overflow: hidden;
 }
+.hm-favcard__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .hm-favcard__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .hm-favcard__title {
   font-size: 14px;

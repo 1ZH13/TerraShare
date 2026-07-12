@@ -42,6 +42,8 @@ export interface LandDto {
   description?: string;
   area: number;
   allowedUses: LandUse[];
+  /** URLs relativas de las fotos; la primera es la portada (#148). */
+  photos?: string[];
   location: LandLocationDto;
   availability: LandAvailabilityDto;
   priceRule: LandPriceRuleDto;

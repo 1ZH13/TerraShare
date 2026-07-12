@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CreateLandDto, LandUse } from "@terrashare/shared";
-import { X, Sprout, ArrowLeft, ArrowRight, Check, MapPin, Info, CloudUpload } from "lucide-react";
-import { createLand } from "../services/api";
+import { X, Sprout, ArrowLeft, ArrowRight, Check, MapPin, Info, CloudUpload, Star, Trash2 } from "lucide-react";
+import { createLand, uploadLandPhoto } from "../services/api";
 import "./publish.css";
+
+const MAX_PHOTOS = 10;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type Operation = "alquiler" | "venta" | "ambas";
 type Currency = "USD" | "PAB";
@@ -57,8 +61,46 @@ export default function PublishLandPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<Form>(EMPTY);
+  const [photos, setPhotos] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const addFiles = (files: FileList | null) => {
+    if (!files) return;
+    setError("");
+    const incoming = Array.from(files);
+    const errors: string[] = [];
+    const valid = incoming.filter((f) => {
+      if (!ACCEPTED_TYPES.includes(f.type)) {
+        errors.push(`${f.name}: formato no admitido`);
+        return false;
+      }
+      if (f.size > MAX_PHOTO_BYTES) {
+        errors.push(`${f.name}: supera 5 MB`);
+        return false;
+      }
+      return true;
+    });
+    setPhotos((prev) => {
+      const next = [...prev, ...valid].slice(0, MAX_PHOTOS);
+      if (prev.length + valid.length > MAX_PHOTOS) {
+        errors.push(`Máximo ${MAX_PHOTOS} fotos.`);
+      }
+      return next;
+    });
+    if (errors.length) setError(errors.join(" · "));
+  };
+
+  const removePhoto = (index: number) =>
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+
+  const makeCover = (index: number) =>
+    setPhotos((prev) => {
+      if (index === 0) return prev;
+      const next = [...prev];
+      const [chosen] = next.splice(index, 1);
+      return [chosen, ...next];
+    });
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -103,8 +145,8 @@ export default function PublishLandPage() {
     setSubmitting(true);
     setError("");
     try {
-      // Nota: operación/precio de venta (#140) y fotos (#148) aún no se persisten
-      // en el backend; se envía lo que soporta CreateLandDto.
+      // Nota: operación/precio de venta (#140) aún no se persisten vía
+      // CreateLandDto; las fotos (#148) sí, subiéndolas tras crear el terreno.
       const dto: CreateLandDto = {
         title: form.title.trim(),
         description: form.description.trim() || undefined,
@@ -125,7 +167,16 @@ export default function PublishLandPage() {
           pricePerMonth: Number(form.pricePerMonth) || 0,
         },
       };
-      await createLand(dto);
+      const land = await createLand(dto);
+      // Subimos las fotos en orden (la primera es la portada). Un fallo de foto
+      // no descarta la publicación ya creada: avisamos pero seguimos.
+      for (const file of photos) {
+        try {
+          await uploadLandPhoto(land.id, file);
+        } catch {
+          setError("El terreno se publicó, pero alguna foto no se pudo subir. Podrás reintentarlo al editarlo.");
+        }
+      }
       navigate({ to: "/dashboard/lands", replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo publicar el terreno.");
@@ -325,16 +376,58 @@ export default function PublishLandPage() {
             <div className="pub-step">
               <div style={{ fontFamily: "var(--ts-font-serif)", fontSize: "19px", fontWeight: 600 }}>Fotos del terreno</div>
               <p style={{ color: "var(--ts-sage-2)", fontSize: "14px", margin: "3px 0 18px" }}>
-                Sube hasta 10 fotos. La primera será la portada.
+                Sube hasta {MAX_PHOTOS} fotos (JPG, PNG o WebP · máx. 5 MB). La primera será la portada.
               </p>
-              {/* TODO(#148): la subida de fotos aún no tiene backend; se publica sin fotos. */}
-              <div className="pub-drop">
-                <CloudUpload size={34} strokeWidth={1.6} />
-                <div className="pub-drop__main">
-                  Carga de fotos <b>próximamente</b>
+
+              {photos.length < MAX_PHOTOS && (
+                <label
+                  className="pub-drop"
+                  style={{ cursor: "pointer", display: "block" }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    addFiles(e.dataTransfer.files);
+                  }}
+                >
+                  <CloudUpload size={34} strokeWidth={1.6} />
+                  <div className="pub-drop__main">
+                    Arrastra tus fotos o <b>haz clic para elegir</b>
+                  </div>
+                  <div className="pub-drop__sub">{photos.length}/{MAX_PHOTOS} añadidas</div>
+                  <input
+                    type="file"
+                    accept={ACCEPTED_TYPES.join(",")}
+                    multiple
+                    hidden
+                    onChange={(e) => {
+                      addFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+
+              {photos.length > 0 && (
+                <div className="pub-thumbs">
+                  {photos.map((file, i) => (
+                    <div key={`${file.name}-${i}`} className={`pub-thumb ${i === 0 ? "is-cover" : ""}`}>
+                      <img src={URL.createObjectURL(file)} alt={`Foto ${i + 1}`} />
+                      {i === 0 && <span className="pub-thumb__cover">Portada</span>}
+                      <div className="pub-thumb__actions">
+                        {i !== 0 && (
+                          <button type="button" title="Hacer portada" onClick={() => makeCover(i)}>
+                            <Star size={14} />
+                          </button>
+                        )}
+                        <button type="button" title="Quitar" onClick={() => removePhoto(i)}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="pub-drop__sub">Podrás añadirlas al editar tu publicación (pendiente #148).</div>
-              </div>
+              )}
+
               <div className="pub-note">
                 <Check size={20} />
                 <div>

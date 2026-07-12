@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { LandDto } from "@terrashare/shared";
 import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX, Heart } from "lucide-react";
-import { listLands } from "../services/api";
+import { listLands, photoSrc } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
 import EmptyState from "../components/EmptyState";
 import { useFavorites } from "../hooks/useFavorites";
@@ -223,8 +223,16 @@ export default function CatalogPage() {
                     onClick={() => setSelectedId(land.id)}
                     onDoubleClick={() => navigate({ to: "/lands/$id", params: { id: land.id } })}
                   >
-                    <div className="cat-card__thumb" aria-hidden="true">
-                      <ImageIcon size={24} strokeWidth={1.5} />
+                    <div className="cat-card__thumb">
+                      {land.photos?.[0] ? (
+                        <img
+                          src={photoSrc(land.photos[0])}
+                          alt={land.title ?? "Terreno"}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <ImageIcon size={24} strokeWidth={1.5} aria-hidden="true" />
+                      )}
                     </div>
                     <span
                       role="button"
