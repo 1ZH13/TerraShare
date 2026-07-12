@@ -22,6 +22,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
 
@@ -37,7 +39,29 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
+      - run: bun test
+
+  mcp-server:
+    name: MCP Server
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
+      - name: Install backend-api deps (reutilizadas vía @backend/*)
+        run: cd ../backend-api && bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
       - run: bun test
 
   web-build:
@@ -52,6 +76,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bun run build
         env:
@@ -71,6 +97,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
       - run: bun run build
