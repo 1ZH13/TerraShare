@@ -46,12 +46,25 @@ describe("set_land_status tool (HU-67 #184)", () => {
     ).rejects.toThrow("Terreno no encontrado");
   });
 
-  it("lanza error cuando el usuario no es el dueño", async () => {
+  it("permite a un administrador modificar terrenos que no posee", async () => {
+    const result = await setLandStatus({
+      landId: "land_a",
+      status: "inactive",
+      actingUserId: "user_admin",
+      actingUserRole: "admin",
+    });
+    expect(result).toBeDefined();
+    expect((result as { id: string }).id).toBe("land_a");
+    expect((result as { status: string }).status).toBe("inactive");
+  });
+
+  it("lanza error cuando el usuario no es el dueño ni administrador", async () => {
     await expect(
       setLandStatus({
         landId: "land_a",
         status: "active",
         actingUserId: "user_other",
+        actingUserRole: "user",
       })
     ).rejects.toThrow("No autorizado");
   });
