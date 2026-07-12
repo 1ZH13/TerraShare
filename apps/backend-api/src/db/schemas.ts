@@ -150,8 +150,8 @@ export interface IAuditEvent extends Document {
   id: string;
   actorId: string;
   actorRole: AppRole | "system";
-  entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat" | "report" | "webhook";
-  action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "refunded" | "signed" | "completed" | "status_changed";
+  entity: "auth" | "user" | "land" | "rental_request" | "contract" | "payment" | "chat" | "report" | "webhook" | "backup";
+  action: "created" | "updated" | "deleted" | "approved" | "rejected" | "cancelled" | "paid" | "refunded" | "signed" | "completed" | "status_changed" | "verified";
   entityId: string;
   metadata?: Record<string, unknown>;
   createdAt: Date;
@@ -197,6 +197,31 @@ export interface IReport extends Document {
   status: ReportStatus;
   resolutionNote?: string;
   resolvedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Registro (ledger) de un respaldo cifrado de MongoDB (HU-56 #174). Persiste la
+ * huella del artefacto (checksum/tamaño) y el resultado de la última
+ * restauración *probada*, para dar visibilidad al equipo de operaciones.
+ */
+export type BackupStatus = "completed" | "failed";
+export type BackupVerifyStatus = "pending" | "passed" | "failed";
+
+export interface IBackupRecord extends Document {
+  id: string;
+  fileName: string;
+  sizeBytes: number;
+  checksum: string;
+  algorithm: string;
+  collections: { name: string; count: number }[];
+  status: BackupStatus;
+  error?: string;
+  createdBy: string;
+  lastVerifiedAt?: Date;
+  verifyStatus: BackupVerifyStatus;
+  verifyDetail?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -337,8 +362,8 @@ const AuditEventSchema = new Schema<IAuditEvent>({
   id: { type: String, required: true, unique: true },
   actorId: { type: String, required: true },
   actorRole: { type: String, enum: ["user", "admin", "system"], required: true },
-  entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat", "report", "webhook"], required: true },
-  action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "refunded", "signed", "completed", "status_changed"], required: true },
+  entity: { type: String, enum: ["auth", "user", "land", "rental_request", "contract", "payment", "chat", "report", "webhook", "backup"], required: true },
+  action: { type: String, enum: ["created", "updated", "deleted", "approved", "rejected", "cancelled", "paid", "refunded", "signed", "completed", "status_changed", "verified"], required: true },
   entityId: { type: String, required: true },
   metadata: Schema.Types.Mixed,
 }, { timestamps: true });
@@ -379,6 +404,21 @@ const FavoriteSchema = new Schema<IFavorite>({
   landId: { type: String, required: true },
 }, { timestamps: true });
 
+const BackupRecordSchema = new Schema<IBackupRecord>({
+  id: { type: String, required: true, unique: true },
+  fileName: { type: String, required: true },
+  sizeBytes: { type: Number, required: true },
+  checksum: { type: String, required: true },
+  algorithm: { type: String, required: true },
+  collections: [{ _id: false, name: String, count: Number }],
+  status: { type: String, enum: ["completed", "failed"], required: true },
+  error: String,
+  createdBy: { type: String, required: true },
+  lastVerifiedAt: Date,
+  verifyStatus: { type: String, enum: ["pending", "passed", "failed"], default: "pending" },
+  verifyDetail: Schema.Types.Mixed,
+}, { timestamps: true });
+
 // Índices secundarios (antes vivían en el driver nativo config/database.ts; se
 // migran aquí para que Mongoose sea la única fuente de índices — #135 A-1/A-6).
 LandSchema.index({ ownerId: 1 });
@@ -402,6 +442,8 @@ ReportSchema.index({ targetType: 1, targetId: 1 });
 ReportSchema.index({ reporterId: 1 });
 // Un usuario no puede guardar el mismo terreno dos veces (guardián de idempotencia).
 FavoriteSchema.index({ userId: 1, landId: 1 }, { unique: true });
+// Historial de respaldos ordenado por fecha (#174).
+BackupRecordSchema.index({ createdAt: -1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
@@ -416,3 +458,4 @@ export const WebhookEvent = mongoose.model<IWebhookEvent>("WebhookEvent", Webhoo
 export const IdempotencyKey = mongoose.model<IIdempotencyKey>("IdempotencyKey", IdempotencyKeySchema);
 export const Favorite = mongoose.model<IFavorite>("Favorite", FavoriteSchema);
 export const Report = mongoose.model<IReport>("Report", ReportSchema);
+export const BackupRecord = mongoose.model<IBackupRecord>("BackupRecord", BackupRecordSchema);

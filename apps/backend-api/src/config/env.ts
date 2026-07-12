@@ -16,6 +16,11 @@ export const envSchema = z.object({
   CLERK_SECRET_KEY: z.string().optional(),
   WHATSAPP_CONTACT_ENABLED: z.string().default("false"),
   FORCE_SEED: z.string().default("false"),
+  // Respaldos cifrados de MongoDB (HU-56 #174). La clave (32 bytes en hex o
+  // base64) se valida en el momento de uso, no al arrancar, para que la API
+  // pueda iniciar aunque los respaldos no estén configurados todavía.
+  BACKUP_ENCRYPTION_KEY: z.string().optional(),
+  BACKUP_DIR: z.string().optional(),
 });
 
 const parsed = envSchema.parse(process.env);
@@ -70,6 +75,17 @@ export const env = {
   },
   get stripeConfigured() {
     return !!process.env.STRIPE_SECRET_KEY;
+  },
+  /** Clave de cifrado de respaldos (hex de 64 chars o base64 de 32 bytes). #174 */
+  get backupEncryptionKey(): string | undefined {
+    return process.env.BACKUP_ENCRYPTION_KEY;
+  },
+  /** Directorio donde se escriben los respaldos cifrados. #174 */
+  get backupDir(): string {
+    return process.env.BACKUP_DIR ?? "./backups";
+  },
+  get backupConfigured() {
+    return !!process.env.BACKUP_ENCRYPTION_KEY;
   },
 };
 

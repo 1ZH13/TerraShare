@@ -24,6 +24,7 @@ import { notificationRoutes } from "./routes/notifications";
 import { metricsRoutes } from "./routes/metrics";
 import { privacyRoutes } from "./routes/privacy";
 import { reportRoutes } from "./routes/reports";
+import { backupRoutes } from "./routes/backups";
 import type { AppEnv } from "./types";
 import { corsAllowHeaders, resolveCorsOrigin } from "./config/env";
 
@@ -67,6 +68,7 @@ export function createApp() {
   app.route("/api/v1", healthRoutes);
   app.route("/api/v1", authRoutes);
   app.route("/api/v1", adminRoutes);
+  app.route("/api/v1", backupRoutes);
   app.route("/api/v1", landRoutes);
   app.route("/api/v1", favoriteRoutes);
   app.route("/api/v1", leadRoutes);

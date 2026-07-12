@@ -230,6 +230,11 @@
 .adm-badge--amber { color: #9a6b1f; background: #f5e9d0; }
 .adm-badge--red { color: #9a3b2c; background: #f7e0da; }
 .adm-badge--teal { color: #2f6b63; background: #e3ecec; }
+.adm-badge--muted { color: var(--ts-ink-3, #6b6b63); background: var(--ts-tint-2, #ececed); }
+
+/* Spinner para acciones en curso (respaldos #174). */
+@keyframes admSpin { to { transform: rotate(360deg); } }
+.adm-spin { animation: admSpin 0.8s linear infinite; }
 
 .adm-act {
   font-size: 12.5px;

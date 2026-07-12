@@ -167,7 +167,8 @@ export interface AuditEventRecord {
     | "payment"
     | "chat"
     | "report"
-    | "webhook";
+    | "webhook"
+    | "backup";
   action:
     | "created"
     | "updated"
@@ -179,7 +180,8 @@ export interface AuditEventRecord {
     | "refunded"
     | "signed"
     | "completed"
-    | "status_changed";
+    | "status_changed"
+    | "verified";
   entityId: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
