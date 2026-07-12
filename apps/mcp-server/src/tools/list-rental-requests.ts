@@ -29,6 +29,7 @@ export interface ListRentalRequestsResult {
  */
 export async function listRentalRequests(rawInput: {
   actingUserId: string | null;
+  actingUserRole?: string;
   status?: string;
 }): Promise<ListRentalRequestsResult> {
   if (!rawInput.actingUserId) {
@@ -41,7 +42,7 @@ export async function listRentalRequests(rawInput: {
 
   // Build query based on permissions
   const permissionQuery = canListRentalRequests(
-    { id: rawInput.actingUserId, role: "user" } as any,
+    { id: rawInput.actingUserId, role: rawInput.actingUserRole ?? "user" } as any,
     ownerLandIds
   );
 
@@ -74,6 +75,7 @@ export const listRentalRequestsTool: ToolDefinition<typeof listRentalRequestsInp
   handler: (args, ctx) =>
     listRentalRequests({
       actingUserId: ctx.actingUser?.id ?? null,
+      actingUserRole: ctx.actingUser?.role,
       status: args.status as string | undefined,
     }),
 };

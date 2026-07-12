@@ -55,6 +55,18 @@ describe("list_rental_requests tool (HU-71 #188)", () => {
     expect(requests.every((r) => !("_id" in r) && !("__v" in r))).toBe(true);
   });
 
+  it("devuelve todas las solicitudes para un administrador", async () => {
+    const result = await listRentalRequests({
+      actingUserId: "user_admin",
+      actingUserRole: "admin",
+      status: undefined,
+    });
+    const requests = (result as { items: unknown[] }).items;
+    expect(Array.isArray(requests)).toBe(true);
+    // Admin should see all rental requests (not just ones where they're tenant/owner)
+    expect(requests.length).toBeGreaterThan(0);
+  });
+
   it("lanza error si no hay usuario autenticado", async () => {
     await expect(
       listRentalRequests({
