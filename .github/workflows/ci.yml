@@ -22,6 +22,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
 
@@ -37,6 +39,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bun test
 
@@ -52,6 +56,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun test
@@ -68,6 +74,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bun run build
         env:
@@ -87,6 +95,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install shared package deps (zod, resuelto desde fuente)
+        run: cd ../../packages/shared && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
       - run: bun run build
