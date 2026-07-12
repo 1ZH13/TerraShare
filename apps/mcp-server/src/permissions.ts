@@ -6,17 +6,9 @@
  * Ejemplo en una tool:
  *   if (!canMutateLand(ctx.actingUser!, land)) throw new ToolError("No autorizado");
  */
-export {
-  isAdmin,
-  isOwnerOrAdmin,
-  canMutateLand,
-  canReadRentalRequest,
-  canListRentalRequests,
-  canCreateRentalRequest,
-  canTransitionRentalRequest,
-  canCreateContract,
-  canReadContract,
-  canMutateContract,
-  canInitiatePayment,
-  canReadPayment,
-} from "@backend/lib/auth-helpers";
+// Reexporta TODOS los helpers de permisos del backend (isAdmin, isOwnerOrAdmin,
+// isParticipant, canMutateLand, canReadRentalRequest, canListRentalRequests,
+// canCreateRentalRequest, canTransitionRentalRequest, canCreateContract,
+// canReadContract, canMutateContract, canInitiatePayment, canReadPayment,
+// canListPayments, canReadChat, canReadNotification, canAccessAuditEvents).
+export * from "@backend/lib/auth-helpers";
