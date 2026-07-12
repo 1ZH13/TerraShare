@@ -6,7 +6,7 @@
   margin: 0 auto;
   padding: 44px 40px 70px;
   font-family: var(--ts-font-sans);
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 
 @keyframes hmUp {
@@ -29,7 +29,7 @@
   font-size: 40px;
   letter-spacing: -0.02em;
   margin: 0;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .hm-head__sub {
   font-size: 16px;
@@ -41,7 +41,7 @@
   align-items: center;
   gap: 9px;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-weight: 600;
   font-size: 15px;
   padding: 13px 22px;
@@ -75,7 +75,7 @@
 .hm-chip {
   font-size: 13px;
   color: var(--ts-text-secondary);
-  background: #f2ecdf;
+  background: var(--ts-paper-tint);
   border: 1px solid var(--ts-border);
   border-radius: 999px;
   padding: 7px 14px;
@@ -102,7 +102,7 @@
   font-weight: 500;
   font-size: 26px;
   margin: 0;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .hm-link {
   font-size: 14px;
@@ -110,7 +110,7 @@
   font-weight: 600;
   text-decoration: none;
 }
-.hm-link:hover { color: var(--ts-green-ink); }
+.hm-link:hover { color: var(--ts-text); }
 
 .hm-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 
@@ -195,7 +195,7 @@
   padding: 4px 9px;
   border-radius: 999px;
 }
-.hm-saved__badge--sale { color: var(--ts-bg); background: var(--ts-green-ink); }
+.hm-saved__badge--sale { color: var(--ts-on-ink); background: var(--ts-green-ink); }
 .hm-saved__heart { position: absolute; top: 10px; right: 10px; color: var(--ts-clay); }
 .hm-saved__body { padding: 14px 16px; }
 .hm-saved__title { font-family: var(--ts-font-serif); font-weight: 600; font-size: 17px; }
@@ -221,7 +221,7 @@
   transition: background 0.2s ease;
 }
 .hm-chatrow:last-child { border-bottom: 0; }
-.hm-chatrow:hover { background: #f7f1e5; }
+.hm-chatrow:hover { background: var(--ts-paper-tint); }
 .hm-avatar {
   width: 38px;
   height: 38px;
@@ -264,7 +264,7 @@
   transition: background 0.2s ease;
 }
 .hm-favcard:last-child { border-bottom: 0; }
-.hm-favcard:hover { background: #f7f1e5; }
+.hm-favcard:hover { background: var(--ts-paper-tint); }
 .hm-favcard__thumb {
   width: 38px;
   height: 38px;
@@ -296,7 +296,7 @@
   border-radius: 16px;
   padding: 22px;
 }
-.hm-stat--dark { background: var(--ts-green-ink); border-color: var(--ts-green-ink); color: var(--ts-bg); }
+.hm-stat--dark { background: var(--ts-green-ink); border-color: var(--ts-green-ink); color: var(--ts-on-ink); }
 .hm-stat__icon { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: var(--ts-green); }
 .hm-stat__icon--clay { color: var(--ts-clay); }
 .hm-stat__icon--light { color: var(--ts-tint-green-3); }
@@ -352,7 +352,7 @@
 .hm-received__reject:hover { border-color: #a5573a; color: #a5573a; }
 .hm-received__approve {
   font-size: 13.5px;
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   background: var(--ts-green);
   font-weight: 600;
   text-decoration: none;
@@ -398,7 +398,7 @@
 .hm-pub__add {
   text-decoration: none;
   color: var(--ts-sage);
-  background: #faf5ea;
+  background: var(--ts-surface-alt);
   border: 1.5px dashed #d8cfb8;
   border-radius: 16px;
   display: flex;
@@ -409,7 +409,7 @@
   min-height: 210px;
   transition: background 0.2s ease, color 0.2s ease;
 }
-.hm-pub__add:hover { background: #f2ecdf; color: var(--ts-green); }
+.hm-pub__add:hover { background: var(--ts-paper-tint); color: var(--ts-green); }
 .hm-pub__add span { font-size: 14px; font-weight: 600; }
 
 /* ── placeholder de foto ─────────────────────────────────────────────────── */

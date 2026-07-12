@@ -4,6 +4,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Navbar } from "./ui";
 import type { BuscoOfrezcoMode } from "./ui";
+import ThemeToggle from "./ThemeToggle";
 import { getDisplayName, isAdminUser } from "./authDisplay";
 import type { UserMenuItem } from "./ui";
 import "../pages/app-shell.css";
@@ -85,6 +86,7 @@ export default function AppLayout({ children }: { children?: ReactNode }) {
 
   const actions = (
     <>
+      <ThemeToggle className="ds-navbar__icon" />
       <Link to="/dashboard/notifications" className="ds-navbar__icon" aria-label="Notificaciones">
         <BellIcon />
       </Link>

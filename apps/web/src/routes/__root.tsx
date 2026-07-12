@@ -1,7 +1,8 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { esES } from "@clerk/localizations";
-import { clerkAppearance } from "../clerkAppearance";
+import { getClerkAppearance } from "../clerkAppearance";
+import { useTheme } from "../hooks/useTheme";
 import ErrorBoundary from "../components/ErrorBoundary";
 import "../i18n";
 import "../styles.css";
@@ -28,6 +29,22 @@ export const Route = createRootRoute({
   component: RootComponent,
 });
 
+/** ClerkProvider cuya apariencia sigue el tema activo (#278). */
+function ThemedClerkProvider({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+  return (
+    <ClerkProvider
+      publishableKey={PUBLISHABLE_KEY}
+      appearance={getClerkAppearance(theme)}
+      localization={esES}
+      signUpForceRedirectUrl="/onboarding"
+      signInFallbackRedirectUrl="/dashboard"
+    >
+      {children}
+    </ClerkProvider>
+  );
+}
+
 function RootComponent() {
   // El límite vive dentro del shell (#261): así un error de página se contiene
   // aquí y nunca alcanza a <html>/<head>, que es lo que borraba el CSS.
@@ -40,20 +57,23 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    // data-theme="light" por defecto en SSR; el script anti-flash lo corrige al
+    // tema real antes del primer pintado. suppressHydrationWarning silencia el
+    // (esperado) desajuste de valor entre servidor y cliente.
+    <html lang="es" data-theme="light" suppressHydrationWarning>
       <head>
+        {/* Anti-flash de tema (#278): fija data-theme antes del primer pintado,
+            replicando la lógica de lib/theme.ts (preferencia guardada o del SO). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var k='ts-theme',v=localStorage.getItem(k);var t=(v==='light'||v==='dark')?v:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();",
+          }}
+        />
         <HeadContent />
       </head>
       <body>
-        <ClerkProvider
-          publishableKey={PUBLISHABLE_KEY}
-          appearance={clerkAppearance}
-          localization={esES}
-          signUpForceRedirectUrl="/onboarding"
-          signInFallbackRedirectUrl="/dashboard"
-        >
-          {children}
-        </ClerkProvider>
+        <ThemedClerkProvider>{children}</ThemedClerkProvider>
         <Scripts />
       </body>
     </html>

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { listLands } from "../services/api";
 import { isAdminUser } from "../components/authDisplay";
+import ThemeToggle from "../components/ThemeToggle";
 import "./landing.css";
 
 // ─── Contenido estático (fiel al prototipo) ───────────────────────────────────
@@ -163,6 +164,7 @@ export default function LandingPage() {
               Iniciar sesión
             </Link>
           )}
+          <ThemeToggle className="lp-nav__theme" />
           <Link to={publishTo} className="lp-nav__cta">
             Publicar terreno
           </Link>

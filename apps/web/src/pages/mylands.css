@@ -1,6 +1,6 @@
 /* TerraShare — Mis terrenos (paridad con "Mis publicaciones" del prototipo). Prefijo `ml-`. */
 
-.ml { max-width: 1120px; margin: 0 auto; padding: 40px 40px 70px; font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+.ml { max-width: 1120px; margin: 0 auto; padding: 40px 40px 70px; font-family: var(--ts-font-sans); color: var(--ts-text); }
 
 @keyframes mlUp {
   from { opacity: 0; transform: translateY(14px); }
@@ -21,7 +21,7 @@
   font-size: 38px;
   letter-spacing: -0.02em;
   margin: 0;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .ml-sub { color: var(--ts-sage-2); font-size: 16px; margin: 6px 0 0; }
 .ml-btn {
@@ -29,7 +29,7 @@
   align-items: center;
   gap: 9px;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-weight: 600;
   font-size: 15px;
   padding: 13px 22px;
@@ -85,7 +85,7 @@
 .ml-add {
   text-decoration: none;
   color: var(--ts-sage);
-  background: #faf5ea;
+  background: var(--ts-surface-alt);
   border: 1.5px dashed #d8cfb8;
   border-radius: 16px;
   display: flex;
@@ -96,7 +96,7 @@
   min-height: 210px;
   transition: background 0.2s ease, color 0.2s ease;
 }
-.ml-add:hover { background: #f2ecdf; color: var(--ts-green); }
+.ml-add:hover { background: var(--ts-paper-tint); color: var(--ts-green); }
 .ml-add span { font-size: 14px; font-weight: 600; }
 
 .ml-empty {
@@ -113,7 +113,7 @@
   display: inline-block;
   margin-top: 16px;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-weight: 600;
   padding: 12px 22px;
   border-radius: 11px;

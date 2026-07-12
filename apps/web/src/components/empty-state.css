@@ -28,7 +28,7 @@
   font-family: var(--ts-font-serif);
   font-size: 22px;
   font-weight: 600;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .es--compact .es__title { font-size: 18px; }
 
@@ -44,7 +44,7 @@
 .es__cta {
   display: inline-block;
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-weight: 600;
   font-size: 14.5px;
   padding: 12px 22px;

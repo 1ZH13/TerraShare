@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useClerk } from "@clerk/clerk-react";
 import { LayoutDashboard, Flag, Map, Users, Mail, LogOut, Sprout, ScrollText, Activity, Scale, CreditCard } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 import "../pages/admin.css";
 
 interface AdminLayoutProps {
@@ -56,6 +57,7 @@ export default function AdminLayout({ children, onSignOut }: AdminLayoutProps) {
         </nav>
 
         <div className="adm-side__foot">
+          <ThemeToggle className="adm-side__theme" />
           <button type="button" className="adm-side__signout" onClick={handleSignOut}>
             <LogOut size={17} /> Cerrar sesión
           </button>

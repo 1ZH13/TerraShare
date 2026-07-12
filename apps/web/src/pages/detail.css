@@ -1,7 +1,7 @@
 /* TerraShare — Detalle de terreno (paridad con el prototipo · pantalla 05).
    Página pública/compartible; las acciones exigen login. Prefijo `det-`. */
 
-.det { width: 100%; font-family: var(--ts-font-sans); color: var(--ts-green-ink); }
+.det { width: 100%; font-family: var(--ts-font-sans); color: var(--ts-text); }
 
 /* ── nav propio del detalle ──────────────────────────────────────────────── */
 .det-nav {
@@ -24,7 +24,7 @@
   font-size: 14px;
   text-decoration: none;
 }
-.det-nav__back:hover { color: var(--ts-green-ink); }
+.det-nav__back:hover { color: var(--ts-text); }
 .det-nav__brand { display: flex; align-items: center; gap: 11px; }
 .det-nav__brand-mark { color: var(--ts-green); display: inline-flex; }
 .det-nav__brand-name { font-family: var(--ts-font-serif); font-weight: 600; font-size: 20px; color: var(--ts-green); }
@@ -83,12 +83,12 @@
   padding: 5px 12px;
   border-radius: 999px;
 }
-.det-badge--sale { color: var(--ts-bg); background: var(--ts-green-ink); }
+.det-badge--sale { color: var(--ts-on-ink); background: var(--ts-green-ink); }
 .det-badge--verified {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
   background: var(--ts-tint-green);
 }
 .det-flag {
@@ -105,7 +105,7 @@
   font-size: 44px;
   letter-spacing: -0.02em;
   margin: 0 0 8px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .det-loc {
   font-size: 15px;
@@ -125,14 +125,14 @@
 }
 .det-spec__icon { color: var(--ts-clay); }
 .det-spec__label { font-size: 12.5px; color: var(--ts-sage); margin: 8px 0 2px; }
-.det-spec__value { font-family: var(--ts-font-serif); font-weight: 600; font-size: 18px; color: var(--ts-green-ink); }
+.det-spec__value { font-family: var(--ts-font-serif); font-weight: 600; font-size: 18px; color: var(--ts-text); }
 
 .det-section-title {
   font-family: var(--ts-font-serif);
   font-weight: 500;
   font-size: 26px;
   margin: 0 0 12px;
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
 }
 .det-desc { font-size: 16px; line-height: 1.7; color: #5b6b5b; margin: 0 0 16px; }
 
@@ -140,7 +140,7 @@
 .det-tag {
   font-size: 13px;
   color: #3d4d3d;
-  background: #f2ecdf;
+  background: var(--ts-paper-tint);
   border: 1px solid var(--ts-border);
   border-radius: 999px;
   padding: 7px 14px;
@@ -179,7 +179,7 @@
 }
 .det-btn--primary {
   background: var(--ts-green);
-  color: var(--ts-bg);
+  color: var(--ts-on-ink);
   font-size: 16px;
   padding: 15px;
   border: 0;
@@ -232,7 +232,7 @@
   padding: 10px 12px;
 }
 .det-note--verified {
-  color: var(--ts-green-ink);
+  color: var(--ts-text);
   background: var(--ts-tint-green);
   font-weight: 600;
 }

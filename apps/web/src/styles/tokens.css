@@ -1,6 +1,8 @@
 /* TerraShare — tokens del sistema de diseño editorial (issue #134).
    Fuente de verdad: design/DESIGN_SYSTEM.md + design/prototipo-editorial.html.
-   Tema claro. El tema oscuro se añadirá en una fase posterior. */
+   Tema claro por defecto + tema oscuro (#278). El tema se controla con el
+   atributo `data-theme` en <html> (lo fija `lib/theme.ts` sin flash); si no
+   hay elección explícita se respeta `prefers-color-scheme`. */
 
 :root {
   /* superficies (papel) */
@@ -39,8 +41,9 @@
   --ts-text-secondary: #55654f;
   --ts-text-muted: #59684f;    /* AA 4.5:1 sobre fondos claros (#178) */
 
-  /* texto sobre relleno verde */
+  /* texto claro sobre rellenos verdes/oscuros (permanece crema en ambos temas) */
   --ts-on-green: #f4efe4;
+  --ts-on-ink: #f4efe4;
 
   /* tipografía */
   --ts-font-serif: "Spectral", Georgia, "Times New Roman", serif;
@@ -69,4 +72,98 @@
 
   /* foco accesible */
   --ts-ring: 0 0 0 3px rgba(47, 81, 56, 0.28);
+}
+
+/* ─── Tema oscuro (#278) ──────────────────────────────────────────────────────
+   Editorial oscuro: papel → tinta cálida verdosa, mucho aire, verde y terracota
+   ligeramente más luminosos para leerse sobre superficies oscuras.
+   Los valores se declaran una sola vez en `%dark-vars` (mixin manual) y se
+   aplican en dos contextos:
+     1. Elección explícita del usuario:  :root[data-theme="dark"]
+     2. Preferencia del SO sin elección:  @media (prefers-color-scheme: dark)
+   `--ts-on-green` y `--ts-on-ink` permanecen crema: son texto sobre rellenos
+   verdes/oscuros que existen en ambos temas. */
+
+:root[data-theme="dark"] {
+  /* superficies (tinta) */
+  --ts-bg: #161c18;
+  --ts-surface: #1e2621;
+  --ts-surface-alt: #19201b;
+  --ts-paper-tint: #212a24;
+
+  /* marca (verde, más luminoso para contraste sobre oscuro) */
+  --ts-green: #4f8a61;
+  --ts-green-ink: #0f140f;     /* superficie más oscura aún: sidebar, cards oscuras */
+  --ts-green-soft: #8aa891;
+  --ts-sage: #9fb0a0;
+  --ts-sage-2: #97a998;
+  --ts-sage-3: #6c7c6e;
+
+  /* tintes (chips, éxito, hover) */
+  --ts-tint-green: #223026;
+  --ts-tint-green-2: #26362b;
+  --ts-tint-green-3: #33463a;
+
+  /* acento */
+  --ts-clay: #d07a54;
+  --ts-clay-tint: #3a241c;
+
+  /* neutros */
+  --ts-border: #33403a;
+  --ts-beige: #2a332c;
+  --ts-beige-2: #313a33;
+
+  /* texto */
+  --ts-text: #ece4d3;
+  --ts-text-secondary: #b7c1b3;
+  --ts-text-muted: #9aa694;
+
+  /* sombras (negro real: el papel ya no aporta profundidad) */
+  --ts-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ts-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+
+  /* foco accesible */
+  --ts-ring: 0 0 0 3px rgba(122, 170, 138, 0.42);
+
+  color-scheme: dark;
+}
+
+/* Preferencia del SO cuando el usuario no ha elegido explícitamente (data-theme
+   ausente o "system"). Se anula en cuanto se fija data-theme="light". */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --ts-bg: #161c18;
+    --ts-surface: #1e2621;
+    --ts-surface-alt: #19201b;
+    --ts-paper-tint: #212a24;
+
+    --ts-green: #4f8a61;
+    --ts-green-ink: #0f140f;
+    --ts-green-soft: #8aa891;
+    --ts-sage: #9fb0a0;
+    --ts-sage-2: #97a998;
+    --ts-sage-3: #6c7c6e;
+
+    --ts-tint-green: #223026;
+    --ts-tint-green-2: #26362b;
+    --ts-tint-green-3: #33463a;
+
+    --ts-clay: #d07a54;
+    --ts-clay-tint: #3a241c;
+
+    --ts-border: #33403a;
+    --ts-beige: #2a332c;
+    --ts-beige-2: #313a33;
+
+    --ts-text: #ece4d3;
+    --ts-text-secondary: #b7c1b3;
+    --ts-text-muted: #9aa694;
+
+    --ts-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --ts-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+
+    --ts-ring: 0 0 0 3px rgba(122, 170, 138, 0.42);
+
+    color-scheme: dark;
+  }
 }
