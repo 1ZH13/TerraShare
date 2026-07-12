@@ -4,7 +4,7 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import { connectMongoose, disconnectMongoose } from "@backend/db/mongoose";
-import { Land, User } from "@backend/db/schemas";
+import { Contract, Land, RentalRequest, User } from "@backend/db/schemas";
 
 const now = new Date().toISOString();
 
@@ -40,6 +40,49 @@ export const SEED_USERS = [
   { clerkUserId: "user_blocked", email: "blocked@test.com", role: "user", status: "blocked", profile: { fullName: "Usuario Bloqueado" } },
 ];
 
+export const SEED_RENTAL_REQUESTS = [
+  {
+    id: "rr_seed_01",
+    landId: "land_a",
+    tenantId: "user_tenant_01",
+    operation: "alquiler",
+    period: { startDate: now, endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() },
+    intendedUse: "agricultura",
+    notes: "Interesado en cultivo de hortalizas.",
+    status: "pending_owner",
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "rr_seed_02",
+    landId: "land_b",
+    tenantId: "user_tenant_02",
+    operation: "venta",
+    offerAmount: 85000,
+    notes: "Oferta por el terreno completo.",
+    status: "approved",
+    createdAt: now,
+    updatedAt: now,
+  },
+];
+
+export const SEED_CONTRACTS = [
+  {
+    id: "contract_seed_01",
+    rentalRequestId: "rr_seed_01",
+    ownerId: "user_owner_01",
+    tenantId: "user_tenant_01",
+    terms: {
+      summary: "Contrato de arrendamiento para cultivo de hortalizas",
+      startsAt: now,
+      endsAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    status: "draft",
+    createdAt: now,
+    updatedAt: now,
+  },
+];
+
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare_mcp`;
 
@@ -50,6 +93,10 @@ async function seed(): Promise<void> {
   await Land.insertMany(SEED_LANDS.map((l) => ({ ...l })));
   await User.deleteMany({});
   await User.insertMany(SEED_USERS.map((u) => ({ ...u })));
+  await RentalRequest.deleteMany({});
+  await RentalRequest.insertMany(SEED_RENTAL_REQUESTS.map((r) => ({ ...r })));
+  await Contract.deleteMany({});
+  await Contract.insertMany(SEED_CONTRACTS.map((c) => ({ ...c })));
 }
 
 await seed();
