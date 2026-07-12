@@ -9,6 +9,15 @@ import { requireAuth } from "../middleware/require-auth";
 import { rateLimitByUser } from "../middleware/rate-limit";
 import { createAuditEvent as createAudit } from "../store/audit";
 import { Land } from "../db/schemas";
+import {
+  ALLOWED_CONTENT_TYPES,
+  MAX_PHOTO_BYTES,
+  MAX_PHOTOS_PER_LAND,
+  deleteLandPhoto,
+  getLandPhoto,
+  photoUrl,
+  storeLandPhoto,
+} from "../lib/land-photos";
 import type { LandRecord } from "../store/types";
 import type { AppEnv } from "../types";
 
@@ -222,6 +231,113 @@ landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
   });
 
   return success(c, land, 201);
+});
+
+// ─── Fotos de terrenos (GridFS, #148) ─────────────────────────────────────────
+
+/** Sirve el binario de una foto. Público: los terrenos activos son públicos. */
+landRoutes.get("/lands/:landId/photos/:fileId", async (c) => {
+  const photo = await getLandPhoto(c.req.param("fileId"));
+  if (!photo) {
+    return failure(c, 404, "NOT_FOUND", "Photo not found");
+  }
+  // Las imágenes se embeben desde la web (otro origen en dev y en prod), así que
+  // relajamos el CORP global (same-origin) a cross-origin solo para este binario.
+  c.header("Cross-Origin-Resource-Policy", "cross-origin");
+  return new Response(new Uint8Array(photo.buffer), {
+    status: 200,
+    headers: {
+      "Content-Type": photo.contentType,
+      "Content-Length": String(photo.buffer.length),
+      // Las URLs son inmutables (id de archivo por foto): caché agresiva.
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cross-Origin-Resource-Policy": "cross-origin",
+    },
+  });
+});
+
+/** Sube una foto (multipart, campo `file`) a un terreno del que se es dueño. */
+landRoutes.post("/lands/:landId/photos", requireAuth, rateLimitByUser(200), async (c) => {
+  const authUser = c.get("authUser");
+  const landId = c.req.param("landId");
+
+  const current = clean<LandRecord>(
+    (await Land.findOne({ id: landId }).lean()) as Record<string, unknown> | null,
+  );
+  if (!current) {
+    return failure(c, 404, "NOT_FOUND", "Land not found");
+  }
+  if (!canMutateLand(authUser, current)) {
+    return failure(c, 403, "FORBIDDEN", "Only owner or admin can add photos to this land");
+  }
+
+  const existing = current.photos ?? [];
+  if (existing.length >= MAX_PHOTOS_PER_LAND) {
+    return failure(
+      c,
+      422,
+      "BUSINESS_RULE_VIOLATION",
+      `A land can have at most ${MAX_PHOTOS_PER_LAND} photos`,
+    );
+  }
+
+  const body = await c.req.parseBody();
+  const file = body["file"];
+  if (!(file instanceof File)) {
+    return failure(c, 400, "VALIDATION_ERROR", "Missing 'file' in multipart body");
+  }
+  if (!(ALLOWED_CONTENT_TYPES as readonly string[]).includes(file.type)) {
+    return failure(
+      c,
+      400,
+      "VALIDATION_ERROR",
+      `Unsupported image type: ${file.type || "unknown"}. Allowed: ${ALLOWED_CONTENT_TYPES.join(", ")}`,
+    );
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    return failure(c, 422, "BUSINESS_RULE_VIOLATION", "Image exceeds the 5 MB limit");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const fileId = await storeLandPhoto({
+    landId,
+    buffer,
+    contentType: file.type,
+    filename: file.name || "photo",
+  });
+  const url = photoUrl(landId, fileId);
+  const photos = [...existing, url];
+
+  await Land.updateOne({ id: landId }, { $set: { photos, updatedAt: new Date().toISOString() } });
+  await createAudit({ actor: authUser, entity: "land", action: "updated", entityId: landId });
+
+  return success(c, { url, photos }, 201);
+});
+
+/** Elimina una foto de un terreno del que se es dueño. */
+landRoutes.delete("/lands/:landId/photos/:fileId", requireAuth, rateLimitByUser(200), async (c) => {
+  const authUser = c.get("authUser");
+  const landId = c.req.param("landId");
+  const fileId = c.req.param("fileId");
+
+  const current = clean<LandRecord>(
+    (await Land.findOne({ id: landId }).lean()) as Record<string, unknown> | null,
+  );
+  if (!current) {
+    return failure(c, 404, "NOT_FOUND", "Land not found");
+  }
+  if (!canMutateLand(authUser, current)) {
+    return failure(c, 403, "FORBIDDEN", "Only owner or admin can remove photos from this land");
+  }
+
+  await deleteLandPhoto(fileId);
+  const url = photoUrl(landId, fileId);
+  const photos = (current.photos ?? []).filter((p) => p !== url);
+
+  await Land.updateOne({ id: landId }, { $set: { photos, updatedAt: new Date().toISOString() } });
+  await createAudit({ actor: authUser, entity: "land", action: "updated", entityId: landId });
+
+  return success(c, { photos });
 });
 
 landRoutes.patch("/lands/:landId", requireAuth, rateLimitByUser(200), async (c) => {

@@ -14,7 +14,7 @@ import {
   Quote,
   ImageIcon,
 } from "lucide-react";
-import { listLands } from "../services/api";
+import { listLands, photoSrc } from "../services/api";
 import { isAdminUser } from "../components/authDisplay";
 import ThemeToggle from "../components/ThemeToggle";
 import "./landing.css";
@@ -52,6 +52,7 @@ type FeaturedCard = {
   province: string;
   price: number | null;
   to: string;
+  cover?: string;
 };
 
 const SAMPLE_FEATURED: FeaturedCard[] = [
@@ -69,6 +70,7 @@ function toFeatured(land: LandDto): FeaturedCard {
     province: land.location?.province ?? "Panamá",
     price: land.priceRule?.pricePerMonth ?? null,
     to: `/lands/${land.id}`,
+    cover: land.photos?.[0] ? photoSrc(land.photos[0]) : undefined,
   };
 }
 
@@ -84,7 +86,13 @@ function PhotoPlaceholder({ label, className }: { label: string; className: stri
 function LandCard({ card }: { card: FeaturedCard }) {
   return (
     <Link to={card.to} className="lp-card">
-      <PhotoPlaceholder label="Foto terreno" className="lp-photo lp-card__photo" />
+      {card.cover ? (
+        <div className="lp-photo lp-card__photo lp-photo--img">
+          <img src={card.cover} alt={card.title} loading="lazy" />
+        </div>
+      ) : (
+        <PhotoPlaceholder label="Foto terreno" className="lp-photo lp-card__photo" />
+      )}
       <div className="lp-card__body">
         <div className="lp-card__top">
           <span className="lp-card__badge">{card.use}</span>

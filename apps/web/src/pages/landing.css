@@ -492,6 +492,9 @@
 }
 .lp-photo--hero { border-radius: 20px; }
 .lp-photo svg { opacity: 0.5; }
+/* Foto de portada real en las cards destacadas (#148). */
+.lp-photo--img { overflow: hidden; padding: 0; }
+.lp-photo--img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* ── responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 1040px) {

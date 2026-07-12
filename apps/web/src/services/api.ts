@@ -168,6 +168,46 @@ export const createLand = async (dto: CreateLandDto): Promise<LandDto> => {
   return res.data;
 };
 
+// ─── Fotos de terrenos (#148) ─────────────────────────────────────────────────
+
+/** Convierte una URL relativa de foto (`/api/v1/lands/…`) en absoluta al backend. */
+export const photoSrc = (path: string): string =>
+  path.startsWith("http") ? path : `${BASE_URL}${path}`;
+
+/**
+ * POST /api/v1/lands/:landId/photos — sube una foto (multipart).
+ * No usa `request()` porque este envía JSON; aquí va `FormData`, cuyo
+ * `Content-Type` (con boundary) debe fijar el navegador, no nosotros.
+ */
+export const uploadLandPhoto = async (
+  landId: string,
+  file: File,
+): Promise<{ url: string; photos: string[] }> => {
+  const headers = await buildHeaders();
+  delete headers["Content-Type"]; // deja que el navegador ponga el boundary
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/lands/${landId}/photos`, {
+    method: "POST",
+    headers,
+    body: fd,
+  });
+  const body = (await handleResponse(res)) as ApiSuccess<{ url: string; photos: string[] }>;
+  return body.data;
+};
+
+/** DELETE /api/v1/lands/:landId/photos/:fileId — quita una foto. */
+export const deleteLandPhoto = async (
+  landId: string,
+  fileId: string,
+): Promise<{ photos: string[] }> => {
+  const res = await request<{ photos: string[] }>(
+    "DELETE",
+    `/api/v1/lands/${landId}/photos/${fileId}`,
+  );
+  return res.data;
+};
+
 // ─── Favorites (#147) ─────────────────────────────────────────────────────────
 
 /** GET /api/v1/users/me/favorites — terrenos guardados por el usuario. */
