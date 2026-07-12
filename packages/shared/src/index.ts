@@ -83,6 +83,15 @@ export type {
   AuditEventFilterDto,
 } from "./dto/audit";
 
+export type {
+  BackupCollectionInfoDto,
+  BackupListDto,
+  BackupRecordDto,
+  BackupStatus,
+  BackupVerifyCollectionDto,
+  BackupVerifyStatus,
+} from "./dto/backups";
+
 // Schemas (Zod)
 export * from "./schemas";
 export type { z } from "zod";

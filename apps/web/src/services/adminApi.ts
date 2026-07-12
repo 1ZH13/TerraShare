@@ -12,6 +12,8 @@ import type {
   UserSummaryDto,
   PaymentDto,
   ReconciliationReportDto,
+  BackupListDto,
+  BackupRecordDto,
 } from "@terrashare/shared";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
@@ -217,3 +219,15 @@ export const getAdminReport = (reportId: string) =>
 /** PATCH /api/v1/admin/reports/:reportId — { status, resolutionNote? } */
 export const updateReportStatus = (reportId: string, status: ReportStatus, resolutionNote?: string) =>
   request<AdminReportDetail>("PATCH", `/api/v1/admin/reports/${reportId}`, { status, resolutionNote });
+
+// ─── Respaldos (HU-56 #174) ───────────────────────────────────────────────────
+
+/** GET /api/v1/admin/backups — historial de respaldos. */
+export const listBackups = () => request<BackupListDto>("GET", "/api/v1/admin/backups");
+
+/** POST /api/v1/admin/backups — dispara un respaldo cifrado. */
+export const createBackup = () => request<BackupRecordDto>("POST", "/api/v1/admin/backups");
+
+/** POST /api/v1/admin/backups/:id/verify — restauración probada. */
+export const verifyBackup = (id: string) =>
+  request<BackupRecordDto>("POST", `/api/v1/admin/backups/${id}/verify`);

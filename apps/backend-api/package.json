@@ -9,10 +9,12 @@
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "migrate": "bun scripts/migrate.ts",
+    "backup": "bun scripts/backup.ts",
     "test": "bun test"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.1",
+    "bson": "^7.2.0",
     "hono": "^4.7.2",
     "jose": "^5.9.6",
     "mongodb": "^7.2.0",
