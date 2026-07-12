@@ -72,8 +72,8 @@ export async function searchLands(rawInput: unknown): Promise<SearchLandsResult>
     .limit(input.pageSize)
     .lean();
 
-  const items = docs.map((d) => {
-    const { _id, __v, ...rest } = d as unknown as Record<string, unknown>;
+  const items = (docs as unknown as Record<string, unknown>[]).map((d) => {
+    const { _id, __v, ...rest } = d;
     return rest;
   });
 

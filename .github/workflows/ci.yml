@@ -58,6 +58,8 @@ jobs:
           bun-version: latest
       - name: Install shared package deps (zod, resuelto desde fuente)
         run: cd ../../packages/shared && bun install --frozen-lockfile
+      - name: Install backend-api deps (reutilizadas vía @backend/*)
+        run: cd ../backend-api && bun install --frozen-lockfile
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun test
