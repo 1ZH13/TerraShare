@@ -1,8 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ZodRawShape } from "zod";
 
 import { config } from "./config";
 import type { ToolContext } from "./context";
-import { registerTool } from "./tools/define-tool";
+import { registerTool, type ToolDefinition } from "./tools/define-tool";
+import { getLandTool } from "./tools/get-land";
 import { searchLandsTool } from "./tools/search-lands";
 
 /**
@@ -11,8 +13,9 @@ import { searchLandsTool } from "./tools/search-lands";
  * Para añadir una tool (HU-64..HU-92): impórtala aquí y añádela al array `TOOLS`.
  * Ver `src/tools/_template.ts` y el README para el patrón.
  */
-const TOOLS = [
+const TOOLS: ToolDefinition<ZodRawShape>[] = [
   searchLandsTool,
+  getLandTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 

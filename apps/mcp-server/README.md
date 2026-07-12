@@ -105,14 +105,26 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | Tool | HU | Issue | Estado |
 |------|-----|-------|--------|
 | `search_lands` | HU-63 | #180 | ✅ implementada |
+| `get_land` | HU-64 | #181 | ✅ implementada |
 
-`search_lands`: busca terrenos publicados (activos) con filtros por texto,
-ubicación, uso, operación y precio; devuelve resultados paginados.
+### search_lands
+Busca terrenos publicados (activos) con filtros por texto, ubicación, uso,
+operación y precio; devuelve resultados paginados.
 
 Ejemplo de argumentos:
 
 ```json
 { "province": "Chiriqui", "use": "agricultura", "priceMax": 1000, "pageSize": 10 }
+```
+
+### get_land
+Obtiene la ficha completa de un terreno por su ID, incluyendo ubicación, área,
+usos permitidos, precio y disponibilidad.
+
+Ejemplo de argumentos:
+
+```json
+{ "landId": "land_a" }
 ```
 
 ## Tests

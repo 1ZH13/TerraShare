@@ -41,4 +41,28 @@ describe("MCP server E2E (#234)", () => {
     expect(res.isError).toBe(true);
     await client.close();
   });
+
+  it("un cliente MCP lista las tools e incluye get_land", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    const names = tools.map((t) => t.name);
+    expect(names).toContain("get_land");
+    await client.close();
+  });
+
+  it("llamar get_land devuelve un terreno por ID", async () => {
+    const client = await connectedClient();
+    const res = await client.callTool({ name: "get_land", arguments: { landId: "land_a" } });
+    const structured = res.structuredContent as { id: string; title: string };
+    expect(structured.id).toBe("land_a");
+    expect(structured.title).toBe("Finca agrícola en Chiriquí");
+    await client.close();
+  });
+
+  it("get_land devuelve error para terreno inexistente", async () => {
+    const client = await connectedClient();
+    const res = await client.callTool({ name: "get_land", arguments: { landId: "nonexistent" } });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
 });
