@@ -147,6 +147,45 @@ describe("MCP server E2E (#234)", () => {
     await client.close();
   });
 
+  it("la lista de tools incluye create_rental_request (HU-70 #187)", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).toContain("create_rental_request");
+    await client.close();
+  });
+
+  it("create_rental_request crea una solicitud en pending_owner", async () => {
+    const client = await connectedClient(TENANT_USER);
+    const res = await client.callTool({
+      name: "create_rental_request",
+      arguments: {
+        landId: "land_a",
+        period: { startDate: "2026-08-01", endDate: "2026-12-01" },
+        intendedUse: "agricultura",
+      },
+    });
+    const rr = res.structuredContent as { id: string; tenantId: string; status: string };
+    expect(res.isError).toBeFalsy();
+    expect(rr.id).toMatch(/^rr_/);
+    expect(rr.tenantId).toBe("user_regular");
+    expect(rr.status).toBe("pending_owner");
+    await client.close();
+  });
+
+  it("create_rental_request sin identidad configurada devuelve error (requires user)", async () => {
+    const client = await connectedClient(null);
+    const res = await client.callTool({
+      name: "create_rental_request",
+      arguments: {
+        landId: "land_a",
+        period: { startDate: "2026-08-01", endDate: "2026-12-01" },
+        intendedUse: "agricultura",
+      },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
   it("la lista de tools incluye create_payment_session (HU-77 #194)", async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
