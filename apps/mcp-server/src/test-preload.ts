@@ -4,7 +4,7 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import { connectMongoose, disconnectMongoose } from "@backend/db/mongoose";
-import { Land } from "@backend/db/schemas";
+import { Land, User } from "@backend/db/schemas";
 
 const now = new Date().toISOString();
 
@@ -34,6 +34,12 @@ export const SEED_LANDS = [
   land({ id: "land_inactive", title: "Terreno inactivo", status: "inactive", location: { province: "Panama", district: "Panama" } }),
 ];
 
+export const SEED_USERS = [
+  { clerkUserId: "user_admin", email: "admin@test.com", role: "admin", status: "active", profile: { fullName: "Admin de Prueba" } },
+  { clerkUserId: "user_regular", email: "user@test.com", role: "user", status: "active", profile: { fullName: "Usuario Regular" } },
+  { clerkUserId: "user_blocked", email: "blocked@test.com", role: "user", status: "blocked", profile: { fullName: "Usuario Bloqueado" } },
+];
+
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare_mcp`;
 
@@ -42,6 +48,8 @@ await connectMongoose();
 async function seed(): Promise<void> {
   await Land.deleteMany({});
   await Land.insertMany(SEED_LANDS.map((l) => ({ ...l })));
+  await User.deleteMany({});
+  await User.insertMany(SEED_USERS.map((u) => ({ ...u })));
 }
 
 await seed();

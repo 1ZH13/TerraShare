@@ -30,11 +30,51 @@ El servidor habla por **stdio** (stdout = canal del protocolo; los logs van a st
 | Variable | Requerida | Descripción |
 |----------|-----------|-------------|
 | `MONGODB_URI` | recomendado | Misma BD que el backend. Default: `mongodb://127.0.0.1:27017/terrashare`. |
+| `MCP_ACTING_USER_ID` | para tools con permisos | `clerkUserId` del usuario en cuyo nombre actúa el servidor. Su rol/estado se resuelven desde Mongo. Sin él, solo funcionan las tools públicas. |
 | `MCP_API_KEY` | opcional | Si se define, activa la autenticación por API key (para transportes remotos). |
 | `MCP_PROVIDED_KEY` | si hay `MCP_API_KEY` | Key que aporta el proceso que lanza el servidor; debe coincidir. |
 
 En uso local por stdio la confianza es del proceso que lo lanza; la API key está
 pensada para el transporte remoto (HTTP/SSE), a añadir después.
+
+## Identidad y permisos
+
+Las tools que exponen o mutan datos con permisos usan los helpers `can*` del
+backend (reexportados en `src/permissions.ts`), que necesitan saber **quién
+actúa**. Ese usuario se configura con `MCP_ACTING_USER_ID` (su `clerkUserId`); el
+servidor resuelve su rol/estado desde Mongo y lo expone a cada tool como
+`ctx.actingUser`.
+
+Cada tool declara su acceso con `requires`:
+
+| `requires` | Significado |
+|------------|-------------|
+| `"public"` (default) | No requiere identidad (p. ej. `search_lands`). |
+| `"user"` | Requiere `MCP_ACTING_USER_ID` (usuario activo, no bloqueado). |
+| `"admin"` | Requiere que ese usuario tenga rol `admin`. |
+
+El andamiaje (`src/tools/define-tool.ts`) aplica esta puerta automáticamente y
+devuelve un error legible si no se cumple.
+
+## Cómo construir una tool (para el equipo) — HU-64..HU-92
+
+Cada tool es independiente. Pasos:
+
+1. Copia `src/tools/_template.ts` a `src/tools/<mi-tool>.ts`.
+2. Define el `inputSchema` (shape Zod, con `.describe()` en cada campo).
+3. Escribe la lógica en el `handler(args, ctx)`:
+   - Usa `ctx.actingUser` (garantizado si `requires` es `"user"`/`"admin"`).
+   - Aplica permisos por recurso con los helpers de `../permissions`
+     (p. ej. `canMutateLand(ctx.actingUser!, land)`).
+   - Lanza `ToolError("mensaje")` para errores de negocio (se devuelven como
+     resultado de error, sin tumbar el servidor).
+   - Devuelve un objeto plano (se serializa a JSON + `structuredContent`).
+4. Regístrala añadiéndola al array `TOOLS` de `src/server.ts`.
+5. Añade `src/tools/<mi-tool>.test.ts` (el preload levanta Mongo en memoria y
+   siembra terrenos/usuarios; ver `search-lands.test.ts` y `define-tool.test.ts`).
+
+No dupliques lógica de negocio: reutiliza modelos (`@backend/db/schemas`) y
+reglas (`@backend/lib/auth-helpers` vía `../permissions`).
 
 ## Conectar un cliente MCP
 
@@ -50,7 +90,8 @@ Añade el servidor a la config de MCP del cliente (`claude_desktop_config.json` 
       "command": "bun",
       "args": ["run", "C:/ruta/al/repo/apps/mcp-server/src/index.ts"],
       "env": {
-        "MONGODB_URI": "mongodb://127.0.0.1:27017/terrashare"
+        "MONGODB_URI": "mongodb://127.0.0.1:27017/terrashare",
+        "MCP_ACTING_USER_ID": "<clerkUserId opcional para tools con permisos>"
       }
     }
   }

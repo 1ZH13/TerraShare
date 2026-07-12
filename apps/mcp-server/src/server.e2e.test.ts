@@ -9,7 +9,7 @@ import { createServer } from "./server";
  * lista las tools y llama a search_lands contra MongoDB (sembrada en el preload).
  */
 async function connectedClient(): Promise<Client> {
-  const server = createServer();
+  const server = createServer({ actingUser: null });
   const client = new Client({ name: "test-client", version: "1.0.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);

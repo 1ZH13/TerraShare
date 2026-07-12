@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { Land } from "@backend/db/schemas";
+import type { ToolDefinition } from "./define-tool";
 
 /**
  * Tool HU-63 (#180): Buscar terrenos. Espeja los filtros públicos de
@@ -83,27 +83,16 @@ export async function searchLands(rawInput: unknown): Promise<SearchLandsResult>
   };
 }
 
-/** Registra la tool en el servidor MCP. */
-export function registerSearchLands(server: McpServer): void {
-  server.registerTool(
-    "search_lands",
-    {
-      title: "Buscar terrenos",
-      description:
-        "Busca terrenos publicados (activos) con filtros por texto, ubicación, uso, operación y precio. Devuelve resultados paginados.",
-      inputSchema: searchLandsInput,
-    },
-    async (args) => {
-      const result = await searchLands(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-        structuredContent: result as unknown as Record<string, unknown>,
-      };
-    },
-  );
-}
+/**
+ * Definición de la tool (referencia para las demás HU-64..HU-92). Es pública
+ * (no requiere identidad): busca solo publicaciones activas.
+ */
+export const searchLandsTool: ToolDefinition<typeof searchLandsInput> = {
+  name: "search_lands",
+  title: "Buscar terrenos",
+  description:
+    "Busca terrenos publicados (activos) con filtros por texto, ubicación, uso, operación y precio. Devuelve resultados paginados.",
+  inputSchema: searchLandsInput,
+  requires: "public",
+  handler: (args) => searchLands(args),
+};
