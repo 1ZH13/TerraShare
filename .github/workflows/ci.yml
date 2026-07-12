@@ -40,6 +40,22 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun test
 
+  mcp-server:
+    name: MCP Server
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+
   web-build:
     name: Web Build
     runs-on: ubuntu-latest
