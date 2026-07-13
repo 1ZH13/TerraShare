@@ -106,6 +106,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 |------|-----|-------|--------|
 | `search_lands` | HU-63 | #180 | ✅ implementada |
 | `create_payment_session` | HU-77 | #194 | ✅ implementada |
+| `refund_payment` | HU-80 | #197 | ✅ implementada |
 
 `search_lands`: busca terrenos publicados (activos) con filtros por texto,
 ubicación, uso, operación y precio; devuelve resultados paginados.
@@ -135,6 +136,18 @@ Ejemplo de argumentos:
   "successUrl": "https://app.terrashare.co/pago/ok",
   "cancelUrl": "https://app.terrashare.co/pago/cancel"
 }
+```
+
+`refund_payment` (`requires: admin`): reembolsa total o parcialmente un pago
+pagado. **Acción sensible: exige `confirm: true`.** Usa Stripe real si hay
+`STRIPE_SECRET_KEY` y el pago tiene `stripePaymentIntentId`; actualiza el estado
+del pago (`partially_refunded`/`refunded`) y registra auditoría. Reusa
+`CreateRefundSchema` y el helper de Stripe.
+
+Ejemplo de argumentos (reembolso parcial):
+
+```json
+{ "paymentId": "pay_123", "amount": 100, "reason": "Cancelación parcial", "confirm": true }
 ```
 
 ## Tests
