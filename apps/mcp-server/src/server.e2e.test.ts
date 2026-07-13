@@ -29,8 +29,18 @@ const TENANT_USER: ActingUser = {
   profile: { fullName: "Usuario Regular" },
 };
 
-// El preload no toca RentalRequest/Payment → sembramos una solicitud pagable en
-// el hook (no en el cuerpo del test) para las tools que la leen.
+/** Administrador de prueba (rol admin). */
+const ADMIN_USER: ActingUser = {
+  id: "user_admin",
+  clerkUserId: "user_admin",
+  email: "admin@test.com",
+  role: "admin",
+  status: "active",
+  profile: { fullName: "Admin de Prueba" },
+};
+
+// El preload no toca RentalRequest/Payment → sembramos en el hook (no en el
+// cuerpo del test) una solicitud pagable y un pago pagado para las tools.
 beforeEach(async () => {
   await RentalRequest.deleteMany({});
   await Payment.deleteMany({});
@@ -40,6 +50,15 @@ beforeEach(async () => {
     tenantId: "user_regular",
     operation: "alquiler",
     status: "approved",
+  });
+  await mongoose.connection.db!.collection("payments").insertOne({
+    id: "pay_e2e",
+    rentalRequestId: "rr_e2e",
+    amount: 300,
+    currency: "USD",
+    status: "paid",
+    refundedAmount: 0,
+    refunds: [],
   });
 });
 
@@ -105,6 +124,47 @@ describe("MCP server E2E (#234)", () => {
         successUrl: "https://ok.test/return",
         cancelUrl: "https://cancel.test/return",
       },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
+  it("la lista de tools incluye refund_payment (HU-80 #197)", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).toContain("refund_payment");
+    await client.close();
+  });
+
+  it("refund_payment reembolsa un pago pagado para un admin", async () => {
+    const client = await connectedClient(ADMIN_USER);
+    const res = await client.callTool({
+      name: "refund_payment",
+      arguments: { paymentId: "pay_e2e", amount: 100, reason: "e2e", confirm: true },
+    });
+    const payment = res.structuredContent as { paymentId: string; status: string; refundedAmount: number };
+    expect(res.isError).toBeFalsy();
+    expect(payment.paymentId).toBe("pay_e2e");
+    expect(payment.status).toBe("partially_refunded");
+    expect(payment.refundedAmount).toBe(100);
+    await client.close();
+  });
+
+  it("refund_payment rechaza a un usuario no admin (requires admin)", async () => {
+    const client = await connectedClient(TENANT_USER);
+    const res = await client.callTool({
+      name: "refund_payment",
+      arguments: { paymentId: "pay_e2e", confirm: true },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
+  it("refund_payment sin identidad configurada devuelve error", async () => {
+    const client = await connectedClient(null);
+    const res = await client.callTool({
+      name: "refund_payment",
+      arguments: { paymentId: "pay_e2e", confirm: true },
     });
     expect(res.isError).toBe(true);
     await client.close();
