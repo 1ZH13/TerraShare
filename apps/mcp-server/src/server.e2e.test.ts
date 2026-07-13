@@ -363,4 +363,44 @@ describe("MCP server E2E (#234)", () => {
     expect(res.isError).toBe(true);
     await client.close();
   });
+
+  it("la lista de tools incluye manage_user_status (HU-91 #208)", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).toContain("manage_user_status");
+    await client.close();
+  });
+
+  it("manage_user_status bloquea una cuenta para un admin", async () => {
+    const client = await connectedClient(ADMIN_USER);
+    const res = await client.callTool({
+      name: "manage_user_status",
+      arguments: { userId: "user_regular", status: "blocked", confirm: true },
+    });
+    const user = res.structuredContent as { userId: string; status: string };
+    expect(res.isError).toBeFalsy();
+    expect(user.userId).toBe("user_regular");
+    expect(user.status).toBe("blocked");
+    await client.close();
+  });
+
+  it("manage_user_status rechaza a un usuario no admin (requires admin)", async () => {
+    const client = await connectedClient(TENANT_USER);
+    const res = await client.callTool({
+      name: "manage_user_status",
+      arguments: { userId: "user_blocked", status: "active", confirm: true },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
+  it("manage_user_status sin identidad configurada devuelve error", async () => {
+    const client = await connectedClient(null);
+    const res = await client.callTool({
+      name: "manage_user_status",
+      arguments: { userId: "user_regular", status: "blocked", confirm: true },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
 });

@@ -111,6 +111,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `create_payment_session` | HU-77 | #194 | ✅ implementada |
 | `refund_payment` | HU-80 | #197 | ✅ implementada |
 | `moderate_land` | HU-90 | #207 | ✅ implementada |
+| `manage_user_status` | HU-91 | #208 | ✅ implementada |
 
 `search_lands`: busca terrenos publicados (activos) con filtros por texto,
 ubicación, uso, operación y precio; devuelve resultados paginados.
@@ -211,6 +212,16 @@ Ejemplo de argumentos:
 
 ```json
 { "landId": "land_123", "status": "inactive", "reason": "Contenido engañoso" }
+```
+
+`manage_user_status` (`requires: admin`): activa o bloquea una cuenta de usuario.
+No permite modificar la propia cuenta. **Acción sensible: exige `confirm: true`.**
+Registra auditoría.
+
+Ejemplo de argumentos:
+
+```json
+{ "userId": "user_abc", "status": "blocked", "reason": "Abuso reportado", "confirm": true }
 ```
 
 ## Tests
