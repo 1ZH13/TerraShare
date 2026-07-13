@@ -1,8 +1,6 @@
-name: Deploy
+name: Deploy to Railway
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -13,56 +11,52 @@ on:
         options:
           - staging
           - production
+      service:
+        description: "Service to deploy"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - backend
+          - web
+          - mcp
+          - all
 
 permissions:
   contents: read
-  deployments: write
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
 jobs:
-  deploy-staging:
-    if: github.event_name == 'push' || github.event.inputs.environment == 'staging'
+  deploy:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: ${{ github.event.inputs.environment }}
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install backend dependencies
-        run: cd apps/backend-api && bun install --frozen-lockfile
-      - name: Install web dependencies
-        run: cd apps/web && bun install --frozen-lockfile
-      - name: Build backend
-        run: cd apps/backend-api && bun run build
-      - name: Build web
-        run: cd apps/web && bun run build
-        env:
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-      - name: Deploy to staging
-        run: echo "Deploying to staging environment..."
-        # Agregar comando real de despliegue (Vercel, Railway, etc.)
-
-  deploy-production:
-    if: github.event.inputs.environment == 'production'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install backend dependencies
-        run: cd apps/backend-api && bun install --frozen-lockfile
-      - name: Install web dependencies
-        run: cd apps/web && bun install --frozen-lockfile
-      - name: Build backend
-        run: cd apps/backend-api && bun run build
-      - name: Build web
-        run: cd apps/web && bun run build
-        env:
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-      - name: Deploy to production
-        run: echo "Deploying to production environment..."
-        # Agregar comando real de despliegue
+      
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      
+      - name: Deploy Backend API
+        if: github.event.inputs.service == 'backend' || github.event.inputs.service == 'all'
+        run: |
+          cd apps/backend-api
+          railway up --service ${{ github.event.inputs.environment }}-backend
+      
+      - name: Deploy Web Frontend
+        if: github.event.inputs.service == 'web' || github.event.inputs.service == 'all'
+        run: |
+          cd apps/web
+          railway up --service ${{ github.event.inputs.environment }}-web
+      
+      - name: Deploy MCP Server
+        if: github.event.inputs.service == 'mcp' || github.event.inputs.service == 'all'
+        run: |
+          cd apps/mcp-server
+          railway up --service ${{ github.event.inputs.environment }}-mcp
+      
+      - name: Verify Deployment
+        run: |
+          echo "Deployment to ${{ github.event.inputs.environment }} completed"
+          echo "Service: ${{ github.event.inputs.service }}"
