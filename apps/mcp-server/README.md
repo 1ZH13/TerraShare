@@ -112,6 +112,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `refund_payment` | HU-80 | #197 | ✅ implementada |
 | `moderate_land` | HU-90 | #207 | ✅ implementada |
 | `manage_user_status` | HU-91 | #208 | ✅ implementada |
+| `get_analytics_overview` | HU-88 | #205 | ✅ implementada |
 
 `search_lands`: busca terrenos publicados (activos) con filtros por texto,
 ubicación, uso, operación y precio; devuelve resultados paginados.
@@ -223,6 +224,10 @@ Ejemplo de argumentos:
 ```json
 { "userId": "user_abc", "status": "blocked", "reason": "Abuso reportado", "confirm": true }
 ```
+
+`get_analytics_overview` (`requires: admin`): overview de métricas del negocio —
+terrenos (por categoría), solicitudes (por estado, aprobadas/rechazadas/pendientes,
+recientes), pagos (ingresos y pendientes) y usuarios. Solo lectura. Sin argumentos.
 
 ## Tests
 
