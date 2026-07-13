@@ -110,6 +110,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `create_contract` | HU-73 | #190 | ✅ implementada |
 | `create_payment_session` | HU-77 | #194 | ✅ implementada |
 | `refund_payment` | HU-80 | #197 | ✅ implementada |
+| `moderate_land` | HU-90 | #207 | ✅ implementada |
 
 `search_lands`: busca terrenos publicados (activos) con filtros por texto,
 ubicación, uso, operación y precio; devuelve resultados paginados.
@@ -200,6 +201,16 @@ Ejemplo de argumentos (reembolso parcial):
 
 ```json
 { "paymentId": "pay_123", "amount": 100, "reason": "Cancelación parcial", "confirm": true }
+```
+
+`moderate_land` (`requires: admin`): cambia el estado de un terreno —`inactive`
+para despublicar contenido que viole políticas, `active` para reactivarlo— y
+registra la acción en auditoría.
+
+Ejemplo de argumentos:
+
+```json
+{ "landId": "land_123", "status": "inactive", "reason": "Contenido engañoso" }
 ```
 
 ## Tests
