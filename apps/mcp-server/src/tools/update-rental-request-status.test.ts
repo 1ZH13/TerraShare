@@ -48,6 +48,27 @@ describe("update_rental_request_status tool (HU-72 #189)", () => {
     expect((res as { status: string }).status).toBe("approved");
   });
 
+  it("owner intenta aprobar solicitud con solapamiento temporal y falla", async () => {
+    // req_approved is from 2026-08-01 to 2026-12-31 on land_a
+    // Insert another pending request that overlaps
+    await RentalRequest.insertMany([{
+      id: "req_overlap",
+      landId: "land_a",
+      tenantId: "user_regular",
+      operation: "alquiler",
+      status: "pending_owner",
+      period: { startDate: "2026-10-01", endDate: "2026-11-01" },
+      intendedUse: "agricultura",
+    }]);
+
+    try {
+      await updateRentalRequestStatus({ requestId: "req_overlap", nextStatus: "approved" }, ownerUser);
+      expect(true).toBe(false);
+    } catch (err) {
+      expect((err as Error).message).toContain("solapa");
+    }
+  });
+
   it("owner rechaza solicitud pendiente", async () => {
     const res = await updateRentalRequestStatus({ requestId: "req_pending", nextStatus: "rejected" }, ownerUser);
     expect((res as { status: string }).status).toBe("rejected");

@@ -61,6 +61,28 @@ export async function updateRentalRequestStatus(
     throw new ToolError("No tiene permisos para realizar esta transición");
   }
 
+  if (input.nextStatus === "approved" && request.period) {
+    const periodStart = Date.parse(request.period.startDate);
+    const periodEnd = Date.parse(request.period.endDate);
+
+    const activeRequests = await RentalRequest.find({
+      id: { $ne: request.id },
+      landId: request.landId,
+      operation: { $ne: "venta" },
+      status: { $in: ["approved", "pending_payment", "paid"] },
+    }).lean();
+
+    for (const active of activeRequests) {
+      if (active.period) {
+        const existingStart = Date.parse(active.period.startDate);
+        const existingEnd = Date.parse(active.period.endDate);
+        if (periodStart < existingEnd && periodEnd > existingStart) {
+          throw new ToolError("El terreno ya tiene una solicitud aprobada o pagada que se solapa en fechas");
+        }
+      }
+    }
+  }
+
   const updated = await RentalRequest.findOneAndUpdate(
     { id: input.requestId },
     { $set: { status: input.nextStatus, updatedAt: new Date() } },
