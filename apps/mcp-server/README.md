@@ -105,6 +105,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | Tool | HU | Issue | Estado |
 |------|-----|-------|--------|
 | `search_lands` | HU-63 | #180 | ✅ implementada |
+| `create_payment_session` | HU-77 | #194 | ✅ implementada |
 
 `search_lands`: busca terrenos publicados (activos) con filtros por texto,
 ubicación, uso, operación y precio; devuelve resultados paginados.
@@ -113,6 +114,27 @@ Ejemplo de argumentos:
 
 ```json
 { "province": "Chiriqui", "use": "agricultura", "priceMax": 1000, "pageSize": 10 }
+```
+
+`create_payment_session` (`requires: user`): genera un enlace de pago
+(`checkoutUrl`) para una solicitud **pagable** (`approved`/`pending_payment`), a
+nombre del arrendatario (o admin). Crea una sesión real de Stripe si
+`STRIPE_SECRET_KEY` está configurada; si no, usa el fallback de desarrollo (igual
+que el backend). **No expone secretos de Stripe**. Reusa `CreateCheckoutSessionSchema`,
+`canInitiatePayment` y `computePaymentBreakdown`.
+
+Variables de entorno adicionales (opcionales): `STRIPE_SECRET_KEY`,
+`STRIPE_PLATFORM_FEE_BPS` (default 500 = 5%).
+
+Ejemplo de argumentos:
+
+```json
+{
+  "rentalRequestId": "rr_123",
+  "currency": "USD",
+  "successUrl": "https://app.terrashare.co/pago/ok",
+  "cancelUrl": "https://app.terrashare.co/pago/cancel"
+}
 ```
 
 ## Tests
