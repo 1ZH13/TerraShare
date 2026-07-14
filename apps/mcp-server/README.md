@@ -106,6 +106,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 |------|-----|-------|--------|
 | `search_lands` | HU-63 | #180 | ✅ implementada |
 | `create_land` | HU-65 | #182 | ✅ implementada |
+| `create_rental_request` | HU-70 | #187 | ✅ implementada |
 | `create_payment_session` | HU-77 | #194 | ✅ implementada |
 | `refund_payment` | HU-80 | #197 | ✅ implementada |
 
@@ -131,6 +132,22 @@ Ejemplo de argumentos:
   "allowedUses": ["agricultura"],
   "location": { "province": "Chiriqui", "district": "Boquete" },
   "priceRule": { "currency": "USD", "pricePerMonth": 750 }
+}
+```
+
+`create_rental_request` (`requires: user`): crea una solicitud de alquiler (o de
+compra) sobre un terreno, a nombre del arrendatario autenticado. Reusa el
+`CreateRentalRequestSchema` compartido, aplica las reglas de negocio (dueño no
+puede solicitar su propio terreno, operación/uso permitidos, solapamiento de
+período) y crea en estado `pending_owner`.
+
+Ejemplo de argumentos (alquiler):
+
+```json
+{
+  "landId": "land_a",
+  "period": { "startDate": "2026-08-01", "endDate": "2026-12-01" },
+  "intendedUse": "agricultura"
 }
 ```
 
