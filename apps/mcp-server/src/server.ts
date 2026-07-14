@@ -4,6 +4,7 @@ import { config } from "./config";
 import type { ToolContext } from "./context";
 import { registerTool } from "./tools/define-tool";
 import { createPaymentSessionTool } from "./tools/create-payment-session";
+import { refundPaymentTool } from "./tools/refund-payment";
 import { searchLandsTool } from "./tools/search-lands";
 
 /**
@@ -15,6 +16,7 @@ import { searchLandsTool } from "./tools/search-lands";
 const TOOLS = [
   searchLandsTool,
   createPaymentSessionTool,
+  refundPaymentTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 
