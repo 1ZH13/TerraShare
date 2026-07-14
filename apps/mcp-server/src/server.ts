@@ -18,6 +18,7 @@ import { completeContractTool } from "./tools/complete-contract";
 import { sendMessageTool } from "./tools/send-message";
 import { getExternalContactTool } from "./tools/get-external-contact";
 import { getOwnerAnalyticsTool } from "./tools/get-owner-analytics";
+import { updateRentalRequestStatusTool } from "./tools/update-rental-request-status";
 import { searchLandsTool } from "./tools/search-lands";
 import { updateLandTool } from "./tools/update-land";
 
@@ -44,6 +45,7 @@ const TOOLS: ToolDefinition<ZodRawShape>[] = [
   sendMessageTool,
   getExternalContactTool,
   getOwnerAnalyticsTool,
+  updateRentalRequestStatusTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 
