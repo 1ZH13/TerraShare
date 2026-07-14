@@ -3,7 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
 import mongoose from "@backend/db/mongoose";
-import { Payment, RentalRequest } from "@backend/db/schemas";
+import { Contract, Payment, RentalRequest } from "@backend/db/schemas";
 import type { ActingUser } from "./context";
 import { createServer } from "./server";
 
@@ -29,6 +29,16 @@ const TENANT_USER: ActingUser = {
   profile: { fullName: "Usuario Regular" },
 };
 
+/** Dueño de land_a (user_seed), para las tools que requieren ser el dueño. */
+const OWNER_USER: ActingUser = {
+  id: "user_seed",
+  clerkUserId: "user_seed",
+  email: "owner@test.com",
+  role: "user",
+  status: "active",
+  profile: { fullName: "Dueño Seed" },
+};
+
 /** Administrador de prueba (rol admin). */
 const ADMIN_USER: ActingUser = {
   id: "user_admin",
@@ -39,11 +49,12 @@ const ADMIN_USER: ActingUser = {
   profile: { fullName: "Admin de Prueba" },
 };
 
-// El preload no toca RentalRequest/Payment → sembramos en el hook (no en el
-// cuerpo del test) una solicitud pagable y un pago pagado para las tools.
+// El preload no toca RentalRequest/Payment/Contract → sembramos en el hook (no en
+// el cuerpo del test) una solicitud pagable y un pago pagado para las tools.
 beforeEach(async () => {
   await RentalRequest.deleteMany({});
   await Payment.deleteMany({});
+  await Contract.deleteMany({});
   await mongoose.connection.db!.collection("rentalrequests").insertOne({
     id: "rr_e2e",
     landId: "land_a",
@@ -180,6 +191,51 @@ describe("MCP server E2E (#234)", () => {
         landId: "land_a",
         period: { startDate: "2026-08-01", endDate: "2026-12-01" },
         intendedUse: "agricultura",
+      },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
+  it("la lista de tools incluye create_contract (HU-73 #190)", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).toContain("create_contract");
+    await client.close();
+  });
+
+  it("create_contract crea un contrato draft para el dueño", async () => {
+    const client = await connectedClient(OWNER_USER);
+    const res = await client.callTool({
+      name: "create_contract",
+      arguments: {
+        rentalRequestId: "rr_e2e",
+        terms: {
+          summary: "Arrendamiento por 12 meses del terreno.",
+          startsAt: "2026-08-01",
+          endsAt: "2027-08-01",
+        },
+      },
+    });
+    const contract = res.structuredContent as { id: string; status: string; ownerId: string };
+    expect(res.isError).toBeFalsy();
+    expect(contract.id).toMatch(/^contract_/);
+    expect(contract.status).toBe("draft");
+    expect(contract.ownerId).toBe("user_seed");
+    await client.close();
+  });
+
+  it("create_contract sin identidad configurada devuelve error (requires user)", async () => {
+    const client = await connectedClient(null);
+    const res = await client.callTool({
+      name: "create_contract",
+      arguments: {
+        rentalRequestId: "rr_e2e",
+        terms: {
+          summary: "Arrendamiento por 12 meses del terreno.",
+          startsAt: "2026-08-01",
+          endsAt: "2027-08-01",
+        },
       },
     });
     expect(res.isError).toBe(true);

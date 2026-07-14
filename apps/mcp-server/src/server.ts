@@ -5,6 +5,7 @@ import type { ToolContext } from "./context";
 import { registerTool } from "./tools/define-tool";
 import { createLandTool } from "./tools/create-land";
 import { createRentalRequestTool } from "./tools/create-rental-request";
+import { createContractTool } from "./tools/create-contract";
 import { createPaymentSessionTool } from "./tools/create-payment-session";
 import { refundPaymentTool } from "./tools/refund-payment";
 import { searchLandsTool } from "./tools/search-lands";
@@ -19,6 +20,7 @@ const TOOLS = [
   searchLandsTool,
   createLandTool,
   createRentalRequestTool,
+  createContractTool,
   createPaymentSessionTool,
   refundPaymentTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
