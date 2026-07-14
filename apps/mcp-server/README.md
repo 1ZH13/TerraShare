@@ -105,6 +105,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | Tool | HU | Issue | Estado |
 |------|-----|-------|--------|
 | `search_lands` | HU-63 | #180 | ✅ implementada |
+| `create_land` | HU-65 | #182 | ✅ implementada |
 | `create_payment_session` | HU-77 | #194 | ✅ implementada |
 | `refund_payment` | HU-80 | #197 | ✅ implementada |
 
@@ -115,6 +116,22 @@ Ejemplo de argumentos:
 
 ```json
 { "province": "Chiriqui", "use": "agricultura", "priceMax": 1000, "pageSize": 10 }
+```
+
+`create_land` (`requires: user`): crea un terreno en `draft` a nombre del dueño
+autenticado (`MCP_ACTING_USER_ID`). Valida con el mismo `CreateLandSchema`
+compartido que la API REST y registra un evento de auditoría.
+
+Ejemplo de argumentos:
+
+```json
+{
+  "title": "Finca agrícola en Boquete",
+  "area": 12000,
+  "allowedUses": ["agricultura"],
+  "location": { "province": "Chiriqui", "district": "Boquete" },
+  "priceRule": { "currency": "USD", "pricePerMonth": 750 }
+}
 ```
 
 `create_payment_session` (`requires: user`): genera un enlace de pago

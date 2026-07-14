@@ -19,7 +19,7 @@ async function connectedClient(actingUser: ActingUser | null = null): Promise<Cl
   return client;
 }
 
-/** Arrendatario de rr_e2e (user_regular). */
+/** Usuario normal (rol `user`, activo) — dueño/arrendatario según la tool. */
 const TENANT_USER: ActingUser = {
   id: "user_regular",
   clerkUserId: "user_regular",
@@ -84,6 +84,65 @@ describe("MCP server E2E (#234)", () => {
     const client = await connectedClient();
     const res = await client.callTool({ name: "search_lands", arguments: { pageSize: 9999 } });
     // El SDK marca isError cuando la validación de entrada falla.
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
+  it("la lista de tools incluye create_land (HU-65 #182)", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).toContain("create_land");
+    await client.close();
+  });
+
+  it("create_land crea un terreno en draft a nombre del usuario que actúa", async () => {
+    const client = await connectedClient(TENANT_USER);
+    const res = await client.callTool({
+      name: "create_land",
+      arguments: {
+        title: "Finca de prueba E2E",
+        area: 5000,
+        allowedUses: ["agricultura"],
+        location: { province: "Cocle", district: "Penonome" },
+        priceRule: { currency: "USD", pricePerMonth: 600 },
+      },
+    });
+    const land = res.structuredContent as { id: string; ownerId: string; status: string };
+    expect(res.isError).toBeFalsy();
+    expect(land.id).toMatch(/^land_/);
+    expect(land.ownerId).toBe("user_regular");
+    expect(land.status).toBe("draft");
+    await client.close();
+  });
+
+  it("create_land sin identidad configurada devuelve error (requires user)", async () => {
+    const client = await connectedClient(null);
+    const res = await client.callTool({
+      name: "create_land",
+      arguments: {
+        title: "No debería crearse",
+        area: 5000,
+        allowedUses: ["agricultura"],
+        location: { province: "Cocle", district: "Penonome" },
+        priceRule: { currency: "USD", pricePerMonth: 600 },
+      },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
+  it("create_land valida la entrada (título corto -> error)", async () => {
+    const client = await connectedClient(TENANT_USER);
+    const res = await client.callTool({
+      name: "create_land",
+      arguments: {
+        title: "ab",
+        area: 5000,
+        allowedUses: ["agricultura"],
+        location: { province: "Cocle", district: "Penonome" },
+        priceRule: { currency: "USD", pricePerMonth: 600 },
+      },
+    });
     expect(res.isError).toBe(true);
     await client.close();
   });
