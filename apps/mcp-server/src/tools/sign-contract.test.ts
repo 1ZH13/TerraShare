@@ -42,19 +42,19 @@ describe("sign_contract tool (HU-74 #191)", () => {
   });
 
   it("owner firma contrato draft → active", async () => {
-    const res = await signContract({ contractId: "contract_draft" }, ownerUser);
+    const res = await signContract({ contractId: "contract_draft", confirm: true }, ownerUser);
     expect((res as { status: string }).status).toBe("active");
     expect((res as { terms: { signedAt: string } }).terms.signedAt).toBeDefined();
   });
 
   it("tenant firma su propio contrato draft", async () => {
-    const res = await signContract({ contractId: "contract_draft" }, tenantUser);
+    const res = await signContract({ contractId: "contract_draft", confirm: true }, tenantUser);
     expect((res as { status: string }).status).toBe("active");
   });
 
   it("contrato active → firmar lanza error", async () => {
     try {
-      await signContract({ contractId: "contract_active" }, ownerUser);
+      await signContract({ contractId: "contract_active", confirm: true }, ownerUser);
       expect(true).toBe(false);
     } catch (err) {
       expect((err as Error).message).toContain("draft");
@@ -63,7 +63,7 @@ describe("sign_contract tool (HU-74 #191)", () => {
 
   it("usuario que NO es parte no puede firmar", async () => {
     try {
-      await signContract({ contractId: "contract_draft" }, outsiderUser);
+      await signContract({ contractId: "contract_draft", confirm: true }, outsiderUser);
       expect(true).toBe(false);
     } catch (err) {
       expect((err as Error).message).toContain("No autorizado");
@@ -72,7 +72,7 @@ describe("sign_contract tool (HU-74 #191)", () => {
 
   it("contrato inexistente lanza error", async () => {
     try {
-      await signContract({ contractId: "contract_nonexistent" }, ownerUser);
+      await signContract({ contractId: "contract_nonexistent", confirm: true }, ownerUser);
       expect(true).toBe(false);
     } catch (err) {
       expect((err as Error).message).toContain("no encontrado");
@@ -80,7 +80,25 @@ describe("sign_contract tool (HU-74 #191)", () => {
   });
 
   it("admin puede firmar contratos de otros", async () => {
-    const res = await signContract({ contractId: "contract_draft" }, adminUser);
+    const res = await signContract({ contractId: "contract_draft", confirm: true }, adminUser);
     expect((res as { status: string }).status).toBe("active");
+  });
+
+  it("sin confirmacion lanza error", async () => {
+    try {
+      await signContract({ contractId: "contract_draft" } as never, ownerUser);
+      expect(true).toBe(false);
+    } catch (err) {
+      expect((err as Error).message).toContain("confirmar");
+    }
+  });
+
+  it("confirm=false lanza error", async () => {
+    try {
+      await signContract({ contractId: "contract_draft", confirm: false }, ownerUser);
+      expect(true).toBe(false);
+    } catch (err) {
+      expect((err as Error).message).toContain("confirmar");
+    }
   });
 });

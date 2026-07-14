@@ -6,6 +6,7 @@ import { canReadContract } from "../permissions";
 
 const signContractInput = {
   contractId: z.string().min(1).describe("ID del contrato a firmar"),
+  confirm: z.boolean().optional().describe("Debe ser true para confirmar la firma"),
 };
 
 export type SignContractInput = z.infer<z.ZodObject<typeof signContractInput>>;
@@ -16,6 +17,10 @@ export async function signContract(
 ): Promise<Record<string, unknown>> {
   const schema = z.object(signContractInput);
   const input = schema.parse(rawInput ?? {});
+
+  if (input.confirm !== true) {
+    throw new ToolError("Debes confirmar la firma con confirm: true");
+  }
 
   const contract = await Contract.findOne({ id: input.contractId }).lean();
   if (!contract) throw new ToolError("Contrato no encontrado");
