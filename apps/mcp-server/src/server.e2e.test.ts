@@ -323,4 +323,44 @@ describe("MCP server E2E (#234)", () => {
     expect(res.isError).toBe(true);
     await client.close();
   });
+
+  it("la lista de tools incluye moderate_land (HU-90 #207)", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).toContain("moderate_land");
+    await client.close();
+  });
+
+  it("moderate_land despublica un terreno para un admin", async () => {
+    const client = await connectedClient(ADMIN_USER);
+    const res = await client.callTool({
+      name: "moderate_land",
+      arguments: { landId: "land_a", status: "inactive", reason: "e2e" },
+    });
+    const land = res.structuredContent as { landId: string; status: string };
+    expect(res.isError).toBeFalsy();
+    expect(land.landId).toBe("land_a");
+    expect(land.status).toBe("inactive");
+    await client.close();
+  });
+
+  it("moderate_land rechaza a un usuario no admin (requires admin)", async () => {
+    const client = await connectedClient(TENANT_USER);
+    const res = await client.callTool({
+      name: "moderate_land",
+      arguments: { landId: "land_a", status: "inactive" },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
+  it("moderate_land sin identidad configurada devuelve error", async () => {
+    const client = await connectedClient(null);
+    const res = await client.callTool({
+      name: "moderate_land",
+      arguments: { landId: "land_a", status: "inactive" },
+    });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
 });

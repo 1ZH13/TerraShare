@@ -8,6 +8,7 @@ import { createRentalRequestTool } from "./tools/create-rental-request";
 import { createContractTool } from "./tools/create-contract";
 import { createPaymentSessionTool } from "./tools/create-payment-session";
 import { refundPaymentTool } from "./tools/refund-payment";
+import { moderateLandTool } from "./tools/moderate-land";
 import { searchLandsTool } from "./tools/search-lands";
 
 /**
@@ -23,6 +24,7 @@ const TOOLS = [
   createContractTool,
   createPaymentSessionTool,
   refundPaymentTool,
+  moderateLandTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 
