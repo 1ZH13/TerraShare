@@ -11,6 +11,7 @@ import { refundPaymentTool } from "./tools/refund-payment";
 import { moderateLandTool } from "./tools/moderate-land";
 import { manageUserStatusTool } from "./tools/manage-user-status";
 import { getAnalyticsOverviewTool } from "./tools/get-analytics-overview";
+import { completeContractTool } from "./tools/complete-contract";
 import { searchLandsTool } from "./tools/search-lands";
 
 /**
@@ -29,6 +30,7 @@ const TOOLS = [
   moderateLandTool,
   manageUserStatusTool,
   getAnalyticsOverviewTool,
+  completeContractTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 
