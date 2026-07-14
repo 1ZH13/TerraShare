@@ -403,4 +403,35 @@ describe("MCP server E2E (#234)", () => {
     expect(res.isError).toBe(true);
     await client.close();
   });
+
+  it("la lista de tools incluye get_analytics_overview (HU-88 #205)", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name)).toContain("get_analytics_overview");
+    await client.close();
+  });
+
+  it("get_analytics_overview devuelve métricas para un admin", async () => {
+    const client = await connectedClient(ADMIN_USER);
+    const res = await client.callTool({ name: "get_analytics_overview", arguments: {} });
+    const overview = res.structuredContent as { lands: { total: number }; users: { total: number } };
+    expect(res.isError).toBeFalsy();
+    expect(overview.lands.total).toBe(3);
+    expect(overview.users.total).toBe(3);
+    await client.close();
+  });
+
+  it("get_analytics_overview rechaza a un usuario no admin (requires admin)", async () => {
+    const client = await connectedClient(TENANT_USER);
+    const res = await client.callTool({ name: "get_analytics_overview", arguments: {} });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
+
+  it("get_analytics_overview sin identidad configurada devuelve error", async () => {
+    const client = await connectedClient(null);
+    const res = await client.callTool({ name: "get_analytics_overview", arguments: {} });
+    expect(res.isError).toBe(true);
+    await client.close();
+  });
 });
