@@ -6,7 +6,8 @@ COPY apps/backend-api/package.json ./apps/backend-api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
 
-RUN bun install --frozen-lockfile
+RUN cd packages/shared && bun install --frozen-lockfile
+RUN cd apps/web && bun install --frozen-lockfile
 
 COPY . .
 
