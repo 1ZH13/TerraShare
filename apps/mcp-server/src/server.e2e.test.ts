@@ -182,11 +182,19 @@ describe("MCP server E2E (#234)", () => {
     await client.close();
   });
 
-  it("la lista de tools incluye list_my_lands", async () => {
+  it("un cliente MCP lista las tools e incluye list_my_lands", async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name);
     expect(names).toContain("list_my_lands");
+    await client.close();
+  });
+
+  it("un cliente MCP lista las tools e incluye set_land_status", async () => {
+    const client = await connectedClient();
+    const { tools } = await client.listTools();
+    const names = tools.map((t) => t.name);
+    expect(names).toContain("set_land_status");
     await client.close();
   });
 });

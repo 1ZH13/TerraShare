@@ -20,6 +20,7 @@ import { getExternalContactTool } from "./tools/get-external-contact";
 import { getOwnerAnalyticsTool } from "./tools/get-owner-analytics";
 import { getLandTool } from "./tools/get-land";
 import { listMyLandsTool } from "./tools/list-my-lands";
+import { setLandStatusTool } from "./tools/set-land-status";
 import { searchLandsTool } from "./tools/search-lands";
 import { updateLandTool } from "./tools/update-land";
 
@@ -48,6 +49,7 @@ const TOOLS: ToolDefinition<ZodRawShape>[] = [
   getOwnerAnalyticsTool,
   getLandTool,
   listMyLandsTool,
+  setLandStatusTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 

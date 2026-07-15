@@ -114,36 +114,8 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `manage_user_status` | HU-91 | #208 | ✅ implementada |
 | `get_analytics_overview` | HU-88 | #205 | ✅ implementada |
 | `get_land` | HU-64 | #181 | ✅ implementada |
+| `set_land_status` | HU-67 | #184 | ✅ implementada |
 | `list_my_lands` | HU-68 | #185 | ✅ implementada |
-
-### search_lands
-Busca terrenos publicados (activos) con filtros por texto, ubicación, uso,
-operación y precio; devuelve resultados paginados.
-
-Ejemplo de argumentos:
-
-```json
-{ "province": "Chiriqui", "use": "agricultura", "priceMax": 1000, "pageSize": 10 }
-```
-
-### create_land
-`create_land` (`requires: user`): crea un terreno en `draft` a nombre del dueño
-autenticado (`MCP_ACTING_USER_ID`). Valida con el mismo `CreateLandSchema`
-compartido que la API REST y registra un evento de auditoría.
-
-### get_land
-Obtiene la ficha completa de un terreno por su ID, incluyendo ubicación, área,
-usos permitidos, precio y disponibilidad.
-
-Ejemplo de argumentos:
-
-```json
-{ "landId": "land_a" }
-```
-
-### list_my_lands
-Devuelve todos los terrenos pertenecientes al dueño autenticado, incluyendo
-estado, área, precio y ubicación. Requiere `MCP_ACTING_USER_ID`.
 
 ## Tests
 
