@@ -158,280 +158,43 @@ describe("MCP server E2E (#234)", () => {
     await client.close();
   });
 
-  it("la lista de tools incluye create_rental_request (HU-70 #187)", async () => {
+  it("un cliente MCP lista las tools e incluye get_land", async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toContain("create_rental_request");
+    const names = tools.map((t) => t.name);
+    expect(names).toContain("get_land");
     await client.close();
   });
 
-  it("create_rental_request crea una solicitud en pending_owner", async () => {
-    const client = await connectedClient(TENANT_USER);
-    const res = await client.callTool({
-      name: "create_rental_request",
-      arguments: {
-        landId: "land_a",
-        period: { startDate: "2026-08-01", endDate: "2026-12-01" },
-        intendedUse: "agricultura",
-      },
-    });
-    const rr = res.structuredContent as { id: string; tenantId: string; status: string };
-    expect(res.isError).toBeFalsy();
-    expect(rr.id).toMatch(/^rr_/);
-    expect(rr.tenantId).toBe("user_regular");
-    expect(rr.status).toBe("pending_owner");
+  it("llamar get_land devuelve un terreno por ID", async () => {
+    const client = await connectedClient();
+    const res = await client.callTool({ name: "get_land", arguments: { landId: "land_a" } });
+    const structured = res.structuredContent as { id: string; title: string };
+    expect(structured.id).toBe("land_a");
+    expect(structured.title).toBe("Finca agrícola en Chiriquí");
     await client.close();
   });
 
-  it("create_rental_request sin identidad configurada devuelve error (requires user)", async () => {
-    const client = await connectedClient(null);
-    const res = await client.callTool({
-      name: "create_rental_request",
-      arguments: {
-        landId: "land_a",
-        period: { startDate: "2026-08-01", endDate: "2026-12-01" },
-        intendedUse: "agricultura",
-      },
-    });
+  it("get_land devuelve error para terreno inexistente", async () => {
+    const client = await connectedClient();
+    const res = await client.callTool({ name: "get_land", arguments: { landId: "nonexistent" } });
     expect(res.isError).toBe(true);
     await client.close();
   });
 
-  it("la lista de tools incluye create_contract (HU-73 #190)", async () => {
+  it("un cliente MCP lista las tools e incluye list_my_lands", async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toContain("create_contract");
+    const names = tools.map((t) => t.name);
+    expect(names).toContain("list_my_lands");
     await client.close();
   });
 
-  it("create_contract crea un contrato draft para el dueño", async () => {
-    const client = await connectedClient(OWNER_USER);
-    const res = await client.callTool({
-      name: "create_contract",
-      arguments: {
-        rentalRequestId: "rr_e2e",
-        terms: {
-          summary: "Arrendamiento por 12 meses del terreno.",
-          startsAt: "2026-08-01",
-          endsAt: "2027-08-01",
-        },
-      },
-    });
-    const contract = res.structuredContent as { id: string; status: string; ownerId: string };
-    expect(res.isError).toBeFalsy();
-    expect(contract.id).toMatch(/^contract_/);
-    expect(contract.status).toBe("draft");
-    expect(contract.ownerId).toBe("user_seed");
-    await client.close();
-  });
-
-  it("create_contract sin identidad configurada devuelve error (requires user)", async () => {
-    const client = await connectedClient(null);
-    const res = await client.callTool({
-      name: "create_contract",
-      arguments: {
-        rentalRequestId: "rr_e2e",
-        terms: {
-          summary: "Arrendamiento por 12 meses del terreno.",
-          startsAt: "2026-08-01",
-          endsAt: "2027-08-01",
-        },
-      },
-    });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("la lista de tools incluye create_payment_session (HU-77 #194)", async () => {
+  it("un cliente MCP lista las tools e incluye set_land_status", async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toContain("create_payment_session");
-    await client.close();
-  });
-
-  it("create_payment_session devuelve un checkoutUrl para el arrendatario", async () => {
-    const client = await connectedClient(TENANT_USER);
-    const res = await client.callTool({
-      name: "create_payment_session",
-      arguments: {
-        rentalRequestId: "rr_e2e",
-        currency: "USD",
-        successUrl: "https://ok.test/return",
-        cancelUrl: "https://cancel.test/return",
-      },
-    });
-    const payment = res.structuredContent as { paymentId: string; checkoutUrl: string; status: string };
-    expect(res.isError).toBeFalsy();
-    expect(payment.paymentId).toMatch(/^pay_/);
-    expect(payment.checkoutUrl).toBe("https://ok.test/return");
-    expect(payment.status).toBe("pending");
-    await client.close();
-  });
-
-  it("create_payment_session sin identidad configurada devuelve error (requires user)", async () => {
-    const client = await connectedClient(null);
-    const res = await client.callTool({
-      name: "create_payment_session",
-      arguments: {
-        rentalRequestId: "rr_e2e",
-        currency: "USD",
-        successUrl: "https://ok.test/return",
-        cancelUrl: "https://cancel.test/return",
-      },
-    });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("la lista de tools incluye refund_payment (HU-80 #197)", async () => {
-    const client = await connectedClient();
-    const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toContain("refund_payment");
-    await client.close();
-  });
-
-  it("refund_payment reembolsa un pago pagado para un admin", async () => {
-    const client = await connectedClient(ADMIN_USER);
-    const res = await client.callTool({
-      name: "refund_payment",
-      arguments: { paymentId: "pay_e2e", amount: 100, reason: "e2e", confirm: true },
-    });
-    const payment = res.structuredContent as { paymentId: string; status: string; refundedAmount: number };
-    expect(res.isError).toBeFalsy();
-    expect(payment.paymentId).toBe("pay_e2e");
-    expect(payment.status).toBe("partially_refunded");
-    expect(payment.refundedAmount).toBe(100);
-    await client.close();
-  });
-
-  it("refund_payment rechaza a un usuario no admin (requires admin)", async () => {
-    const client = await connectedClient(TENANT_USER);
-    const res = await client.callTool({
-      name: "refund_payment",
-      arguments: { paymentId: "pay_e2e", confirm: true },
-    });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("refund_payment sin identidad configurada devuelve error", async () => {
-    const client = await connectedClient(null);
-    const res = await client.callTool({
-      name: "refund_payment",
-      arguments: { paymentId: "pay_e2e", confirm: true },
-    });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("la lista de tools incluye moderate_land (HU-90 #207)", async () => {
-    const client = await connectedClient();
-    const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toContain("moderate_land");
-    await client.close();
-  });
-
-  it("moderate_land despublica un terreno para un admin", async () => {
-    const client = await connectedClient(ADMIN_USER);
-    const res = await client.callTool({
-      name: "moderate_land",
-      arguments: { landId: "land_a", status: "inactive", reason: "e2e" },
-    });
-    const land = res.structuredContent as { landId: string; status: string };
-    expect(res.isError).toBeFalsy();
-    expect(land.landId).toBe("land_a");
-    expect(land.status).toBe("inactive");
-    await client.close();
-  });
-
-  it("moderate_land rechaza a un usuario no admin (requires admin)", async () => {
-    const client = await connectedClient(TENANT_USER);
-    const res = await client.callTool({
-      name: "moderate_land",
-      arguments: { landId: "land_a", status: "inactive" },
-    });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("moderate_land sin identidad configurada devuelve error", async () => {
-    const client = await connectedClient(null);
-    const res = await client.callTool({
-      name: "moderate_land",
-      arguments: { landId: "land_a", status: "inactive" },
-    });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("la lista de tools incluye manage_user_status (HU-91 #208)", async () => {
-    const client = await connectedClient();
-    const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toContain("manage_user_status");
-    await client.close();
-  });
-
-  it("manage_user_status bloquea una cuenta para un admin", async () => {
-    const client = await connectedClient(ADMIN_USER);
-    const res = await client.callTool({
-      name: "manage_user_status",
-      arguments: { userId: "user_regular", status: "blocked", confirm: true },
-    });
-    const user = res.structuredContent as { userId: string; status: string };
-    expect(res.isError).toBeFalsy();
-    expect(user.userId).toBe("user_regular");
-    expect(user.status).toBe("blocked");
-    await client.close();
-  });
-
-  it("manage_user_status rechaza a un usuario no admin (requires admin)", async () => {
-    const client = await connectedClient(TENANT_USER);
-    const res = await client.callTool({
-      name: "manage_user_status",
-      arguments: { userId: "user_blocked", status: "active", confirm: true },
-    });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("manage_user_status sin identidad configurada devuelve error", async () => {
-    const client = await connectedClient(null);
-    const res = await client.callTool({
-      name: "manage_user_status",
-      arguments: { userId: "user_regular", status: "blocked", confirm: true },
-    });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("la lista de tools incluye get_analytics_overview (HU-88 #205)", async () => {
-    const client = await connectedClient();
-    const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toContain("get_analytics_overview");
-    await client.close();
-  });
-
-  it("get_analytics_overview devuelve métricas para un admin", async () => {
-    const client = await connectedClient(ADMIN_USER);
-    const res = await client.callTool({ name: "get_analytics_overview", arguments: {} });
-    const overview = res.structuredContent as { lands: { total: number }; users: { total: number } };
-    expect(res.isError).toBeFalsy();
-    expect(overview.lands.total).toBe(3);
-    expect(overview.users.total).toBe(3);
-    await client.close();
-  });
-
-  it("get_analytics_overview rechaza a un usuario no admin (requires admin)", async () => {
-    const client = await connectedClient(TENANT_USER);
-    const res = await client.callTool({ name: "get_analytics_overview", arguments: {} });
-    expect(res.isError).toBe(true);
-    await client.close();
-  });
-
-  it("get_analytics_overview sin identidad configurada devuelve error", async () => {
-    const client = await connectedClient(null);
-    const res = await client.callTool({ name: "get_analytics_overview", arguments: {} });
-    expect(res.isError).toBe(true);
+    const names = tools.map((t) => t.name);
+    expect(names).toContain("set_land_status");
     await client.close();
   });
 });

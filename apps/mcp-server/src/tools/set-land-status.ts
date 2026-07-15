@@ -24,6 +24,7 @@ export async function setLandStatus(rawInput: {
   landId: string;
   status: "draft" | "active" | "inactive";
   actingUserId: string | null;
+  actingUserRole?: string;
 }): Promise<Record<string, unknown>> {
   if (!rawInput.actingUserId) {
     throw new ToolError("Se requiere un usuario autenticado");
@@ -33,7 +34,7 @@ export async function setLandStatus(rawInput: {
   if (!land) throw new ToolError("Terreno no encontrado");
 
   // Check permission: only owner or admin can mutate
-  if (!canMutateLand({ id: rawInput.actingUserId } as any, land as any)) {
+  if (!canMutateLand({ id: rawInput.actingUserId, role: rawInput.actingUserRole ?? "user" } as any, land as any)) {
     throw new ToolError("No autorizado para modificar este terreno");
   }
 
@@ -64,5 +65,6 @@ export const setLandStatusTool: ToolDefinition<typeof setLandStatusInput> = {
       landId: args.landId as string,
       status: args.status as "draft" | "active" | "inactive",
       actingUserId: ctx.actingUser?.id ?? null,
+      actingUserRole: ctx.actingUser?.role,
     }),
 };
