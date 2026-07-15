@@ -1,7 +1,7 @@
 FROM oven/bun:1
 
 WORKDIR /app
-COPY package.json bun.lock ./
+COPY package.json ./
 COPY apps/backend-api/package.json apps/backend-api/bun.lock ./apps/backend-api/
 COPY packages/shared/package.json packages/shared/bun.lock ./packages/shared/
 

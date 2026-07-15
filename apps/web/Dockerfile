@@ -1,7 +1,7 @@
 FROM oven/bun:1 as builder
 
 WORKDIR /app
-COPY package.json bun.lock ./
+COPY package.json ./
 COPY apps/web/package.json apps/web/bun.lock ./apps/web/
 COPY packages/shared/package.json packages/shared/bun.lock ./packages/shared/
 
