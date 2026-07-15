@@ -23,6 +23,12 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      # TanStack Start (modo SPA) prerenderiza el shell arrancando un server
+      # interno y crawleándolo por loopback durante `bun run build`. El sandbox
+      # de red de BuildKit no permite ese loopback, así que el build necesita la
+      # red del host. No se puede desactivar el prerender: en modo SPA el plugin
+      # lo fuerza (schema: spa.prerender → enabled: true).
+      network: host
       args:
         - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
         - VITE_API_BASE_URL=${VITE_API_BASE_URL}
