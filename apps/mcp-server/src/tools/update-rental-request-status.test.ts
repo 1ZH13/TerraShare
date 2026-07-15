@@ -57,7 +57,7 @@ describe("update_rental_request_status tool (HU-72 #189)", () => {
       tenantId: "user_regular",
       operation: "alquiler",
       status: "pending_owner",
-      period: { startDate: "2026-10-01", endDate: "2026-11-01" },
+      period: { startDate: "2027-01-15", endDate: "2027-02-15" },
       intendedUse: "agricultura",
     }]);
 
