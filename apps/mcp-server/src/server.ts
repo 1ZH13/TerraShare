@@ -21,6 +21,7 @@ import { getOwnerAnalyticsTool } from "./tools/get-owner-analytics";
 import { getLandTool } from "./tools/get-land";
 import { listMyLandsTool } from "./tools/list-my-lands";
 import { setLandStatusTool } from "./tools/set-land-status";
+import { listRentalRequestsTool } from "./tools/list-rental-requests";
 import { searchLandsTool } from "./tools/search-lands";
 import { updateLandTool } from "./tools/update-land";
 
@@ -50,6 +51,7 @@ const TOOLS: ToolDefinition<ZodRawShape>[] = [
   getLandTool,
   listMyLandsTool,
   setLandStatusTool,
+  listRentalRequestsTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 

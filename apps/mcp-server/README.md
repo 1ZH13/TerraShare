@@ -116,6 +116,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `get_land` | HU-64 | #181 | ✅ implementada |
 | `set_land_status` | HU-67 | #184 | ✅ implementada |
 | `list_my_lands` | HU-68 | #185 | ✅ implementada |
+| `list_rental_requests` | HU-71 | #188 | ✅ implementada |
 
 ## Tests
 
