@@ -9,7 +9,10 @@ import path from "path";
 export default defineConfig({
   server: { port: 5173 },
   plugins: [
-    tanstackStart({ spa: { enabled: true } }),
+    tanstackStart({
+      spa: { enabled: true },
+      server: { prerender: { routes: [] } },
+    }),
     viteReact(),
   ],
   resolve: {
