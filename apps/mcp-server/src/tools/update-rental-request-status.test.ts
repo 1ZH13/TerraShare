@@ -31,7 +31,7 @@ describe("update_rental_request_status tool (HU-72 #189)", () => {
         tenantId: "user_regular",
         operation: "alquiler",
         status: "approved",
-        period: { startDate: "2026-08-01", endDate: "2026-12-31" },
+        period: { startDate: "2027-01-01", endDate: "2027-03-31" },
       },
       {
         id: "req_paid",
