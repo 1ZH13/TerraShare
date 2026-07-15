@@ -23,7 +23,7 @@ export async function getLand(rawInput: unknown): Promise<Record<string, unknown
   const input = z.object(getLandInput).parse(rawInput);
 
   const land = await Land.findOne({ id: input.landId }).lean();
-  if (!land) throw new ToolError("Terreno no encontrado");
+  if (!land || land.status === "inactive") throw new ToolError("Terreno no encontrado");
 
   const { _id, __v, ...rest } = land as unknown as Record<string, unknown>;
   return rest;

@@ -40,10 +40,7 @@ describe("get_land tool (HU-64 #181)", () => {
     expect(land).not.toHaveProperty("__v");
   });
 
-  it("devuelve terreno inactivo (sin filtro de status)", async () => {
-    const result = await getLand({ landId: "land_inactive" });
-    expect(result).toBeDefined();
-    expect((result as { id: string }).id).toBe("land_inactive");
-    expect((result as { status: string }).status).toBe("inactive");
+  it("lanza error cuando el terreno está inactivo", async () => {
+    await expect(getLand({ landId: "land_inactive" })).rejects.toThrow("Terreno no encontrado");
   });
 });
