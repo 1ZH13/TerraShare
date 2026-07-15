@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  backend-api:
+    build:
+      context: .
+      dockerfile: apps/backend-api/Dockerfile
+    image: terrashare-backend-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGO_URI=${MONGO_URI}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - REQUIRE_ADMIN_MFA=${REQUIRE_ADMIN_MFA}
+      - ADMIN_SEED_EMAIL=${ADMIN_SEED_EMAIL}
+    depends_on:
+      - mongo
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+    image: terrashare-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend-api
+
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-admin123}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

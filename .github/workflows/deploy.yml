@@ -19,50 +19,42 @@ permissions:
   deployments: write
 
 jobs:
-  deploy-staging:
-    if: github.event_name == 'push' || github.event.inputs.environment == 'staging'
+  deploy:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: ${{ github.event.inputs.environment || 'staging' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          bun-version: latest
-      - name: Install backend dependencies
-        run: cd apps/backend-api && bun install --frozen-lockfile
-      - name: Install web dependencies
-        run: cd apps/web && bun install --frozen-lockfile
-      - name: Build backend
-        run: cd apps/backend-api && bun run build
-      - name: Build web
-        run: cd apps/web && bun run build
-        env:
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-      - name: Deploy to staging
-        run: echo "Deploying to staging environment..."
-        # Agregar comando real de despliegue (Vercel, Railway, etc.)
-
-  deploy-production:
-    if: github.event.inputs.environment == 'production'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install backend dependencies
-        run: cd apps/backend-api && bun install --frozen-lockfile
-      - name: Install web dependencies
-        run: cd apps/web && bun install --frozen-lockfile
-      - name: Build backend
-        run: cd apps/backend-api && bun run build
-      - name: Build web
-        run: cd apps/web && bun run build
-        env:
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-      - name: Deploy to production
-        run: echo "Deploying to production environment..."
-        # Agregar comando real de despliegue
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          envs: GITHUB_REPOSITORY
+          script: |
+            mkdir -p /opt/terrashare
+            cd /opt/terrashare
+            
+            # Setup git repository if it doesn't exist
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/${GITHUB_REPOSITORY}.git .
+            fi
+            
+            # Fetch latest and reset
+            git fetch origin
+            git checkout main
+            git reset --hard origin/main
+            
+            # Create .env file for docker-compose
+            cat <<EOF > .env
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+            REQUIRE_ADMIN_MFA=${{ secrets.REQUIRE_ADMIN_MFA }}
+            ADMIN_SEED_EMAIL=${{ secrets.ADMIN_SEED_EMAIL }}
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+            EOF
+            
+            # Deploy
+            docker-compose up --build -d
