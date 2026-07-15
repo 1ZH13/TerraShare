@@ -113,9 +113,12 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `moderate_land` | HU-90 | #207 | ✅ implementada |
 | `manage_user_status` | HU-91 | #208 | ✅ implementada |
 | `get_analytics_overview` | HU-88 | #205 | ✅ implementada |
+| `get_land` | HU-64 | #181 | ✅ implementada |
+| `list_my_lands` | HU-68 | #185 | ✅ implementada |
 
-`search_lands`: busca terrenos publicados (activos) con filtros por texto,
-ubicación, uso, operación y precio; devuelve resultados paginados.
+### search_lands
+Busca terrenos publicados (activos) con filtros por texto, ubicación, uso,
+operación y precio; devuelve resultados paginados.
 
 Ejemplo de argumentos:
 
@@ -123,111 +126,24 @@ Ejemplo de argumentos:
 { "province": "Chiriqui", "use": "agricultura", "priceMax": 1000, "pageSize": 10 }
 ```
 
+### create_land
 `create_land` (`requires: user`): crea un terreno en `draft` a nombre del dueño
 autenticado (`MCP_ACTING_USER_ID`). Valida con el mismo `CreateLandSchema`
 compartido que la API REST y registra un evento de auditoría.
 
-Ejemplo de argumentos:
-
-```json
-{
-  "title": "Finca agrícola en Boquete",
-  "area": 12000,
-  "allowedUses": ["agricultura"],
-  "location": { "province": "Chiriqui", "district": "Boquete" },
-  "priceRule": { "currency": "USD", "pricePerMonth": 750 }
-}
-```
-
-`create_rental_request` (`requires: user`): crea una solicitud de alquiler (o de
-compra) sobre un terreno, a nombre del arrendatario autenticado. Reusa el
-`CreateRentalRequestSchema` compartido, aplica las reglas de negocio (dueño no
-puede solicitar su propio terreno, operación/uso permitidos, solapamiento de
-período) y crea en estado `pending_owner`.
-
-Ejemplo de argumentos (alquiler):
-
-```json
-{
-  "landId": "land_a",
-  "period": { "startDate": "2026-08-01", "endDate": "2026-12-01" },
-  "intendedUse": "agricultura"
-}
-```
-
-`create_contract` (`requires: user`): genera un contrato en `draft` vinculado a
-una solicitud, con términos, fechas y partes. Solo el dueño del terreno (o un
-admin) puede crearlo; reusa `CreateContractSchema` y `canCreateContract`.
+### get_land
+Obtiene la ficha completa de un terreno por su ID, incluyendo ubicación, área,
+usos permitidos, precio y disponibilidad.
 
 Ejemplo de argumentos:
 
 ```json
-{
-  "rentalRequestId": "rr_123",
-  "terms": {
-    "summary": "Arrendamiento por 12 meses del terreno.",
-    "startsAt": "2026-08-01",
-    "endsAt": "2027-08-01"
-  }
-}
+{ "landId": "land_a" }
 ```
 
-`create_payment_session` (`requires: user`): genera un enlace de pago
-(`checkoutUrl`) para una solicitud **pagable** (`approved`/`pending_payment`), a
-nombre del arrendatario (o admin). Crea una sesión real de Stripe si
-`STRIPE_SECRET_KEY` está configurada; si no, usa el fallback de desarrollo (igual
-que el backend). **No expone secretos de Stripe**. Reusa `CreateCheckoutSessionSchema`,
-`canInitiatePayment` y `computePaymentBreakdown`.
-
-Variables de entorno adicionales (opcionales): `STRIPE_SECRET_KEY`,
-`STRIPE_PLATFORM_FEE_BPS` (default 500 = 5%).
-
-Ejemplo de argumentos:
-
-```json
-{
-  "rentalRequestId": "rr_123",
-  "currency": "USD",
-  "successUrl": "https://app.terrashare.co/pago/ok",
-  "cancelUrl": "https://app.terrashare.co/pago/cancel"
-}
-```
-
-`refund_payment` (`requires: admin`): reembolsa total o parcialmente un pago
-pagado. **Acción sensible: exige `confirm: true`.** Usa Stripe real si hay
-`STRIPE_SECRET_KEY` y el pago tiene `stripePaymentIntentId`; actualiza el estado
-del pago (`partially_refunded`/`refunded`) y registra auditoría. Reusa
-`CreateRefundSchema` y el helper de Stripe.
-
-Ejemplo de argumentos (reembolso parcial):
-
-```json
-{ "paymentId": "pay_123", "amount": 100, "reason": "Cancelación parcial", "confirm": true }
-```
-
-`moderate_land` (`requires: admin`): cambia el estado de un terreno —`inactive`
-para despublicar contenido que viole políticas, `active` para reactivarlo— y
-registra la acción en auditoría.
-
-Ejemplo de argumentos:
-
-```json
-{ "landId": "land_123", "status": "inactive", "reason": "Contenido engañoso" }
-```
-
-`manage_user_status` (`requires: admin`): activa o bloquea una cuenta de usuario.
-No permite modificar la propia cuenta. **Acción sensible: exige `confirm: true`.**
-Registra auditoría.
-
-Ejemplo de argumentos:
-
-```json
-{ "userId": "user_abc", "status": "blocked", "reason": "Abuso reportado", "confirm": true }
-```
-
-`get_analytics_overview` (`requires: admin`): overview de métricas del negocio —
-terrenos (por categoría), solicitudes (por estado, aprobadas/rechazadas/pendientes,
-recientes), pagos (ingresos y pendientes) y usuarios. Solo lectura. Sin argumentos.
+### list_my_lands
+Devuelve todos los terrenos pertenecientes al dueño autenticado, incluyendo
+estado, área, precio y ubicación. Requiere `MCP_ACTING_USER_ID`.
 
 ## Tests
 
