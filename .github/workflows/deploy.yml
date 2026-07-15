@@ -22,39 +22,58 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'staging' }}
+    env:
+      # C1: Secretos expuestos como env vars del step, pasados via SSH envs
+      # Los valores nunca se expanden inline en el script remoto
+      MONGODB_URI: ${{ secrets.MONGO_URI }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      REQUIRE_ADMIN_MFA: ${{ secrets.REQUIRE_ADMIN_MFA }}
+      ADMIN_SEED_EMAIL: ${{ secrets.ADMIN_SEED_EMAIL }}
+      CLERK_JWKS_URL: ${{ secrets.CLERK_JWKS_URL }}
+      CLERK_ISSUER: ${{ secrets.CLERK_ISSUER }}
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        # M3: Pineado a SHA de commit para evitar tag hijacking
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: GITHUB_REPOSITORY
+          # C1: Nombres de env vars del runner a inyectar en el servidor remoto
+          envs: GITHUB_REPOSITORY,MONGODB_URI,CLERK_SECRET_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,REQUIRE_ADMIN_MFA,ADMIN_SEED_EMAIL,CLERK_JWKS_URL,CLERK_ISSUER,VITE_CLERK_PUBLISHABLE_KEY,VITE_API_BASE_URL
           script: |
             mkdir -p /opt/terrashare
             cd /opt/terrashare
-            
+
             # Setup git repository if it doesn't exist
             if [ ! -d ".git" ]; then
               git clone https://github.com/${GITHUB_REPOSITORY}.git .
             fi
-            
+
             # Fetch latest and reset
             git fetch origin
             git checkout main
             git reset --hard origin/main
-            
-            # Create .env file for docker-compose
-            cat <<EOF > .env
-            MONGO_URI=${{ secrets.MONGO_URI }}
-            CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
-            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
-            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
-            REQUIRE_ADMIN_MFA=${{ secrets.REQUIRE_ADMIN_MFA }}
-            ADMIN_SEED_EMAIL=${{ secrets.ADMIN_SEED_EMAIL }}
-            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
-            EOF
-            
-            # Deploy
-            docker-compose up --build -d
+
+            # C1+C2: Escribir .env usando variables de entorno SSH (no inline)
+            # C2: chmod 600 para que solo root/deploy user pueda leer el .env
+            printf '%s\n' \
+              "MONGODB_URI=${MONGODB_URI}" \
+              "CLERK_SECRET_KEY=${CLERK_SECRET_KEY}" \
+              "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}" \
+              "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" \
+              "REQUIRE_ADMIN_MFA=${REQUIRE_ADMIN_MFA}" \
+              "ADMIN_SEED_EMAIL=${ADMIN_SEED_EMAIL}" \
+              "CLERK_JWKS_URL=${CLERK_JWKS_URL}" \
+              "CLERK_ISSUER=${CLERK_ISSUER}" \
+              "VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}" \
+              "VITE_API_BASE_URL=${VITE_API_BASE_URL}" \
+              > .env
+            chmod 600 .env
+
+            # M4: --remove-orphans limpia contenedores de servicios eliminados
+            docker-compose up --build -d --remove-orphans

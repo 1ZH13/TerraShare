@@ -11,14 +11,20 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - MONGO_URI=${MONGO_URI}
+      # C3: Nombre correcto segun env.ts (MONGODB_URI, no MONGO_URI)
+      - MONGODB_URI=${MONGODB_URI}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       - REQUIRE_ADMIN_MFA=${REQUIRE_ADMIN_MFA}
       - ADMIN_SEED_EMAIL=${ADMIN_SEED_EMAIL}
+      # C4: Variables obligatorias en env.ts que faltaban
+      - CLERK_JWKS_URL=${CLERK_JWKS_URL}
+      - CLERK_ISSUER=${CLERK_ISSUER}
     depends_on:
-      - mongo
+      mongo:
+        # m4: Esperar a que Mongo este healthy antes de arrancar el backend
+        condition: service_healthy
 
   web:
     build:
@@ -38,12 +44,19 @@ services:
     image: mongo:6.0
     restart: unless-stopped
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-admin123}
-    ports:
-      - "27017:27017"
+      # M2: Sin fallbacks hardcodeados — las credenciales deben estar en .env
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    # M1: Puerto 27017 NO expuesto al exterior — solo accesible internamente
     volumes:
       - mongo_data:/data/db
+    # m4: Healthcheck para que backend-api espere a que Mongo este listo
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   mongo_data:

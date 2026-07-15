@@ -2,7 +2,6 @@ FROM oven/bun:1.1 as builder
 
 WORKDIR /app
 COPY package.json ./
-COPY apps/backend-api/package.json ./apps/backend-api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
 
@@ -14,8 +13,8 @@ COPY . .
 WORKDIR /app/apps/web
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG VITE_API_BASE_URL
-ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# m1: Solo ARG — las vars VITE_* se queman en el bundle durante el build.
+# Usar ENV las embedia en las capas de la imagen (visible con docker history).
 ENV HOST=127.0.0.1
 
 RUN bun run build
