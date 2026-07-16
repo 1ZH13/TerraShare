@@ -13,9 +13,6 @@ COPY . .
 WORKDIR /app/apps/web
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG VITE_API_BASE_URL
-# m1: ARG variables stand in the build environment to be baked into Vite bundle.
-# Unlike ENV, ARG values won't persist into the final image layers for runtime.
-ENV HOST=127.0.0.1
 
 RUN bun run build
 
