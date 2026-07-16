@@ -124,6 +124,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `get_chat_messages` | HU-84 | #199 | ✅ implementada |
 | `capture_lead` | HU-88 | #203 | ✅ implementada |
 | `list_leads` | HU-89 | #204 | ✅ implementada |
+| `list_audit_events` | HU-92 | #209 | ✅ implementada |
 
 ## Tests
 
