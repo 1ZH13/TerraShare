@@ -4,7 +4,7 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import { connectMongoose, disconnectMongoose } from "@backend/db/mongoose";
-import { Contract, Land, RentalRequest, User } from "@backend/db/schemas";
+import { AuditEvent, Contract, Land, RentalRequest, User } from "@backend/db/schemas";
 
 const now = new Date().toISOString();
 
@@ -83,6 +83,29 @@ export const SEED_CONTRACTS = [
   },
 ];
 
+export const SEED_AUDIT_EVENTS = [
+  {
+    id: "audit_seed_01",
+    actorId: "user_admin",
+    actorRole: "admin",
+    entity: "land",
+    action: "created",
+    entityId: "land_a",
+    metadata: { title: "Finca agrícola en Chiriquí" },
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "audit_seed_02",
+    actorId: "user_admin",
+    actorRole: "admin",
+    entity: "user",
+    action: "updated",
+    entityId: "user_regular",
+    metadata: { field: "status" },
+    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare_mcp`;
 
@@ -97,6 +120,8 @@ async function seed(): Promise<void> {
   await RentalRequest.insertMany(SEED_RENTAL_REQUESTS.map((r) => ({ ...r })));
   await Contract.deleteMany({});
   await Contract.insertMany(SEED_CONTRACTS.map((c) => ({ ...c })));
+  await AuditEvent.deleteMany({});
+  await AuditEvent.insertMany(SEED_AUDIT_EVENTS.map((e) => ({ ...e })));
 }
 
 await seed();
