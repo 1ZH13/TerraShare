@@ -3,15 +3,12 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import path from "path";
 
-// TanStack Start en modo SPA: la app es fuertemente client-side (Clerk, Leaflet
-// con `window`, Stripe), así que renderizamos en cliente y no prerenderizamos.
-// El plugin de Start debe ir antes de viteReact.
+// TanStack Start: la app es fuertemente client-side (Clerk, Leaflet con `window`,
+// Stripe), así que renderizamos en cliente y no prerenderizamos.
 export default defineConfig({
   server: { port: 5173 },
   plugins: [
-    tanstackStart({
-      spa: { enabled: true },
-    }),
+    tanstackStart(),
     viteReact(),
   ],
   resolve: {
