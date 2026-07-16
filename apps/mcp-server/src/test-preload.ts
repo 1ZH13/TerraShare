@@ -4,7 +4,7 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import { connectMongoose, disconnectMongoose } from "@backend/db/mongoose";
-import { Chat, ChatMessage, Contract, Land, Lead, Payment, RentalRequest, User } from "@backend/db/schemas";
+import { AuditEvent, Chat, ChatMessage, Contract, Land, Lead, Payment, RentalRequest, User } from "@backend/db/schemas";
 
 const now = new Date().toISOString();
 
@@ -171,6 +171,29 @@ export const SEED_LEADS = [
   },
 ];
 
+export const SEED_AUDIT_EVENTS = [
+  {
+    id: "audit_seed_01",
+    actorId: "user_admin",
+    actorRole: "admin",
+    entity: "land",
+    action: "created",
+    entityId: "land_a",
+    metadata: { title: "Finca agrícola en Chiriquí" },
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "audit_seed_02",
+    actorId: "user_admin",
+    actorRole: "admin",
+    entity: "user",
+    action: "updated",
+    entityId: "user_regular",
+    metadata: { field: "status" },
+    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare_mcp`;
 
@@ -193,6 +216,8 @@ async function seed(): Promise<void> {
   await ChatMessage.insertMany(SEED_CHAT_MESSAGES.map((m) => ({ ...m })));
   await Lead.deleteMany({});
   await Lead.insertMany(SEED_LEADS.map((l) => ({ ...l })));
+  await AuditEvent.deleteMany({});
+  await AuditEvent.insertMany(SEED_AUDIT_EVENTS.map((e) => ({ ...e })));
 }
 
 await seed();
