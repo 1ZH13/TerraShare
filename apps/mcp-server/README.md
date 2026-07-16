@@ -127,6 +127,14 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `list_audit_events` | HU-92 | #209 | ✅ implementada |
 | `list_notifications` | HU-90 | #202 | ✅ implementada |
 | `mark_notification_read` | HU-91 | #202 | ✅ implementada |
+| `update_land` | HU-66 | #183 | ✅ implementada |
+| `delete_land` | HU-69 | #186 | ✅ implementada |
+| `update_rental_request_status` | HU-72 | #189 | ✅ implementada |
+| `sign_contract` | HU-74 | #191 | ✅ implementada |
+| `complete_contract` | HU-75 | #192 | ✅ implementada |
+| `send_message` | HU-83 | #200 | ✅ implementada |
+| `get_external_contact` | HU-84 | #201 | ✅ implementada |
+| `get_owner_analytics` | HU-89 | #206 | ✅ implementada |
 
 ## Tests
 
