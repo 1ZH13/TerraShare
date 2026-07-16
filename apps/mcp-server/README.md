@@ -120,6 +120,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `get_contract` | HU-76 | #193 | ✅ implementada |
 | `get_payment_status` | HU-80 | #195 | ✅ implementada |
 | `list_payments` | HU-81 | #196 | ✅ implementada |
+| `list_chats` | HU-83 | #198 | ✅ implementada |
 
 ## Tests
 

@@ -56,9 +56,10 @@ describe("get_analytics_overview tool (HU-88 #205)", () => {
 
   it("incluye el total y activos de usuarios", async () => {
     const res = await getAnalyticsOverview();
-    // Preload: user_admin, user_regular (activos), user_blocked (bloqueado).
-    expect(res.users.total).toBe(3);
-    expect(res.users.active).toBe(2);
+    // Preload: user_admin, user_regular, user_seed, user_tenant_01, user_other
+    // (activos) y user_blocked (bloqueado).
+    expect(res.users.total).toBe(6);
+    expect(res.users.active).toBe(5);
   });
 
   describe("sin solicitudes ni pagos", () => {
