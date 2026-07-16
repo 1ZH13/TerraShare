@@ -29,6 +29,7 @@ import { listPaymentsTool } from "./tools/list-payments";
 import { listChatsTool } from "./tools/list-chats";
 import { getChatMessagesTool } from "./tools/get-chat-messages";
 import { captureLeadTool } from "./tools/capture-lead";
+import { listLeadsTool } from "./tools/list-leads";
 import { searchLandsTool } from "./tools/search-lands";
 import { updateLandTool } from "./tools/update-land";
 
@@ -66,6 +67,7 @@ const TOOLS: ToolDefinition<ZodRawShape>[] = [
   listChatsTool,
   getChatMessagesTool,
   captureLeadTool,
+  listLeadsTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 
