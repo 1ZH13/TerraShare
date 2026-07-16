@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend-api:
     build:
@@ -8,7 +6,7 @@ services:
     image: terrashare-backend-api
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${API_PORT:-3000}:3000"
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/terrashare?authSource=admin
@@ -31,7 +29,7 @@ services:
     image: terrashare-web
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${WEB_PORT:-80}:80"
     depends_on:
       - backend-api
 

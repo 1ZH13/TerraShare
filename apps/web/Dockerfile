@@ -1,9 +1,9 @@
 FROM oven/bun:1.1 as builder
 
 WORKDIR /app
-COPY package.json ./
-COPY apps/web/package.json ./apps/web/
-COPY packages/shared/package.json ./packages/shared/
+COPY package.json bun.lock ./
+COPY apps/web/package.json apps/web/bun.lock ./apps/web/
+COPY packages/shared/package.json packages/shared/bun.lock ./packages/shared/
 
 RUN cd packages/shared && bun install --frozen-lockfile
 RUN cd apps/web && bun install --frozen-lockfile
@@ -13,8 +13,8 @@ COPY . .
 WORKDIR /app/apps/web
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG VITE_API_BASE_URL
-# m1: Solo ARG — las vars VITE_* se queman en el bundle durante el build.
-# Usar ENV las embedia en las capas de la imagen (visible con docker history).
+# m1: ARG variables stand in the build environment to be baked into Vite bundle.
+# Unlike ENV, ARG values won't persist into the final image layers for runtime.
 ENV HOST=127.0.0.1
 
 RUN bun run build

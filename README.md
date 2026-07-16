@@ -23,7 +23,18 @@ Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos produc
 - Testing E2E: Playwright
 - CI/CD: GitHub Actions
 - MCP server propio: planeado (epico #234)
-- Docker: planeado (issue #233)
+- Docker: implementado (issue #233)
+
+## Despliegue Local con Docker
+
+Para levantar el ecosistema completo (Frontend, Backend, y MongoDB) de forma unificada:
+
+1. Asegúrate de configurar tu archivo `.env` en la raíz (puedes basarte en `.env.example`).
+2. Ejecuta Docker Compose:
+   ```bash
+   docker compose up --build
+   ```
+El Frontend estará en `http://localhost:80` (o `WEB_PORT`) y la API en `http://localhost:3000` (o `API_PORT`).
 
 ## Estado actual
 - `apps/web`: frontend unificado (landing + dashboard + admin)

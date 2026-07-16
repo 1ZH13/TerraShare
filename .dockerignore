@@ -1,0 +1,16 @@
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+dist
+build
+.git
+.github
+.env
+.env.*
+!.env.example
+.claude/
+*.log
+coverage/
+playwright-report/
+test-results/
+.vscode/
