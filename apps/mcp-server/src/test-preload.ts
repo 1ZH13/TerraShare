@@ -4,7 +4,7 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import { connectMongoose, disconnectMongoose } from "@backend/db/mongoose";
-import { Contract, Land, RentalRequest, User } from "@backend/db/schemas";
+import { Contract, Land, Payment, RentalRequest, User } from "@backend/db/schemas";
 
 const now = new Date().toISOString();
 
@@ -83,6 +83,21 @@ export const SEED_CONTRACTS = [
   },
 ];
 
+export const SEED_PAYMENTS = [
+  {
+    id: "payment_seed_01",
+    rentalRequestId: "rr_seed_01",
+    amount: 300,
+    currency: "USD",
+    platformFeeAmount: 15,
+    netAmount: 285,
+    settlementCurrency: "USD",
+    status: "paid",
+    createdAt: now,
+    updatedAt: now,
+  },
+];
+
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare_mcp`;
 
@@ -97,6 +112,8 @@ async function seed(): Promise<void> {
   await RentalRequest.insertMany(SEED_RENTAL_REQUESTS.map((r) => ({ ...r })));
   await Contract.deleteMany({});
   await Contract.insertMany(SEED_CONTRACTS.map((c) => ({ ...c })));
+  await Payment.deleteMany({});
+  await Payment.insertMany(SEED_PAYMENTS.map((p) => ({ ...p })));
 }
 
 await seed();
