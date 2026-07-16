@@ -36,6 +36,24 @@ Para levantar el ecosistema completo (Frontend, Backend, y MongoDB) de forma uni
    ```
 El Frontend estará en `http://localhost:80` (o `WEB_PORT`) y la API en `http://localhost:3000` (o `API_PORT`).
 
+## Despliegue y Rollback (DigitalOcean)
+
+El pipeline de CD (`.github/workflows/deploy.yml`) despliega por SSH al droplet:
+- `main` → `terrashare-prod` (puertos 80/3000)
+- `staging` → `terrashare-staging` (puertos 8080/3001)
+
+Antes de cada deploy se crea un tag local `deploy-pre-<timestamp>-<sha>` en el droplet.
+Si el deploy completa OK, se crea `deploy-good-<timestamp>` y se guarda en `.last-good-deploy`.
+
+### Rollback
+En el droplet:
+```bash
+cd /opt/terrashare-<env>
+./scripts/rollback.sh . main
+# o con tag explicito:
+./scripts/rollback.sh . main deploy-good-20260715-120000
+```
+
 ## Estado actual
 - `apps/web`: frontend unificado (landing + dashboard + admin)
 - `apps/backend-api`: API con auth, lands, rental requests, contracts, payments, chat
