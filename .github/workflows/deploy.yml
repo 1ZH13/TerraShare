@@ -39,11 +39,11 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: GITHUB_REPOSITORY,GITHUB_REF_NAME,MONGO_ROOT_USERNAME,MONGO_ROOT_PASSWORD,CLERK_JWKS_URL,CLERK_ISSUER,CLERK_SECRET_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,VITE_CLERK_PUBLISHABLE_KEY,VITE_API_BASE_URL
+          envs: MONGO_ROOT_USERNAME,MONGO_ROOT_PASSWORD,CLERK_JWKS_URL,CLERK_ISSUER,CLERK_SECRET_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,VITE_CLERK_PUBLISHABLE_KEY,VITE_API_BASE_URL
           script: |
-            BRANCH=$GITHUB_REF_NAME
+            BRANCH="${{ github.ref_name }}"
             # Fallback to main if run from workflow_dispatch on a different ref without properly picking
-            if [ "$BRANCH" = "" ]; then
+            if [ -z "$BRANCH" ]; then
               BRANCH="main"
             fi
 
@@ -60,16 +60,16 @@ jobs:
               API_PORT="3001"
             fi
 
-            mkdir -p $TARGET_DIR
-            cd $TARGET_DIR
+            mkdir -p "$TARGET_DIR"
+            cd "$TARGET_DIR" || exit 1
 
             if [ ! -d ".git" ]; then
-              git clone https://github.com/${GITHUB_REPOSITORY}.git .
+              git clone https://github.com/${{ github.repository }}.git .
             fi
 
             git fetch origin
-            git checkout $BRANCH
-            git reset --hard origin/$BRANCH
+            git checkout "$BRANCH"
+            git reset --hard "origin/$BRANCH"
 
             printf '%s\n' \
               "MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}" \
