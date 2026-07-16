@@ -9,7 +9,7 @@ export default defineConfig({
   server: { port: 5173 },
   plugins: [
     tanstackStart({
-      client: { entry: "./src/client.tsx" },
+      client: { entry: "./client.tsx" },
     }),
     viteReact(),
   ],
