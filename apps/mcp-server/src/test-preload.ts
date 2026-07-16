@@ -4,7 +4,7 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import { connectMongoose, disconnectMongoose } from "@backend/db/mongoose";
-import { Contract, Land, RentalRequest, User } from "@backend/db/schemas";
+import { Contract, Land, Notification, RentalRequest, User } from "@backend/db/schemas";
 
 const now = new Date().toISOString();
 
@@ -83,6 +83,36 @@ export const SEED_CONTRACTS = [
   },
 ];
 
+export const SEED_NOTIFICATIONS = [
+  {
+    id: "notif_seed_01",
+    userId: "user_seed",
+    type: "rental_request",
+    title: "Nueva solicitud de alquiler",
+    body: "Hay una nueva solicitud para tu terreno.",
+    read: false,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+  },
+  {
+    id: "notif_seed_02",
+    userId: "user_seed",
+    type: "payment",
+    title: "Pago recibido",
+    body: "Se ha registrado un pago.",
+    read: false,
+    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+  },
+  {
+    id: "notif_seed_03",
+    userId: "user_other",
+    type: "system",
+    title: "Notificación para otro usuario",
+    body: "Esta notificación no es para user_seed.",
+    read: false,
+    createdAt: new Date(),
+  },
+];
+
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare_mcp`;
 
@@ -97,6 +127,8 @@ async function seed(): Promise<void> {
   await RentalRequest.insertMany(SEED_RENTAL_REQUESTS.map((r) => ({ ...r })));
   await Contract.deleteMany({});
   await Contract.insertMany(SEED_CONTRACTS.map((c) => ({ ...c })));
+  await Notification.deleteMany({});
+  await Notification.insertMany(SEED_NOTIFICATIONS.map((n) => ({ ...n })));
 }
 
 await seed();

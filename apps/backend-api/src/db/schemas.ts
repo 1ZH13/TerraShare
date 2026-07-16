@@ -459,3 +459,27 @@ export const IdempotencyKey = mongoose.model<IIdempotencyKey>("IdempotencyKey", 
 export const Favorite = mongoose.model<IFavorite>("Favorite", FavoriteSchema);
 export const Report = mongoose.model<IReport>("Report", ReportSchema);
 export const BackupRecord = mongoose.model<IBackupRecord>("BackupRecord", BackupRecordSchema);
+
+export interface INotification extends Document {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  body?: string;
+  read: boolean;
+  readAt?: string;
+  createdAt: Date;
+}
+
+const NotificationSchema = new Schema<INotification>({
+  id: { type: String, required: true, unique: true },
+  userId: { type: String, required: true, index: true },
+  type: { type: String, required: true },
+  title: { type: String, required: true },
+  body: { type: String },
+  read: { type: Boolean, default: false },
+  readAt: { type: String },
+  createdAt: { type: Date, default: Date.now },
+}, { timestamps: false });
+
+export const Notification = mongoose.models.Notification || mongoose.model<INotification>("Notification", NotificationSchema);
