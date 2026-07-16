@@ -1,0 +1,56 @@
+services:
+  backend-api:
+    build:
+      context: .
+      dockerfile: apps/backend-api/Dockerfile
+    image: terrashare-backend-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/terrashare?authSource=admin
+      - CLERK_JWKS_URL=${CLERK_JWKS_URL}
+      - CLERK_ISSUER=${CLERK_ISSUER}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      # TanStack Start (modo SPA) prerenderiza el shell arrancando un server
+      # interno y crawleándolo por loopback durante `bun run build`. El sandbox
+      # de red de BuildKit no permite ese loopback, así que el build necesita la
+      # red del host. No se puede desactivar el prerender: en modo SPA el plugin
+      # lo fuerza (schema: spa.prerender → enabled: true).
+      network: host
+      args:
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+    image: terrashare-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-80}:80"
+
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mongo_data:

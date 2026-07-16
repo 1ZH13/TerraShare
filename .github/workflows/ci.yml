@@ -121,3 +121,21 @@ jobs:
           name: playwright-traces
           path: apps/web/playwright-report/trace.zip
           if-no-files-found: ignore
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [backend-typecheck, web-build]
+    steps:
+      - uses: actions/checkout@v4
+      # Sin setup-buildx-action a propósito: el builder por defecto de dockerd
+      # permite `network: host` en el build (que el web necesita para el
+      # prerender del shell SPA); el driver docker-container exigiría entitlement.
+      - name: Build images via compose
+        run: docker compose build
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          MONGO_ROOT_USERNAME: ci
+          MONGO_ROOT_PASSWORD: ci

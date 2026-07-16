@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   workflow_dispatch:
     inputs:
       environment:
@@ -19,50 +19,89 @@ permissions:
   deployments: write
 
 jobs:
-  deploy-staging:
-    if: github.event_name == 'push' || github.event.inputs.environment == 'staging'
+  deploy:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: ${{ github.event.inputs.environment || (github.ref_name == 'main' && 'production' || 'staging') }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MONGO_ROOT_USERNAME: ${{ secrets.MONGO_ROOT_USERNAME }}
+      MONGO_ROOT_PASSWORD: ${{ secrets.MONGO_ROOT_PASSWORD }}
+      CLERK_JWKS_URL: ${{ secrets.CLERK_JWKS_URL }}
+      CLERK_ISSUER: ${{ secrets.CLERK_ISSUER }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
-          bun-version: latest
-      - name: Install backend dependencies
-        run: cd apps/backend-api && bun install --frozen-lockfile
-      - name: Install web dependencies
-        run: cd apps/web && bun install --frozen-lockfile
-      - name: Build backend
-        run: cd apps/backend-api && bun run build
-      - name: Build web
-        run: cd apps/web && bun run build
-        env:
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-      - name: Deploy to staging
-        run: echo "Deploying to staging environment..."
-        # Agregar comando real de despliegue (Vercel, Railway, etc.)
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          envs: GITHUB_TOKEN,MONGO_ROOT_USERNAME,MONGO_ROOT_PASSWORD,CLERK_JWKS_URL,CLERK_ISSUER,CLERK_SECRET_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,VITE_CLERK_PUBLISHABLE_KEY,VITE_API_BASE_URL
+          script: |
+            BRANCH="${{ github.ref_name }}"
+            # Fallback to main if run from workflow_dispatch on a different ref without properly picking
+            if [ -z "$BRANCH" ]; then
+              BRANCH="main"
+            fi
 
-  deploy-production:
-    if: github.event.inputs.environment == 'production'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install backend dependencies
-        run: cd apps/backend-api && bun install --frozen-lockfile
-      - name: Install web dependencies
-        run: cd apps/web && bun install --frozen-lockfile
-      - name: Build backend
-        run: cd apps/backend-api && bun run build
-      - name: Build web
-        run: cd apps/web && bun run build
-        env:
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-      - name: Deploy to production
-        run: echo "Deploying to production environment..."
-        # Agregar comando real de despliegue
+            # Environment specific variables
+            if [ "$BRANCH" = "main" ]; then
+              TARGET_DIR="/opt/terrashare-prod"
+              PROJECT_NAME="terrashare-prod"
+              WEB_PORT="80"
+              API_PORT="3000"
+            else
+              TARGET_DIR="/opt/terrashare-staging"
+              PROJECT_NAME="terrashare-staging"
+              WEB_PORT="8080"
+              API_PORT="3001"
+            fi
+
+            mkdir -p "$TARGET_DIR"
+            cd "$TARGET_DIR" || exit 1
+
+            if [ ! -d ".git" ]; then
+              git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git .
+            fi
+
+            git fetch origin
+            git fetch origin --tags
+
+            PRE_DEPLOY_TAG="deploy-pre-$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short origin/$BRANCH)"
+            git tag "$PRE_DEPLOY_TAG" "origin/$BRANCH"
+
+            git checkout "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+
+            printf '%s\n' \
+              "MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}" \
+              "MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}" \
+              "CLERK_JWKS_URL=${CLERK_JWKS_URL}" \
+              "CLERK_ISSUER=${CLERK_ISSUER}" \
+              "CLERK_SECRET_KEY=${CLERK_SECRET_KEY}" \
+              "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}" \
+              "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" \
+              "VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}" \
+              "VITE_API_BASE_URL=${VITE_API_BASE_URL}" \
+              "WEB_PORT=${WEB_PORT}" \
+              "API_PORT=${API_PORT}" \
+              "COMPOSE_PROJECT_NAME=${PROJECT_NAME}" \
+              > .env
+            chmod 600 .env
+
+            docker compose up --build -d --remove-orphans
+            DEPLOY_EXIT=$?
+
+            if [ $DEPLOY_EXIT -eq 0 ]; then
+              GOOD_TAG="deploy-good-$(date +%Y%m%d-%H%M%S)"
+              git tag "$GOOD_TAG" "$BRANCH"
+              echo "$GOOD_TAG" > .last-good-deploy
+              echo "Deploy OK. Rollback: ./scripts/rollback.sh $TARGET_DIR $BRANCH"
+            else
+              echo "Deploy FAILED (exit $DEPLOY_EXIT). Rollback: ./scripts/rollback.sh $TARGET_DIR $BRANCH"
+            fi
+            exit $DEPLOY_EXIT
