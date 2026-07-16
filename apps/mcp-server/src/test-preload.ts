@@ -4,7 +4,7 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import { connectMongoose, disconnectMongoose } from "@backend/db/mongoose";
-import { Contract, Land, Payment, RentalRequest, User } from "@backend/db/schemas";
+import { Chat, ChatMessage, Contract, Land, Payment, RentalRequest, User } from "@backend/db/schemas";
 
 const now = new Date().toISOString();
 
@@ -38,6 +38,9 @@ export const SEED_USERS = [
   { clerkUserId: "user_admin", email: "admin@test.com", role: "admin", status: "active", profile: { fullName: "Admin de Prueba" } },
   { clerkUserId: "user_regular", email: "user@test.com", role: "user", status: "active", profile: { fullName: "Usuario Regular" } },
   { clerkUserId: "user_blocked", email: "blocked@test.com", role: "user", status: "blocked", profile: { fullName: "Usuario Bloqueado" } },
+  { clerkUserId: "user_seed", email: "seed@test.com", role: "user", status: "active", profile: { fullName: "Usuario Seed" } },
+  { clerkUserId: "user_tenant_01", email: "tenant1@test.com", role: "user", status: "active", profile: { fullName: "Arrendatario Uno" } },
+  { clerkUserId: "user_other", email: "other@test.com", role: "user", status: "active", profile: { fullName: "Otro Usuario" } },
 ];
 
 export const SEED_RENTAL_REQUESTS = [
@@ -98,6 +101,55 @@ export const SEED_PAYMENTS = [
   },
 ];
 
+export const SEED_CHATS = [
+  {
+    id: "chat_seed_01",
+    landId: "land_a",
+    participants: [
+      { userId: "user_seed", role: "owner" },
+      { userId: "user_tenant_01", role: "tenant" },
+    ],
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "chat_seed_02",
+    landId: "land_b",
+    participants: [
+      { userId: "user_admin", role: "admin" },
+      { userId: "user_regular", role: "tenant" },
+    ],
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
+  },
+];
+
+export const SEED_CHAT_MESSAGES = [
+  {
+    id: "msg_seed_01",
+    chatId: "chat_seed_01",
+    senderId: "user_seed",
+    text: "Hola, estoy interesado en el terreno.",
+    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "msg_seed_02",
+    chatId: "chat_seed_01",
+    senderId: "user_tenant_01",
+    text: "¡Hola! Sí, el terreno está disponible.",
+    createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "msg_seed_03",
+    chatId: "chat_seed_01",
+    senderId: "user_seed",
+    text: "¿Cuál es el precio mensual?",
+    createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+  },
+];
+
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare_mcp`;
 
@@ -114,6 +166,10 @@ async function seed(): Promise<void> {
   await Contract.insertMany(SEED_CONTRACTS.map((c) => ({ ...c })));
   await Payment.deleteMany({});
   await Payment.insertMany(SEED_PAYMENTS.map((p) => ({ ...p })));
+  await Chat.deleteMany({});
+  await Chat.insertMany(SEED_CHATS.map((c) => ({ ...c })));
+  await ChatMessage.deleteMany({});
+  await ChatMessage.insertMany(SEED_CHAT_MESSAGES.map((m) => ({ ...m })));
 }
 
 await seed();
