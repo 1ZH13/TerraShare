@@ -17,7 +17,7 @@ ARG VITE_API_BASE_URL
 RUN bun run build
 
 FROM nginx:alpine
-COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/web/dist/client /usr/share/nginx/html
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
