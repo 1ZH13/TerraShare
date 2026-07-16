@@ -4,7 +4,7 @@ import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import { connectMongoose, disconnectMongoose } from "@backend/db/mongoose";
-import { AuditEvent, Chat, ChatMessage, Contract, Land, Lead, Payment, RentalRequest, User } from "@backend/db/schemas";
+import { AuditEvent, Chat, ChatMessage, Contract, Land, Lead, Notification, Payment, RentalRequest, User } from "@backend/db/schemas";
 
 const now = new Date().toISOString();
 
@@ -194,6 +194,37 @@ export const SEED_AUDIT_EVENTS = [
   },
 ];
 
+export const SEED_NOTIFICATIONS = [
+  {
+    id: "notif_seed_01",
+    userId: "user_seed",
+    type: "rental_request",
+    title: "Nueva solicitud de alquiler",
+    body: "Hay una solicitud pendiente para tu terreno",
+    read: false,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "notif_seed_02",
+    userId: "user_seed",
+    type: "payment",
+    title: "Pago recibido",
+    body: "Pago de $300 confirmado",
+    read: true,
+    readAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "notif_seed_03",
+    userId: "user_regular",
+    type: "system",
+    title: "Bienvenido a TerraShare",
+    body: "Tu cuenta ha sido creada exitosamente",
+    read: false,
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 const mongod = await MongoMemoryServer.create();
 process.env.MONGODB_URI = `${mongod.getUri()}terrashare_mcp`;
 
@@ -218,6 +249,8 @@ async function seed(): Promise<void> {
   await Lead.insertMany(SEED_LEADS.map((l) => ({ ...l })));
   await AuditEvent.deleteMany({});
   await AuditEvent.insertMany(SEED_AUDIT_EVENTS.map((e) => ({ ...e })));
+  await Notification.deleteMany({});
+  await Notification.insertMany(SEED_NOTIFICATIONS.map((n) => ({ ...n })));
 }
 
 await seed();
