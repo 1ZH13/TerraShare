@@ -25,6 +25,7 @@ import { listMyLandsTool } from "./tools/list-my-lands";
 import { listRentalRequestsTool } from "./tools/list-rental-requests";
 import { setLandStatusTool } from "./tools/set-land-status";
 import { getPaymentStatusTool } from "./tools/get-payment-status";
+import { listPaymentsTool } from "./tools/list-payments";
 import { searchLandsTool } from "./tools/search-lands";
 import { updateLandTool } from "./tools/update-land";
 
@@ -58,6 +59,7 @@ const TOOLS: ToolDefinition<ZodRawShape>[] = [
   listRentalRequestsTool,
   setLandStatusTool,
   getPaymentStatusTool,
+  listPaymentsTool,
   // HU-64..HU-92: añadir aquí cada nueva tool.
 ];
 

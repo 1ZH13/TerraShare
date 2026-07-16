@@ -119,6 +119,7 @@ Tras reiniciar el cliente, la tool `search_lands` aparecerá disponible.
 | `list_rental_requests` | HU-71 | #188 | ✅ implementada |
 | `get_contract` | HU-76 | #193 | ✅ implementada |
 | `get_payment_status` | HU-80 | #195 | ✅ implementada |
+| `list_payments` | HU-81 | #196 | ✅ implementada |
 
 ## Tests
 
