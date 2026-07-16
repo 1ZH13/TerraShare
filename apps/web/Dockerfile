@@ -18,8 +18,11 @@ RUN bun run build
 
 # Generate index.html SPA shell (client uses createRoot, not hydration)
 RUN cd dist/client && \
-    JS_FILE=$(ls assets/index-*.js | head -1) && \
-    printf '<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>TerraShare</title>\n</head>\n<body>\n<div id="root"></div>\n<script type="module" src="/%s"></script>\n</body>\n</html>\n' "$JS_FILE" > index.html
+    echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TerraShare</title>' > index.html && \
+    for f in assets/*.css; do [ -f "$f" ] && echo "<link rel=\"stylesheet\" href=\"/$f\">" >> index.html; done && \
+    echo '</head><body><div id="root"></div>' >> index.html && \
+    for f in assets/index-*.js; do [ -f "$f" ] && echo "<script type=\"module\" src=\"/$f\"></script>" >> index.html; done && \
+    echo '</body></html>' >> index.html
 
 FROM nginx:alpine
 COPY --from=builder /app/apps/web/dist/client /usr/share/nginx/html
