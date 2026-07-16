@@ -21,6 +21,7 @@ import { getOwnerAnalyticsTool } from "./tools/get-owner-analytics";
 import { updateRentalRequestStatusTool } from "./tools/update-rental-request-status";
 import { getContractTool } from "./tools/get-contract";
 import { getLandTool } from "./tools/get-land";
+import { listLeadsTool } from "./tools/list-leads";
 import { listMyLandsTool } from "./tools/list-my-lands";
 import { listRentalRequestsTool } from "./tools/list-rental-requests";
 import { setLandStatusTool } from "./tools/set-land-status";
@@ -53,6 +54,7 @@ const TOOLS: ToolDefinition<ZodRawShape>[] = [
   updateRentalRequestStatusTool,
   getContractTool,
   getLandTool,
+  listLeadsTool,
   listMyLandsTool,
   listRentalRequestsTool,
   setLandStatusTool,
