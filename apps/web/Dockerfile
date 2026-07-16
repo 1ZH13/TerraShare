@@ -16,8 +16,10 @@ ARG VITE_API_BASE_URL
 
 RUN bun run build
 
-# Copy SPA shell to index.html for nginx (TanStack Start generates _shell.html with hydration support)
-RUN cp dist/client/_shell.html dist/client/index.html
+# Generate index.html SPA shell (client uses createRoot, not hydration)
+RUN cd dist/client && \
+    JS_FILE=$(ls assets/index-*.js | head -1) && \
+    printf '<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>TerraShare</title>\n</head>\n<body>\n<div id="root"></div>\n<script type="module" src="/%s"></script>\n</body>\n</html>\n' "$JS_FILE" > index.html
 
 FROM nginx:alpine
 COPY --from=builder /app/apps/web/dist/client /usr/share/nginx/html
