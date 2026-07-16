@@ -121,3 +121,19 @@ jobs:
           name: playwright-traces
           path: apps/web/playwright-report/trace.zip
           if-no-files-found: ignore
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [backend-typecheck, web-build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build images via compose
+        run: docker compose build
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: pk_test_placeholder
+          VITE_API_BASE_URL: http://localhost:3000
+          MONGO_ROOT_USERNAME: ci
+          MONGO_ROOT_PASSWORD: ci

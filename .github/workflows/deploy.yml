@@ -69,6 +69,11 @@ jobs:
             fi
 
             git fetch origin
+            git fetch origin --tags
+
+            PRE_DEPLOY_TAG="deploy-pre-$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short origin/$BRANCH)"
+            git tag "$PRE_DEPLOY_TAG" "origin/$BRANCH"
+
             git checkout "$BRANCH"
             git reset --hard "origin/$BRANCH"
 
@@ -89,3 +94,14 @@ jobs:
             chmod 600 .env
 
             docker compose up --build -d --remove-orphans
+            DEPLOY_EXIT=$?
+
+            if [ $DEPLOY_EXIT -eq 0 ]; then
+              GOOD_TAG="deploy-good-$(date +%Y%m%d-%H%M%S)"
+              git tag "$GOOD_TAG" "$BRANCH"
+              echo "$GOOD_TAG" > .last-good-deploy
+              echo "Deploy OK. Rollback: ./scripts/rollback.sh $TARGET_DIR $BRANCH"
+            else
+              echo "Deploy FAILED (exit $DEPLOY_EXIT). Rollback: ./scripts/rollback.sh $TARGET_DIR $BRANCH"
+            fi
+            exit $DEPLOY_EXIT
