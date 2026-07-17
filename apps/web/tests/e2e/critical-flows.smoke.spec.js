@@ -4,7 +4,11 @@ test.describe("Critical flows - public navigation", () => {
   test("landing page loads with key elements", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/");
-    await expect(page.locator("body")).toBeVisible();
+    // Verifica el punto de montaje de la app (único). Nota: en el build de
+    // producción client-only, RootDocument renderiza <html>/<body> dentro de
+    // #root, generando un <body> anidado; por eso no usamos locator("body")
+    // (strict mode falla con 2 elementos). Ver #315 (fix de raíz pendiente).
+    await expect(page.locator("#root")).toBeVisible();
   });
 
   test("catalog page requires auth and redirects to login", async ({ page }) => {
@@ -16,7 +20,11 @@ test.describe("Critical flows - public navigation", () => {
   test("land detail page loads", async ({ page }) => {
     await page.goto("/lands/land_0001");
     await page.waitForTimeout(2000);
-    await expect(page.locator("body")).toBeVisible();
+    // Verifica el punto de montaje de la app (único). Nota: en el build de
+    // producción client-only, RootDocument renderiza <html>/<body> dentro de
+    // #root, generando un <body> anidado; por eso no usamos locator("body")
+    // (strict mode falla con 2 elementos). Ver #315 (fix de raíz pendiente).
+    await expect(page.locator("#root")).toBeVisible();
   });
 
   test("navigation between public pages works", async ({ page }) => {
