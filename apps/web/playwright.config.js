@@ -18,11 +18,15 @@ export default defineConfig({
     baseURL: "http://localhost:5173",
     trace: "on-first-retry"
   },
+  // El E2E prueba el build de producción (client-only, servido estáticamente),
+  // no `bun run dev`: en dev, TanStack Start hace SSR e incompatibiliza con el
+  // client entry usado en producción. Así se prueba el mismo artefacto que se
+  // despliega. El build tarda, por eso el timeout más alto.
   webServer: {
-    command: "bun run dev",
+    command: "bun run preview:static",
     url: "http://localhost:5173",
-    reuseExistingServer: true,
-    timeout: 120000
+    reuseExistingServer: !process.env.CI,
+    timeout: 180000
   },
   projects: [
     {
