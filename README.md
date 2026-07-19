@@ -46,11 +46,16 @@ El reverse proxy (nginx) corre como container y rutea por dominio:
 - `terrashare.duckdns.org` / `success.terrashare.duckdns.org` → prod
 - `terrashare-test.duckdns.org` / `success.terrashare-test.duckdns.org` → staging
 
-### Bootstrap del proxy (primera vez)
+### SSL (Let's Encrypt) — automático
+El deploy ejecuta `scripts/init-letsencrypt.sh` (idempotente): crea un cert temporal
+para que nginx arranque, levanta el proxy, emite el cert real por webroot y recarga.
+El servicio `certbot` renueva cada 12h. No requiere pasos manuales.
+
+Para forzar/reintentar a mano en el droplet (p. ej. con certs de staging de LE):
 ```bash
-ssh root@159.223.188.105
-cd /opt/terrashare-proxy
-./scripts/deploy-proxy.sh
+cd /opt/terrashare-prod
+CERTBOT_STAGING=1 bash scripts/init-letsencrypt.sh   # certs de prueba (sin rate limit)
+bash scripts/init-letsencrypt.sh                     # certs reales
 ```
 
 Antes de cada deploy se crea un tag local `deploy-pre-<timestamp>-<sha>` en el droplet.
