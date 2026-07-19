@@ -32,7 +32,6 @@ jobs:
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
@@ -40,7 +39,7 @@ jobs:
           host: ${{ secrets.DROPLET_IP }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: GITHUB_TOKEN,MONGO_ROOT_USERNAME,MONGO_ROOT_PASSWORD,CLERK_JWKS_URL,CLERK_ISSUER,CLERK_SECRET_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,VITE_CLERK_PUBLISHABLE_KEY,VITE_API_BASE_URL
+          envs: GITHUB_TOKEN,MONGO_ROOT_USERNAME,MONGO_ROOT_PASSWORD,CLERK_JWKS_URL,CLERK_ISSUER,CLERK_SECRET_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET,VITE_CLERK_PUBLISHABLE_KEY
           script: |
             BRANCH="${{ github.ref_name }}"
             # Fallback to main if run from workflow_dispatch on a different ref without properly picking
@@ -54,11 +53,15 @@ jobs:
               PROJECT_NAME="terrashare-prod"
               WEB_PORT="80"
               API_PORT="3000"
+              CORS_ALLOWED_ORIGINS="https://terrashare.duckdns.org,https://success.terrashare.duckdns.org"
+              VITE_API_BASE_URL="https://terrashare.duckdns.org"
             else
               TARGET_DIR="/opt/terrashare-staging"
               PROJECT_NAME="terrashare-staging"
               WEB_PORT="8080"
               API_PORT="3001"
+              CORS_ALLOWED_ORIGINS="https://terrashare-test.duckdns.org,https://success.terrashare-test.duckdns.org"
+              VITE_API_BASE_URL="https://terrashare-test.duckdns.org"
             fi
 
             mkdir -p "$TARGET_DIR"
@@ -87,14 +90,52 @@ jobs:
               "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" \
               "VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}" \
               "VITE_API_BASE_URL=${VITE_API_BASE_URL}" \
+              "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}" \
               "WEB_PORT=${WEB_PORT}" \
               "API_PORT=${API_PORT}" \
               "COMPOSE_PROJECT_NAME=${PROJECT_NAME}" \
               > .env
             chmod 600 .env
 
-            docker compose up --build -d --remove-orphans
+            # Red compartida para el enrutado del proxy
+            docker network create terrashare-network 2>/dev/null || true
+
+            # 1) App containers (web/backend/mongo): sin puertos expuestos, van tras el proxy.
+            #    El resultado de ESTE paso define si el deploy fue OK (el SSL es best-effort).
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d --remove-orphans web backend-api mongo
             DEPLOY_EXIT=$?
+
+            # 2) Bootstrap SSL + proxy (idempotente y NO fatal): crea un cert temporal
+            #    para que nginx arranque, levanta el proxy, emite el cert real de
+            #    Let's Encrypt por webroot y recarga. Ver scripts/init-letsencrypt.sh.
+            chmod +x scripts/init-letsencrypt.sh
+            CERTBOT_EMAIL="${CERTBOT_EMAIL:-admin@terrashare.duckdns.org}" \
+              bash scripts/init-letsencrypt.sh || echo "WARN: init-letsencrypt no completó; el proxy sigue con cert temporal. Revisar SSL."
+
+            # 3) certbot en background (renovación automática cada 12h)
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d certbot
+
+            # 4) Verificación post-deploy: el dominio debe responder por HTTPS.
+            PRIMARY_DOMAIN=$(echo "$CORS_ALLOWED_ORIGINS" | cut -d',' -f1 | sed 's#https://##')
+            sleep 3
+            HTTPS_CODE=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 "https://${PRIMARY_DOMAIN}/" || echo "000")
+            echo "Verificación HTTPS de ${PRIMARY_DOMAIN}: HTTP ${HTTPS_CODE}"
+
+            # 5) AUTO-ROLLBACK (red de seguridad): si el HTTPS no responde 200, el
+            #    proxy/SSL no quedó bien. Restauramos el serving DIRECTO por IP (el
+            #    estado que funciona), sin proxy y sin SSL, para que prod NO quede
+            #    caído. No requiere SSH: lo hace el propio deploy.
+            if [ "$HTTPS_CODE" != "200" ]; then
+              echo "WARN: HTTPS=${HTTPS_CODE}. Auto-rollback → serving directo por IP en :${WEB_PORT} (sin proxy)."
+              docker rm -f terrashare-proxy terrashare-certbot 2>/dev/null || true
+              # El frontend se compila con la URL de la API: al volver a directo, apunta a la IP.
+              sed -i "s#^VITE_API_BASE_URL=.*#VITE_API_BASE_URL=http://159.223.188.105:${API_PORT}#" .env
+              # Reconstruye SOLO con el compose base (sin el override) → web/backend
+              # recuperan sus puertos (${WEB_PORT}/${API_PORT}); --remove-orphans limpia proxy/certbot.
+              docker compose -f docker-compose.yml up -d --build --remove-orphans
+              DEPLOY_EXIT=1
+              echo "Auto-rollback completado: app servida en http://159.223.188.105:${WEB_PORT} (revisar SSL antes de reintentar)."
+            fi
 
             if [ $DEPLOY_EXIT -eq 0 ]; then
               GOOD_TAG="deploy-good-$(date +%Y%m%d-%H%M%S)"

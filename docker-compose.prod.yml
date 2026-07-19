@@ -1,0 +1,52 @@
+services:
+  backend-api:
+    ports: !reset []
+    networks:
+      - terrashare-network
+
+  web:
+    ports: !reset []
+    networks:
+      - terrashare-network
+
+  mongo:
+    networks:
+      - terrashare-network
+
+  proxy:
+    image: nginx:alpine
+    container_name: terrashare-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-var:/var/lib/letsencrypt
+      - certbot-www:/var/www/certbot
+    depends_on:
+      - web
+      - backend-api
+    networks:
+      - terrashare-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: terrashare-certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - terrashare-network
+
+volumes:
+  certbot-etc:
+  certbot-var:
+  certbot-www:
+
+networks:
+  terrashare-network:
+    external: true

@@ -39,8 +39,24 @@ El Frontend estará en `http://localhost:80` (o `WEB_PORT`) y la API en `http://
 ## Despliegue y Rollback (DigitalOcean)
 
 El pipeline de CD (`.github/workflows/deploy.yml`) despliega por SSH al droplet:
-- `main` → `terrashare-prod` (puertos 80/3000)
-- `staging` → `terrashare-staging` (puertos 8080/3001)
+- `main` → `terrashare-prod` (proxy en :80/:443 → web :80 interno, API :3000)
+- `staging` → `terrashare-staging` (proxy en :80/:443 → web :80 interno, API :3001)
+
+El reverse proxy (nginx) corre como container y rutea por dominio:
+- `terrashare.duckdns.org` / `success.terrashare.duckdns.org` → prod
+- `terrashare-test.duckdns.org` / `success.terrashare-test.duckdns.org` → staging
+
+### SSL (Let's Encrypt) — automático
+El deploy ejecuta `scripts/init-letsencrypt.sh` (idempotente): crea un cert temporal
+para que nginx arranque, levanta el proxy, emite el cert real por webroot y recarga.
+El servicio `certbot` renueva cada 12h. No requiere pasos manuales.
+
+Para forzar/reintentar a mano en el droplet (p. ej. con certs de staging de LE):
+```bash
+cd /opt/terrashare-prod
+CERTBOT_STAGING=1 bash scripts/init-letsencrypt.sh   # certs de prueba (sin rate limit)
+bash scripts/init-letsencrypt.sh                     # certs reales
+```
 
 Antes de cada deploy se crea un tag local `deploy-pre-<timestamp>-<sha>` en el droplet.
 Si el deploy completa OK, se crea `deploy-good-<timestamp>` y se guarda en `.last-good-deploy`.
