@@ -34,5 +34,5 @@ echo "Rollback a $TAG ..."
 git checkout --detach "$TAG"
 git reset --hard "$TAG"
 
-docker compose up --build -d --remove-orphans
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d --remove-orphans
 echo "Rollback completo. Estado: $TAG"

@@ -39,8 +39,19 @@ El Frontend estará en `http://localhost:80` (o `WEB_PORT`) y la API en `http://
 ## Despliegue y Rollback (DigitalOcean)
 
 El pipeline de CD (`.github/workflows/deploy.yml`) despliega por SSH al droplet:
-- `main` → `terrashare-prod` (puertos 80/3000)
-- `staging` → `terrashare-staging` (puertos 8080/3001)
+- `main` → `terrashare-prod` (proxy en :80/:443 → web :80 interno, API :3000)
+- `staging` → `terrashare-staging` (proxy en :80/:443 → web :80 interno, API :3001)
+
+El reverse proxy (nginx) corre como container y rutea por dominio:
+- `terrashare.duckdns.org` / `success.terrashare.duckdns.org` → prod
+- `terrashare-test.duckdns.org` / `success.terrashare-test.duckdns.org` → staging
+
+### Bootstrap del proxy (primera vez)
+```bash
+ssh root@159.223.188.105
+cd /opt/terrashare-proxy
+./scripts/deploy-proxy.sh
+```
 
 Antes de cada deploy se crea un tag local `deploy-pre-<timestamp>-<sha>` en el droplet.
 Si el deploy completa OK, se crea `deploy-good-<timestamp>` y se guarda en `.last-good-deploy`.
