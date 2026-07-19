@@ -100,41 +100,40 @@ jobs:
             # Red compartida para el enrutado del proxy
             docker network create terrashare-network 2>/dev/null || true
 
-            # 1) App containers (web/backend/mongo): sin puertos expuestos, van tras el proxy.
-            #    El resultado de ESTE paso define si el deploy fue OK (el SSL es best-effort).
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d --remove-orphans web backend-api mongo
+            # Asegura el proxy (solo prod define el servicio; se levanta desde el dir de prod).
+            if ! docker ps --format '{{.Names}}' | grep -q terrashare-proxy; then
+              ( cd /opt/terrashare-prod && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d proxy certbot 2>/dev/null || true )
+            fi
+
+            # App: prod usa prod.yml (con proxy/certbot); staging usa staging.yml (sin proxy
+            # propio, va tras el proxy compartido). El resultado define si el deploy fue OK.
+            if [ "$BRANCH" = "main" ]; then
+              docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d --remove-orphans
+            else
+              docker compose -f docker-compose.yml -f docker-compose.staging.yml up --build -d --remove-orphans
+            fi
             DEPLOY_EXIT=$?
 
-            # 2) Bootstrap SSL + proxy (idempotente y NO fatal): crea un cert temporal
-            #    para que nginx arranque, levanta el proxy, emite el cert real de
-            #    Let's Encrypt por webroot y recarga. Ver scripts/init-letsencrypt.sh.
-            chmod +x scripts/init-letsencrypt.sh
-            CERTBOT_EMAIL="${CERTBOT_EMAIL:-admin@terrashare.duckdns.org}" \
-              bash scripts/init-letsencrypt.sh || echo "WARN: init-letsencrypt no completó; el proxy sigue con cert temporal. Revisar SSL."
-
-            # 3) certbot en background (renovación automática cada 12h)
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d certbot
-
-            # 4) Verificación post-deploy: el dominio debe responder por HTTPS.
+            # Verificación post-deploy: el dominio debe responder por HTTPS.
             PRIMARY_DOMAIN=$(echo "$CORS_ALLOWED_ORIGINS" | cut -d',' -f1 | sed 's#https://##')
             sleep 3
-            HTTPS_CODE=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 "https://${PRIMARY_DOMAIN}/" || echo "000")
-            echo "Verificación HTTPS de ${PRIMARY_DOMAIN}: HTTP ${HTTPS_CODE}"
+            HTTPS_CODE=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 "https://${PRIMARY_DOMAIN}/" || true)
+            echo "Verificación HTTPS de ${PRIMARY_DOMAIN}: HTTP ${HTTPS_CODE:-000}"
 
-            # 5) AUTO-ROLLBACK (red de seguridad): si el HTTPS no responde 200, el
-            #    proxy/SSL no quedó bien. Restauramos el serving DIRECTO por IP (el
-            #    estado que funciona), sin proxy y sin SSL, para que prod NO quede
-            #    caído. No requiere SSH: lo hace el propio deploy.
+            # AUTO-ROLLBACK (red de seguridad): si el HTTPS no responde 200, restaura el
+            # serving DIRECTO por IP para que el entorno NO quede caído. No requiere SSH.
             if [ "$HTTPS_CODE" != "200" ]; then
-              echo "WARN: HTTPS=${HTTPS_CODE}. Auto-rollback → serving directo por IP en :${WEB_PORT} (sin proxy)."
-              docker rm -f terrashare-proxy terrashare-certbot 2>/dev/null || true
+              echo "WARN: HTTPS=${HTTPS_CODE:-000}. Auto-rollback -> serving directo por IP en :${WEB_PORT}."
+              # En prod se retira el proxy (vuelve a directo). En staging NO se toca el
+              # proxy porque lo comparte prod.
+              if [ "$BRANCH" = "main" ]; then
+                docker rm -f terrashare-proxy terrashare-certbot 2>/dev/null || true
+              fi
               # El frontend se compila con la URL de la API: al volver a directo, apunta a la IP.
               sed -i "s#^VITE_API_BASE_URL=.*#VITE_API_BASE_URL=http://159.223.188.105:${API_PORT}#" .env
-              # Reconstruye SOLO con el compose base (sin el override) → web/backend
-              # recuperan sus puertos (${WEB_PORT}/${API_PORT}); --remove-orphans limpia proxy/certbot.
               docker compose -f docker-compose.yml up -d --build --remove-orphans
               DEPLOY_EXIT=1
-              echo "Auto-rollback completado: app servida en http://159.223.188.105:${WEB_PORT} (revisar SSL antes de reintentar)."
+              echo "Auto-rollback completado: app servida en http://159.223.188.105:${WEB_PORT} (revisar SSL)."
             fi
 
             if [ $DEPLOY_EXIT -eq 0 ]; then

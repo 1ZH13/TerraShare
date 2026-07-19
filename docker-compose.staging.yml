@@ -1,0 +1,18 @@
+services:
+  backend-api:
+    ports: !reset []
+    networks:
+      - terrashare-network
+
+  web:
+    ports: !reset []
+    networks:
+      - terrashare-network
+
+  mongo:
+    networks:
+      - terrashare-network
+
+networks:
+  terrashare-network:
+    external: true
