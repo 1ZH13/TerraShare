@@ -63,7 +63,9 @@ issue_real() {
     "sh -c 'rm -rf /etc/letsencrypt/live/$name /etc/letsencrypt/archive/$name /etc/letsencrypt/renewal/$name.conf'" \
     certbot >/dev/null 2>&1 || true
   # shellcheck disable=SC2086
-  $COMPOSE run --rm certbot certonly --webroot -w /var/www/certbot \
+  # `timeout` para que certbot NUNCA se cuelgue si el ACME challenge no se puede
+  # validar (p. ej. el proxy no sirve el :80): así el deploy sigue al auto-rollback.
+  timeout 150 $COMPOSE run --rm certbot certonly --webroot -w /var/www/certbot \
     $STAGING_FLAG --email "$EMAIL" --agree-tos --no-eff-email \
     --non-interactive --keep-until-expiring $args
 }
@@ -84,7 +86,16 @@ done
 
 # 2) Levanta/recarga el proxy (ahora los certs -aunque dummy- existen).
 echo "  [proxy] levantando reverse proxy ..."
-$COMPOSE up -d proxy
+$COMPOSE up -d proxy || true
+
+# Verifica que el proxy REALMENTE arrancó (tomó el :80). Si no pudo (p. ej. el
+# :80 está ocupado), aborta ya: no tiene sentido intentar emitir certs y colgar
+# el deploy — mejor salir para que el auto-rollback restaure el serving directo.
+sleep 3
+if ! docker ps --filter "name=terrashare-proxy" --filter "status=running" --format '{{.Names}}' | grep -q '^terrashare-proxy$'; then
+  echo "  [ERROR] el proxy no está corriendo (¿:80 ocupado / config inválida?). Abortando emisión de certs."
+  exit 1
+fi
 
 # 3) Emite los certs reales que falten (usa el ACME challenge por webroot).
 for group in "${NEED_ISSUE[@]}"; do
