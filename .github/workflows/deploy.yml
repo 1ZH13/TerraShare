@@ -97,22 +97,44 @@ jobs:
               > .env
             chmod 600 .env
 
-            # Ensure shared network for proxy routing exists
+            # Red compartida para el enrutado del proxy
             docker network create terrashare-network 2>/dev/null || true
 
-            # Ensure proxy is running (only prod override has the proxy service)
+            # Asegura el proxy (solo prod define el servicio; se levanta desde el dir de prod).
             if ! docker ps --format '{{.Names}}' | grep -q terrashare-proxy; then
-              cd /opt/terrashare-prod
-              docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d proxy certbot 2>/dev/null || true
-              cd "$TARGET_DIR"
+              ( cd /opt/terrashare-prod && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d proxy certbot 2>/dev/null || true )
             fi
 
+            # App: prod usa prod.yml (con proxy/certbot); staging usa staging.yml (sin proxy
+            # propio, va tras el proxy compartido). El resultado define si el deploy fue OK.
             if [ "$BRANCH" = "main" ]; then
               docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d --remove-orphans
             else
               docker compose -f docker-compose.yml -f docker-compose.staging.yml up --build -d --remove-orphans
             fi
             DEPLOY_EXIT=$?
+
+            # Verificación post-deploy: el dominio debe responder por HTTPS.
+            PRIMARY_DOMAIN=$(echo "$CORS_ALLOWED_ORIGINS" | cut -d',' -f1 | sed 's#https://##')
+            sleep 3
+            HTTPS_CODE=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 "https://${PRIMARY_DOMAIN}/" || true)
+            echo "Verificación HTTPS de ${PRIMARY_DOMAIN}: HTTP ${HTTPS_CODE:-000}"
+
+            # AUTO-ROLLBACK (red de seguridad): si el HTTPS no responde 200, restaura el
+            # serving DIRECTO por IP para que el entorno NO quede caído. No requiere SSH.
+            if [ "$HTTPS_CODE" != "200" ]; then
+              echo "WARN: HTTPS=${HTTPS_CODE:-000}. Auto-rollback -> serving directo por IP en :${WEB_PORT}."
+              # En prod se retira el proxy (vuelve a directo). En staging NO se toca el
+              # proxy porque lo comparte prod.
+              if [ "$BRANCH" = "main" ]; then
+                docker rm -f terrashare-proxy terrashare-certbot 2>/dev/null || true
+              fi
+              # El frontend se compila con la URL de la API: al volver a directo, apunta a la IP.
+              sed -i "s#^VITE_API_BASE_URL=.*#VITE_API_BASE_URL=http://159.223.188.105:${API_PORT}#" .env
+              docker compose -f docker-compose.yml up -d --build --remove-orphans
+              DEPLOY_EXIT=1
+              echo "Auto-rollback completado: app servida en http://159.223.188.105:${WEB_PORT} (revisar SSL)."
+            fi
 
             if [ $DEPLOY_EXIT -eq 0 ]; then
               GOOD_TAG="deploy-good-$(date +%Y%m%d-%H%M%S)"
