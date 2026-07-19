@@ -120,7 +120,22 @@ jobs:
             sleep 3
             HTTPS_CODE=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 "https://${PRIMARY_DOMAIN}/" || echo "000")
             echo "Verificación HTTPS de ${PRIMARY_DOMAIN}: HTTP ${HTTPS_CODE}"
-            [ "$HTTPS_CODE" = "200" ] || echo "WARN: HTTPS no devolvió 200 (revisar certs/proxy)."
+
+            # 5) AUTO-ROLLBACK (red de seguridad): si el HTTPS no responde 200, el
+            #    proxy/SSL no quedó bien. Restauramos el serving DIRECTO por IP (el
+            #    estado que funciona), sin proxy y sin SSL, para que prod NO quede
+            #    caído. No requiere SSH: lo hace el propio deploy.
+            if [ "$HTTPS_CODE" != "200" ]; then
+              echo "WARN: HTTPS=${HTTPS_CODE}. Auto-rollback → serving directo por IP en :${WEB_PORT} (sin proxy)."
+              docker rm -f terrashare-proxy terrashare-certbot 2>/dev/null || true
+              # El frontend se compila con la URL de la API: al volver a directo, apunta a la IP.
+              sed -i "s#^VITE_API_BASE_URL=.*#VITE_API_BASE_URL=http://159.223.188.105:${API_PORT}#" .env
+              # Reconstruye SOLO con el compose base (sin el override) → web/backend
+              # recuperan sus puertos (${WEB_PORT}/${API_PORT}); --remove-orphans limpia proxy/certbot.
+              docker compose -f docker-compose.yml up -d --build --remove-orphans
+              DEPLOY_EXIT=1
+              echo "Auto-rollback completado: app servida en http://159.223.188.105:${WEB_PORT} (revisar SSL antes de reintentar)."
+            fi
 
             if [ $DEPLOY_EXIT -eq 0 ]; then
               GOOD_TAG="deploy-good-$(date +%Y%m%d-%H%M%S)"
