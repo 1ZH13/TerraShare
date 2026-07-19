@@ -100,12 +100,18 @@ jobs:
             # Ensure shared network for proxy routing exists
             docker network create terrashare-network 2>/dev/null || true
 
-            # Ensure proxy is running (first deploy bootstrap)
+            # Ensure proxy is running (only prod override has the proxy service)
             if ! docker ps --format '{{.Names}}' | grep -q terrashare-proxy; then
-              docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d proxy certbot
+              cd /opt/terrashare-prod
+              docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d proxy certbot 2>/dev/null || true
+              cd "$TARGET_DIR"
             fi
 
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d --remove-orphans
+            if [ "$BRANCH" = "main" ]; then
+              docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d --remove-orphans
+            else
+              docker compose -f docker-compose.yml -f docker-compose.staging.yml up --build -d --remove-orphans
+            fi
             DEPLOY_EXIT=$?
 
             if [ $DEPLOY_EXIT -eq 0 ]; then
