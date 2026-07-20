@@ -1,5 +1,6 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, beforeEach } from "bun:test";
 
+import { Land } from "@backend/db/schemas";
 import { listMyLands } from "./list-my-lands";
 
 describe("list_my_lands tool (HU-68 #185)", () => {
@@ -47,5 +48,31 @@ describe("list_my_lands tool (HU-68 #185)", () => {
 
   it("lanza error si no hay usuario autenticado", async () => {
     await expect(listMyLands({ actingUserId: null })).rejects.toThrow("Se requiere un usuario autenticado");
+  });
+});
+
+// Follow-up soft-delete (#328): los terrenos con `deletedAt` no aparecen en la
+// lista del dueño. Sembrado en beforeEach (write); el test solo lee.
+describe("list_my_lands — filtro soft-delete (#328 follow-up)", () => {
+  beforeEach(async () => {
+    await Land.create({
+      id: "land_gone",
+      ownerId: "user_gone",
+      title: "Terreno retirado",
+      area: 5,
+      allowedUses: ["agricultura"],
+      location: { province: "Panama", district: "Panama" },
+      priceRule: { currency: "USD", pricePerMonth: 100 },
+      status: "inactive",
+      operation: "alquiler",
+      deletedAt: new Date(),
+    });
+  });
+
+  it("excluye los terrenos con soft-delete del dueño", async () => {
+    const result = await listMyLands({ actingUserId: "user_gone" });
+    const lands = (result as { items: { id: string }[] }).items;
+    expect(lands.some((l) => l.id === "land_gone")).toBe(false);
+    expect(lands.length).toBe(0);
   });
 });

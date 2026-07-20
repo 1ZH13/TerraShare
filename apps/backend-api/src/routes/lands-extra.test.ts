@@ -1,7 +1,37 @@
 import { describe, expect, it } from "bun:test";
 import { requestJson } from "../lib/http-test-utils";
+import { Land } from "../db/schemas";
 
 describe("lands routes - extended coverage", () => {
+  it("excludes soft-deleted lands from /lands/me and /admin/lands (#328 follow-up)", async () => {
+    await Land.create({
+      id: "land_softdel_01",
+      ownerId: "user_owner_01",
+      title: "Terreno retirado",
+      area: 10,
+      allowedUses: ["agricultura"],
+      location: { province: "Panama", district: "Panama" },
+      priceRule: { currency: "USD", pricePerMonth: 100 },
+      status: "inactive",
+      operation: "alquiler",
+      deletedAt: new Date(),
+    });
+
+    const mine = await requestJson("/api/v1/lands/me", {
+      headers: { "x-dev-user-id": "user_owner_01" },
+    });
+    expect(mine.response.status).toBe(200);
+    const mineIds = (mine.payload.data as { id: string }[]).map((l) => l.id);
+    expect(mineIds).not.toContain("land_softdel_01");
+
+    const admin = await requestJson("/api/v1/admin/lands", {
+      headers: { "x-dev-user-id": "user_admin_01", "x-dev-role": "admin" },
+    });
+    expect(admin.response.status).toBe(200);
+    const adminIds = (admin.payload.data.items as { id: string }[]).map((l) => l.id);
+    expect(adminIds).not.toContain("land_softdel_01");
+  });
+
   it("rejects land creation without required fields", async () => {
     const { response, payload } = await requestJson("/api/v1/lands", {
       method: "POST",
