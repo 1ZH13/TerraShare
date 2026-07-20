@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 
-import { AuditEvent, Land } from "@backend/db/schemas";
+import { AuditEvent, Land, Notification } from "@backend/db/schemas";
 import { moderateLand } from "./moderate-land";
 
 const ADMIN = { id: "user_admin", role: "admin" as const };
@@ -45,6 +45,14 @@ describe("moderate_land tool (HU-90 #207)", () => {
     await moderateLand({ landId: "land_inactive", status: "active" }, ADMIN);
     const audit = await AuditEvent.findOne({ entityId: "land_inactive", action: "approved" }).lean();
     expect(audit).not.toBeNull();
+  });
+
+  it("capa E: notifica al dueño del terreno moderado", async () => {
+    // land_a lo posee user_seed (ver preload).
+    await moderateLand({ landId: "land_a", status: "inactive", reason: "Spam" }, ADMIN);
+    const notif = await Notification.findOne({ userId: "user_seed", type: "land_moderated" }).lean();
+    expect(notif).not.toBeNull();
+    expect((notif as { title: string }).title).toContain("despublicado");
   });
 
   it("falla si el terreno no existe", async () => {
