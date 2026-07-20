@@ -24,6 +24,13 @@ export const config = {
     return process.env.MCP_ALLOW_REFUND !== "false";
   },
   /**
+   * Interruptor (capa F, #328): permite firmar contratos vía MCP. Por defecto
+   * activado; `MCP_ALLOW_SIGN=false` desactiva la firma por MCP.
+   */
+  get allowSign(): boolean {
+    return process.env.MCP_ALLOW_SIGN !== "false";
+  },
+  /**
    * Límite (capa D, #328): importe máximo de reembolso permitido vía MCP.
    * `MCP_REFUND_MAX` sin definir → sin límite. Por encima, la tool remite al panel.
    */
