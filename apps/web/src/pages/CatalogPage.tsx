@@ -1,12 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { LandDto } from "@terrashare/shared";
-import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX, Heart } from "lucide-react";
+import {
+  Search,
+  Sprout,
+  MapPin,
+  DollarSign,
+  Tag,
+  ChevronDown,
+  ImageIcon,
+  SearchX,
+  Heart,
+  Columns2,
+  ArrowRight,
+} from "lucide-react";
 import { listLands, photoSrc } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
 import EmptyState from "../components/EmptyState";
 import { useFavorites } from "../hooks/useFavorites";
+import { useCompareLands } from "../hooks/useCompareLands";
 import "./catalog.css";
+import "./compare.css";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -40,12 +54,35 @@ export default function CatalogPage() {
 
   // Favoritos (#147): el catálogo vive tras login, así que siempre habilitado.
   const { isFavorite, toggle: toggleFavorite } = useFavorites();
+  // Comparador (HU-98 / #324): localStorage, máx. 3, sin backend.
+  const {
+    ids: compareIds,
+    count: compareCount,
+    max: compareMax,
+    isCompared,
+    toggle: toggleCompare,
+    clear: clearCompare,
+  } = useCompareLands();
+  const [compareToast, setCompareToast] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
   const [use, setUse] = useState("todos");
   const [province, setProvince] = useState("todas");
   const [maxPrice, setMaxPrice] = useState(1_000_000);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!compareToast) return;
+    const t = window.setTimeout(() => setCompareToast(null), 2400);
+    return () => window.clearTimeout(t);
+  }, [compareToast]);
+
+  const handleToggleCompare = (landId: string) => {
+    const result = toggleCompare(landId);
+    if (!result.ok && result.full) {
+      setCompareToast(`Solo puedes comparar hasta ${compareMax} terrenos`);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -237,6 +274,28 @@ export default function CatalogPage() {
                     <span
                       role="button"
                       tabIndex={0}
+                      className={`cat-card__cmp${isCompared(land.id) ? " is-active" : ""}`}
+                      aria-label={
+                        isCompared(land.id) ? "Quitar de comparación" : "Añadir a comparación"
+                      }
+                      aria-pressed={isCompared(land.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleCompare(land.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleToggleCompare(land.id);
+                        }
+                      }}
+                    >
+                      <Columns2 size={15} />
+                    </span>
+                    <span
+                      role="button"
+                      tabIndex={0}
                       className={`cat-card__fav${isFavorite(land.id) ? " is-active" : ""}`}
                       aria-label={isFavorite(land.id) ? "Quitar de guardados" : "Guardar terreno"}
                       aria-pressed={isFavorite(land.id)}
@@ -301,13 +360,51 @@ export default function CatalogPage() {
                     : ""}
                 </div>
               </div>
-              <Link to="/lands/$id" params={{ id: selectedLand.id }} className="cat-mapcard__go">
-                Ver
-              </Link>
+              <div className="cat-mapcard__actions">
+                <button
+                  type="button"
+                  className={`cat-mapcard__cmp${isCompared(selectedLand.id) ? " is-active" : ""}`}
+                  onClick={() => handleToggleCompare(selectedLand.id)}
+                >
+                  <Columns2 size={15} />
+                  {isCompared(selectedLand.id) ? "En comparación" : "Comparar"}
+                </button>
+                <Link to="/lands/$id" params={{ id: selectedLand.id }} className="cat-mapcard__go">
+                  Ver
+                </Link>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {compareCount > 0 && (
+        <div className="cmp-bar" role="status">
+          <div className="cmp-bar__text">
+            {compareCount} de {compareMax} en comparación{" "}
+            <span>
+              ·{" "}
+              {compareIds.length === 1
+                ? "añade otro para comparar"
+                : "listo para ver lado a lado"}
+            </span>
+          </div>
+          <div className="cmp-bar__actions">
+            <button type="button" className="cmp-bar__clear" onClick={clearCompare}>
+              Vaciar
+            </button>
+            <Link to="/compare" className="cmp-bar__go">
+              Comparar <ArrowRight size={15} />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {compareToast && (
+        <div className="cmp-toast" role="status">
+          {compareToast}
+        </div>
+      )}
     </div>
   );
 }

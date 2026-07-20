@@ -109,10 +109,10 @@
 }
 .cat-card:hover { transform: translateY(-3px); box-shadow: 0 26px 44px -30px rgba(36, 49, 42, 0.4); }
 .cat-card.is-active { border-color: var(--ts-green); box-shadow: 0 0 0 1px var(--ts-green); }
-.cat-card__fav {
+.cat-card__fav,
+.cat-card__cmp {
   position: absolute;
   bottom: 12px;
-  right: 12px;
   width: 34px;
   height: 34px;
   display: flex;
@@ -125,9 +125,14 @@
   cursor: pointer;
   transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
-.cat-card__fav:hover { color: var(--ts-clay); border-color: var(--ts-clay); }
-.cat-card__fav.is-active { color: var(--ts-clay); border-color: var(--ts-clay); background: var(--ts-surface); }
-.cat-card__fav:focus-visible { outline: 2px solid var(--ts-green); outline-offset: 2px; }
+.cat-card__fav { right: 12px; }
+.cat-card__cmp { right: 52px; }
+.cat-card__fav:hover,
+.cat-card__cmp:hover { color: var(--ts-clay); border-color: var(--ts-clay); }
+.cat-card__fav.is-active,
+.cat-card__cmp.is-active { color: var(--ts-clay); border-color: var(--ts-clay); background: var(--ts-surface); }
+.cat-card__fav:focus-visible,
+.cat-card__cmp:focus-visible { outline: 2px solid var(--ts-green); outline-offset: 2px; }
 .cat-card__thumb {
   width: 130px;
   height: 104px;
@@ -207,6 +212,33 @@
 }
 .cat-mapcard__title { font-family: var(--ts-font-serif); font-weight: 600; font-size: 16px; }
 .cat-mapcard__sub { font-size: 12.5px; color: var(--ts-sage); }
+.cat-mapcard__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.cat-mapcard__cmp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--ts-green);
+  background: transparent;
+  border: 1px solid #cdd6c8;
+  padding: 8px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cat-mapcard__cmp:hover { background: var(--ts-tint-green); }
+.cat-mapcard__cmp.is-active {
+  color: var(--ts-clay);
+  border-color: var(--ts-clay);
+  background: var(--ts-clay-tint, #f3e4dc);
+}
 .cat-mapcard__go {
   font-size: 13px;
   font-weight: 600;
