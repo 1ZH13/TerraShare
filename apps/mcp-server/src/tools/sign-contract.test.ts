@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 
-import { Contract, User } from "@backend/db/schemas";
-import { signContract } from "./sign-contract";
+import { Contract, Notification, User } from "@backend/db/schemas";
+import { signContract, signContractPreview } from "./sign-contract";
 
 const ownerUser = { id: "user_seed", role: "user" };
 const tenantUser = { id: "user_regular", role: "user" };
@@ -84,21 +84,27 @@ describe("sign_contract tool (HU-74 #191)", () => {
     expect((res as { status: string }).status).toBe("active");
   });
 
-  it("sin confirmacion lanza error", async () => {
-    try {
-      await signContract({ contractId: "contract_draft" } as never, ownerUser);
-      expect(true).toBe(false);
-    } catch (err) {
-      expect((err as Error).message).toContain("confirmar");
-    }
+  it("capa B: signContractPreview resume el contrato sin firmarlo", async () => {
+    const preview = await signContractPreview({ contractId: "contract_draft" }, ownerUser);
+    expect(preview.contractId).toBe("contract_draft");
+    expect(preview.status).toBe("draft");
+    expect(preview.willBecome).toBe("active");
+    // No debe haber firmado.
+    const contract = await Contract.findOne({ id: "contract_draft" }).lean();
+    expect((contract as { status: string }).status).toBe("draft");
   });
 
-  it("confirm=false lanza error", async () => {
-    try {
-      await signContract({ contractId: "contract_draft", confirm: false }, ownerUser);
-      expect(true).toBe(false);
-    } catch (err) {
-      expect((err as Error).message).toContain("confirmar");
-    }
+  it("capa C: la vista previa también bloquea a quien no es parte", async () => {
+    await expect(
+      signContractPreview({ contractId: "contract_draft" }, outsiderUser),
+    ).rejects.toThrow(/No autorizado/i);
+  });
+
+  it("capa E: notifica a ambas partes tras la firma", async () => {
+    await signContract({ contractId: "contract_draft" }, ownerUser);
+    const forOwner = await Notification.findOne({ userId: "user_seed", type: "contract_signed" }).lean();
+    const forTenant = await Notification.findOne({ userId: "user_regular", type: "contract_signed" }).lean();
+    expect(forOwner).not.toBeNull();
+    expect(forTenant).not.toBeNull();
   });
 });
