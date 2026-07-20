@@ -16,6 +16,23 @@ export const config = {
   get authRequired(): boolean {
     return !!config.apiKey;
   },
+  /**
+   * Interruptor (capa F, #328): permite reembolsar vía MCP. Por defecto activado;
+   * `MCP_ALLOW_REFUND=false` lo desactiva en despliegues sensibles.
+   */
+  get allowRefund(): boolean {
+    return process.env.MCP_ALLOW_REFUND !== "false";
+  },
+  /**
+   * Límite (capa D, #328): importe máximo de reembolso permitido vía MCP.
+   * `MCP_REFUND_MAX` sin definir → sin límite. Por encima, la tool remite al panel.
+   */
+  get refundMaxAmount(): number | undefined {
+    const raw = process.env.MCP_REFUND_MAX;
+    if (!raw) return undefined;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  },
   serverName: "terrashare-mcp",
   serverVersion: "0.1.0",
 };

@@ -1,10 +1,12 @@
 import { z, type ZodRawShape } from "zod";
 import { CreateRefundSchema } from "@terrashare/shared";
 
-import { Payment } from "@backend/db/schemas";
+import { Payment, RentalRequest } from "@backend/db/schemas";
 import { createAuditEvent } from "@backend/store/audit";
+import { config } from "../config";
 import type { ActingUser } from "../context";
 import { getStripeClient } from "../lib/stripe";
+import { notifyUser } from "../lib/notify";
 import { ToolError, type ToolDefinition } from "./define-tool";
 
 /**
@@ -17,6 +19,8 @@ import { ToolError, type ToolDefinition } from "./define-tool";
 // El `inputSchema` que anuncia el SDK se declara con el Zod local (con
 // `.describe()`); el importe/razón se validan con `CreateRefundSchema.parse`.
 // Tipado como `ZodRawShape` para que `TOOLS` unifique en server.ts.
+// La confirmación (capa A/B) la gestiona el andamiaje `registerTool` vía
+// `sensitive`, que inyecta `confirm`/`confirmationToken` — no se declara aquí.
 export const refundPaymentInput: ZodRawShape = {
   paymentId: z.string().min(1).describe("ID del pago a reembolsar"),
   amount: z
@@ -25,9 +29,6 @@ export const refundPaymentInput: ZodRawShape = {
     .optional()
     .describe("Importe a reembolsar; si se omite, reembolsa el saldo pendiente (total)"),
   reason: z.string().max(500).optional().describe("Motivo del reembolso (auditoría)"),
-  confirm: z
-    .boolean()
-    .describe("Confirmación explícita obligatoria de esta acción sensible (debe ser true)"),
 };
 
 function round2(n: number): number {
@@ -54,11 +55,6 @@ export async function refundPayment(
 ): Promise<RefundResult> {
   const input = (rawInput ?? {}) as Record<string, unknown>;
 
-  // Acción sensible: exige confirmación explícita.
-  if (input.confirm !== true) {
-    throw new ToolError("Esta acción sensible requiere confirmación explícita (confirm: true)");
-  }
-
   const paymentId = typeof input.paymentId === "string" ? input.paymentId : "";
   if (!paymentId) throw new ToolError("paymentId es requerido");
 
@@ -81,6 +77,14 @@ export async function refundPayment(
   const requested = body.amount != null ? round2(body.amount) : refundable;
   if (requested <= 0) throw new ToolError("El importe del reembolso debe ser positivo");
   if (requested > refundable) throw new ToolError("El importe excede el saldo reembolsable");
+
+  // Capa D (#328): límite configurable de reembolso vía MCP.
+  const maxAmount = config.refundMaxAmount;
+  if (maxAmount != null && requested > maxAmount) {
+    throw new ToolError(
+      `El reembolso (${requested}) supera el límite permitido vía MCP (${maxAmount}). Procésalo desde el panel de administración.`,
+    );
+  }
 
   const refundId = `rf_${crypto.randomUUID()}`;
   let stripeRefundId: string | undefined;
@@ -140,6 +144,22 @@ export async function refundPayment(
     },
   });
 
+  // Capa E (#328): notifica al arrendatario (pagador) que su pago fue reembolsado.
+  // Efecto secundario no crítico: un fallo aquí no revierte el reembolso ya aplicado.
+  try {
+    const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
+    if (request?.tenantId) {
+      await notifyUser({
+        userId: request.tenantId,
+        type: "payment_refunded",
+        title: "Reembolso procesado",
+        body: `Se reembolsaron ${requested} ${payment.currency} de tu pago ${payment.id}.`,
+      });
+    }
+  } catch (err) {
+    console.error("[mcp-server] refund_payment: fallo al notificar al arrendatario", err);
+  }
+
   return {
     paymentId: payment.id,
     status: newStatus,
@@ -151,16 +171,50 @@ export async function refundPayment(
 }
 
 /**
- * Definición de la tool. `requires: "admin"` → solo administradores; el
- * andamiaje aplica la puerta. Acción sensible: exige `confirm: true`.
+ * Vista previa (capa B, #328): resume el reembolso a confirmar SIN ejecutarlo.
+ * Se muestra al agente en el 1er paso para que el humano vea monto y saldo.
+ */
+export async function refundPreview(args: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const paymentId = typeof args.paymentId === "string" ? args.paymentId : "";
+  if (!paymentId) throw new ToolError("paymentId es requerido");
+
+  const payment = await Payment.findOne({ id: paymentId }).lean();
+  if (!payment) throw new ToolError("Pago no encontrado");
+
+  const alreadyRefunded = payment.refundedAmount ?? 0;
+  const refundable = round2(payment.amount - alreadyRefunded);
+  const requested = typeof args.amount === "number" ? round2(args.amount) : refundable;
+  const maxAmount = config.refundMaxAmount;
+
+  return {
+    paymentId: payment.id,
+    currency: payment.currency,
+    amount: payment.amount,
+    alreadyRefunded,
+    refundable,
+    requested,
+    reason: typeof args.reason === "string" ? args.reason : undefined,
+    exceedsLimit: maxAmount != null && requested > maxAmount,
+    limit: maxAmount ?? null,
+  };
+}
+
+/**
+ * Definición de la tool. `requires: "admin"` → solo administradores; el andamiaje
+ * aplica la puerta. Acción sensible (#328): flujo de vista previa en 2 pasos (B),
+ * con interruptor de configuración (F) y límite de importe (D, en la lógica).
  */
 export const refundPaymentTool: ToolDefinition<typeof refundPaymentInput> = {
   name: "refund_payment",
   title: "Reembolsar pago (admin)",
   description:
-    "Emite un reembolso total o parcial de un pago pagado (solo admin). Acción sensible: requiere confirm: true. Devuelve el estado del pago y el reembolso aplicado.",
+    "Emite un reembolso total o parcial de un pago pagado (solo admin). Acción sensible: la 1ª llamada devuelve una vista previa y un confirmationToken; el reembolso se aplica al repetir la llamada con ese token. Devuelve el estado del pago y el reembolso aplicado.",
   inputSchema: refundPaymentInput,
   requires: "admin",
+  sensitive: {
+    preview: (args) => refundPreview(args),
+    enabled: () => config.allowRefund,
+  },
   handler: (args, ctx) => {
     const actingUser = ctx.actingUser as ActingUser;
     return refundPayment(args, { id: actingUser.id, role: actingUser.role });
