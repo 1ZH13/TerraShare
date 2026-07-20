@@ -3,6 +3,7 @@ import { z, type ZodRawShape } from "zod";
 import { Land } from "@backend/db/schemas";
 import { createAuditEvent } from "@backend/store/audit";
 import type { ActingUser } from "../context";
+import { notifyUser } from "../lib/notify";
 import { ToolError, type ToolDefinition } from "./define-tool";
 
 /**
@@ -59,6 +60,20 @@ export async function moderateLand(
     metadata: { title: land.title, reason: data.reason, from: land.status, to: data.status },
   });
 
+  // Capa E (#328): notifica al dueño del terreno la acción de moderación.
+  try {
+    if (land.ownerId) {
+      await notifyUser({
+        userId: land.ownerId as string,
+        type: "land_moderated",
+        title: data.status === "inactive" ? "Tu terreno fue despublicado" : "Tu terreno fue reactivado",
+        body: data.reason ? `Motivo: ${data.reason}` : undefined,
+      });
+    }
+  } catch (err) {
+    console.error("[mcp-server] moderate_land: fallo al notificar al dueño", err);
+  }
+
   return {
     landId: data.landId,
     status: data.status,
@@ -68,16 +83,18 @@ export async function moderateLand(
 }
 
 /**
- * Definición de la tool. `requires: "admin"` → solo administradores; el
- * andamiaje aplica la puerta.
+ * Definición de la tool. `requires: "admin"` → solo administradores; el andamiaje
+ * aplica la puerta. Acción sensible (#328): confirmación explícita (A) + notifica
+ * al dueño del terreno (E).
  */
 export const moderateLandTool: ToolDefinition<typeof moderateLandInput> = {
   name: "moderate_land",
   title: "Moderar terreno (admin)",
   description:
-    "Cambia el estado de un terreno (solo admin): 'inactive' lo despublica, 'active' lo reactiva. Registra la acción en auditoría. Devuelve el estado anterior y el nuevo.",
+    "Cambia el estado de un terreno (solo admin): 'inactive' lo despublica, 'active' lo reactiva. Requiere confirm: true. Registra auditoría, notifica al dueño y devuelve el estado anterior y el nuevo.",
   inputSchema: moderateLandInput,
   requires: "admin",
+  sensitive: { confirm: true },
   handler: (args, ctx) => {
     const actingUser = ctx.actingUser as ActingUser;
     return moderateLand(args, { id: actingUser.id, role: actingUser.role });

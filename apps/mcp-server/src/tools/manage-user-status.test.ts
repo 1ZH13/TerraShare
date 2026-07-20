@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 
-import { AuditEvent, User } from "@backend/db/schemas";
-import { manageUserStatus } from "./manage-user-status";
+import { AuditEvent, Notification, User } from "@backend/db/schemas";
+import { manageUserStatus, manageUserStatusPreview } from "./manage-user-status";
 
 const ADMIN = { id: "user_admin", role: "admin" as const };
 
@@ -43,13 +43,24 @@ describe("manage_user_status tool (HU-91 #208)", () => {
     ).rejects.toThrow(/propia cuenta/i);
   });
 
-  it("exige confirmación explícita (confirm: true)", async () => {
-    await expect(
-      manageUserStatus({ userId: "user_regular", status: "blocked", confirm: false }, ADMIN),
-    ).rejects.toThrow(/confirm/i);
-    await expect(
-      manageUserStatus({ userId: "user_regular", status: "blocked" }, ADMIN),
-    ).rejects.toThrow(/confirm/i);
+  it("capa B: manageUserStatusPreview resume el cambio sin ejecutarlo", async () => {
+    const preview = await manageUserStatusPreview({ userId: "user_regular", status: "blocked" });
+    expect(preview.userId).toBe("user_regular");
+    expect(preview.currentStatus).toBe("active");
+    expect(preview.newStatus).toBe("blocked");
+    // No debe haber tocado al usuario.
+    const user = await User.findOne({ clerkUserId: "user_regular" }).lean();
+    expect((user as { status: string }).status).toBe("active");
+  });
+
+  it("capa E: notifica al usuario afectado el cambio de estado", async () => {
+    await manageUserStatus({ userId: "user_regular", status: "blocked", reason: "abuso" }, ADMIN);
+    const notif = await Notification.findOne({
+      userId: "user_regular",
+      type: "account_status_changed",
+    }).lean();
+    expect(notif).not.toBeNull();
+    expect((notif as { title: string }).title).toContain("bloqueada");
   });
 
   it("falla si el usuario no existe", async () => {
@@ -77,14 +88,6 @@ describe("manage_user_status tool (HU-91 #208)", () => {
   });
 
   it("rechaza cuando falta userId", async () => {
-    await expect(manageUserStatus({ status: "blocked", confirm: true }, ADMIN)).rejects.toThrow();
-  });
-
-  it("no modifica el usuario si la confirmación falta", async () => {
-    await expect(
-      manageUserStatus({ userId: "user_regular", status: "blocked" }, ADMIN),
-    ).rejects.toThrow();
-    const user = await User.findOne({ clerkUserId: "user_regular" }).lean();
-    expect((user as { status: string }).status).toBe("active");
+    await expect(manageUserStatus({ status: "blocked" }, ADMIN)).rejects.toThrow();
   });
 });
