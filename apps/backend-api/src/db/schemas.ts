@@ -67,6 +67,8 @@ export interface ILand extends Document {
   features?: string[];
   /** Terreno verificado por TerraShare (identidad y linderos) (#150). */
   verified?: boolean;
+  /** Borrado lógico (soft-delete): fecha de borrado, o null/ausente si activo (#328). */
+  deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -143,6 +145,8 @@ export interface IChatMessage extends Document {
   chatId: string;
   senderId: string;
   text: string;
+  /** Marca de transparencia: el mensaje se envió mediante un asistente/agente (#328). */
+  viaAssistant?: boolean;
   createdAt: Date;
 }
 
@@ -279,6 +283,7 @@ const LandSchema = new Schema<ILand>({
   access: String,
   features: [String],
   verified: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 LandSchema.index({ title: "text", description: "text" });
@@ -355,6 +360,7 @@ const ChatMessageSchema = new Schema<IChatMessage>({
   chatId: { type: String, required: true },
   senderId: { type: String, required: true },
   text: { type: String, required: true },
+  viaAssistant: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

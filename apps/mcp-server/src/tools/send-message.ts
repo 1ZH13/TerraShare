@@ -36,6 +36,8 @@ export async function sendMessage(
     chatId: input.chatId,
     senderId: actingUser.id,
     text: trimmedText,
+    // Marca de transparencia (#328): enviado a través del asistente/agente.
+    viaAssistant: true,
     createdAt: now,
   });
 
@@ -54,6 +56,7 @@ export async function sendMessage(
     chatId: input.chatId,
     senderId: actingUser.id,
     text: trimmedText,
+    viaAssistant: true,
     createdAt: now.toISOString(),
   };
 }
@@ -62,9 +65,11 @@ export const sendMessageTool: ToolDefinition<typeof sendMessageInput> = {
   name: "send_message",
   title: "Enviar mensaje",
   description:
-    "Envía un mensaje de texto en un chat existente. El usuario debe ser participante del chat.",
+    "Envía un mensaje de texto en un chat existente. El usuario debe ser participante del chat. Acción sensible: requiere confirm: true. El mensaje se marca como enviado vía asistente (transparencia).",
   inputSchema: sendMessageInput,
   requires: "user",
+  // Capa A (#328): confirmación explícita. El mensaje queda marcado `viaAssistant`.
+  sensitive: { confirm: true },
   handler: async (args, ctx) => {
     const actingUser = ctx.actingUser!;
     return sendMessage(args, actingUser);
