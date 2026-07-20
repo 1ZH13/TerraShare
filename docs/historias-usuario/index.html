@@ -131,6 +131,7 @@
       <li><a href="#s1">Sección 1 — Inventario actual (implementado)</a> <span class="pill pill-count">HU 1–32</span></li>
       <li><a href="#s2">Sección 2 — Faltante / Production-Ready</a> <span class="pill pill-count">HU 33–62</span></li>
       <li><a href="#s3">Sección 3 — Servidor MCP sobre el comercio electrónico</a> <span class="pill pill-mcp">HU 63–92 · [MCP]</span></li>
+      <li><a href="#s4">Sección 4 — Nueva ronda de funcionalidades</a> <span class="pill pill-count">HU 93–101</span></li>
       <li><a href="#tabla">Anexo — Tabla resumen de herramientas (tools) MCP</a></li>
     </ol>
   </div>
@@ -159,8 +160,8 @@
     <b>Formato de cada historia:</b> «Como &lt;rol&gt;, quiero &lt;acción&gt;, para &lt;beneficio&gt;»,
     numerada, con 2–4 criterios de aceptación. Las historias <b>[MCP]</b> incluyen además:
     <b>tool</b> que la expone, <b>autenticación</b> requerida y <b>qué le permite hacer al agente</b>.
-    <br><b>Resumen de cobertura:</b> 32 implementadas · 30 nuevas production-ready · 30 vía MCP =
-    <b>92 historias</b> (≥30 etiquetadas <span class="tag tag-mcp">[MCP]</span>).
+    <br><b>Resumen de cobertura:</b> 32 implementadas · 30 nuevas production-ready · 30 vía MCP ·
+    9 nueva ronda funcional (HU 93–101) = <b>101 historias</b> (≥30 etiquetadas <span class="tag tag-mcp">[MCP]</span>).
   </div>
 </section>
 
@@ -1122,6 +1123,97 @@
   </div>
 </section>
 
+<!-- ====================== SECCIÓN 4 — NUEVA RONDA FUNCIONAL ====================== -->
+<section class="page">
+  <h2 id="s4">Sección 4 — Nueva ronda de funcionalidades</h2>
+  <p class="section-intro">9 historias <b>funcionales</b> añadidas como nueva ronda: <b>4</b> ya
+  construidas en el código pero que faltaban por documentar (<span class="tag" style="background:var(--green);color:#fff">CONSTRUIDA</span>)
+  y <b>5</b> nuevas por desarrollar (<span class="tag" style="background:var(--amber);color:#fff">NUEVA</span>),
+  con su issue de GitHub asignado. Todas son requisitos funcionales (no incluyen atributos de calidad).</p>
+
+  <h3>Features ya construidas (a documentar)</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-93</span><span class="tag" style="background:var(--green);color:#fff">CONSTRUIDA</span><span class="title">Guardar terrenos favoritos</span></div>
+    <p class="us">Como <span class="r">usuario autenticado</span>, quiero marcar terrenos como favoritos y verlos en una lista, para hacer seguimiento de los que me interesan.</p>
+    <ul class="ac">
+      <li><code>POST/DELETE /users/me/favorites/:landId</code> agrega o quita un favorito.</li>
+      <li><code>GET /users/me/favorites</code> devuelve solo los favoritos del usuario.</li>
+      <li>El estado de favorito se refleja en catálogo, home y detalle.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-94</span><span class="tag" style="background:var(--green);color:#fff">CONSTRUIDA</span><span class="title">Reportar un terreno</span></div>
+    <p class="us">Como <span class="r">usuario</span>, quiero reportar un terreno con contenido sospechoso o inválido, para ayudar a mantener la calidad del catálogo.</p>
+    <ul class="ac">
+      <li><code>POST /reports</code> registra el reporte con motivo y terreno asociado.</li>
+      <li>El reporte queda vinculado al usuario que lo levanta.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-95</span><span class="tag" style="background:var(--green);color:#fff">CONSTRUIDA</span><span class="title">Moderar reportes (admin)</span></div>
+    <p class="us">Como <span class="r">administrador</span>, quiero revisar y resolver los reportes recibidos, para actuar sobre publicaciones denunciadas.</p>
+    <ul class="ac">
+      <li><code>GET /admin/reports</code> y <code>GET /admin/reports/:id</code> listan y detallan reportes.</li>
+      <li><code>PATCH /admin/reports/:id</code> cambia el estado (revisado/resuelto).</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-96</span><span class="tag" style="background:var(--green);color:#fff">CONSTRUIDA</span><span class="title">Ver perfil público de un dueño</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero ver el perfil público de un dueño con sus terrenos publicados, para evaluar su reputación antes de alquilar.</p>
+    <ul class="ac">
+      <li><code>GET /users/:userId/public</code> devuelve datos públicos del dueño y sus publicaciones activas.</li>
+      <li>Un usuario inexistente devuelve <code>404</code>.</li>
+    </ul>
+  </div>
+
+  <h3>Historias nuevas por desarrollar</h3>
+
+  <div class="story"><div class="h"><span class="num">HU-97</span><span class="tag" style="background:var(--amber);color:#fff">NUEVA</span><span class="title">Reseñas y calificaciones</span><span class="tag" style="background:var(--muted);color:#fff">#323</span></div>
+    <p class="us">Como <span class="r">parte de un contrato completado</span>, quiero calificar y comentar a la otra parte, para construir reputación y confianza en la plataforma.</p>
+    <ul class="ac">
+      <li>Solo se puede reseñar si existe un contrato en estado <code>completed</code> entre ambas partes.</li>
+      <li>Cada parte puede dejar una sola reseña por contrato: 1–5 estrellas + comentario opcional.</li>
+      <li>El promedio de calificación se muestra en el perfil público del dueño (HU-96) y en la ficha del terreno.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-98</span><span class="tag" style="background:var(--amber);color:#fff">NUEVA</span><span class="title">Comparador de terrenos</span><span class="tag" style="background:var(--muted);color:#fff">#324</span></div>
+    <p class="us">Como <span class="r">visitante</span>, quiero seleccionar hasta 3 terrenos y compararlos lado a lado, para decidir mejor cuál me conviene.</p>
+    <ul class="ac">
+      <li>Se pueden añadir/quitar terrenos de una lista de comparación (máx. 3).</li>
+      <li>La vista muestra en columnas: precio, área, provincia/distrito, usos permitidos y disponibilidad.</li>
+      <li>La selección persiste en <code>localStorage</code> (no requiere login).</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-99</span><span class="tag" style="background:var(--amber);color:#fff">NUEVA</span><span class="title">Búsquedas guardadas y alertas</span><span class="tag" style="background:var(--muted);color:#fff">#325</span></div>
+    <p class="us">Como <span class="r">usuario autenticado</span>, quiero guardar un conjunto de filtros y recibir un email cuando aparezca un terreno que los cumpla, para no revisar el catálogo manualmente.</p>
+    <ul class="ac">
+      <li><code>POST /users/me/saved-searches</code> guarda los filtros con un nombre.</li>
+      <li>Un proceso periódico compara terrenos nuevos <code>active</code> contra las búsquedas guardadas y notifica por email.</li>
+      <li><code>GET</code> / <code>DELETE /users/me/saved-searches</code> gestionan la lista.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-100</span><span class="tag" style="background:var(--amber);color:#fff">NUEVA</span><span class="title">Agendar visita a un terreno</span><span class="tag" style="background:var(--muted);color:#fff">#326</span></div>
+    <p class="us">Como <span class="r">arrendatario interesado</span>, quiero solicitar una cita para visitar un terreno, para conocerlo antes de reservar.</p>
+    <ul class="ac">
+      <li><code>POST /lands/:id/visits</code> crea una solicitud de visita con fecha/hora propuesta.</li>
+      <li>El dueño confirma, reprograma o rechaza (<code>PATCH /visits/:id</code>).</li>
+      <li>Ambas partes ven sus visitas agendadas; se genera una notificación.</li>
+    </ul>
+  </div>
+
+  <div class="story"><div class="h"><span class="num">HU-101</span><span class="tag" style="background:var(--amber);color:#fff">NUEVA</span><span class="title">Exportar contrato a PDF</span><span class="tag" style="background:var(--muted);color:#fff">#327</span></div>
+    <p class="us">Como <span class="r">parte de un contrato</span>, quiero descargar el contrato en PDF, para tener un respaldo formal del acuerdo.</p>
+    <ul class="ac">
+      <li><code>GET /contracts/:id/pdf</code> genera un PDF con términos, fechas, partes y estado de firma.</li>
+      <li>Solo las partes del contrato o un admin pueden descargarlo.</li>
+      <li>Si el contrato está <code>active</code>/<code>completed</code>, el PDF incluye la evidencia de firma (nombre, fecha).</li>
+    </ul>
+  </div>
+</section>
+
 <!-- ====================== ANEXO — TABLA MCP ====================== -->
 <section class="page">
   <h2 id="tabla">Anexo — Tabla resumen de herramientas (tools) MCP</h2>
@@ -1174,7 +1266,7 @@
 
   <footer>
     TerraShare · Grupo 1GS241 · Universidad Tecnológica de Panamá · Desarrollo de Software IX ·
-    22 de junio de 2026 · 92 historias de usuario (32 implementadas · 30 production-ready · 30 [MCP]).
+    22 de junio de 2026 · 101 historias de usuario (32 implementadas · 30 production-ready · 30 [MCP] · 9 nueva ronda funcional).
     <br>Documento HTML — para entregar como PDF: abrir en el navegador → Imprimir → «Guardar como PDF».
   </footer>
 </section>
