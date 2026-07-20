@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useAuth, useUser } from "@clerk/clerk-react";
+import { Download } from "lucide-react";
+import jsPDF from "jspdf";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -42,13 +44,47 @@ export default function ContractDetailPage() {
     fetchContract();
   }, [user, contractId]);
 
+  const generatePDF = () => {
+    if (!contract) return;
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(22);
+    doc.text("Contrato TerraShare", 20, 20);
+
+    // Detalles
+    doc.setFontSize(12);
+    doc.text(`ID de Contrato: ${contract.id}`, 20, 35);
+    doc.text(`ID de Solicitud: ${contract.rentalRequestId}`, 20, 45);
+    doc.text(`Estado: ${contract.status.toUpperCase()}`, 20, 55);
+    
+    doc.setFontSize(16);
+    doc.text("Términos del Contrato", 20, 75);
+    doc.setFontSize(12);
+    doc.text(`Fecha de inicio: ${contract.terms?.startsAt || "—"}`, 20, 85);
+    doc.text(`Fecha de fin: ${contract.terms?.endsAt || "—"}`, 20, 95);
+
+    doc.setFontSize(10);
+    const splitSummary = doc.splitTextToSize(contract.terms?.summary || "No hay resumen.", 170);
+    doc.text(splitSummary, 20, 110);
+    
+    doc.save(`contrato-${contract.id.slice(0, 8)}.pdf`);
+  };
+
   const status = contract ? statusConfig[contract.status] || statusConfig.draft : null;
 
   return (
     <div>
-      <div className="section-header">
-        <h1>Detalle de contrato</h1>
-        <p>Contrato #{contractId?.slice(0, 8)}</p>
+      <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1>Detalle de contrato</h1>
+          <p>Contrato #{contractId?.slice(0, 8)}</p>
+        </div>
+        {contract && (
+          <button onClick={generatePDF} className="btn btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+            <Download size={18} /> Exportar a PDF
+          </button>
+        )}
       </div>
 
       {loading && (
