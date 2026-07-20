@@ -173,9 +173,12 @@ export const createPaymentSessionTool: ToolDefinition<typeof createPaymentSessio
   name: "create_payment_session",
   title: "Crear sesión de pago",
   description:
-    "Genera un enlace de pago (checkoutUrl) para una solicitud pagable, a nombre del arrendatario autenticado. No expone secretos de Stripe. Devuelve el checkoutUrl y el estado del pago.",
+    "Genera un enlace de pago (checkoutUrl) para una solicitud pagable, a nombre del arrendatario autenticado. No expone secretos de Stripe. Acción sensible: requiere confirm: true. Devuelve el checkoutUrl y el estado del pago.",
   inputSchema: createPaymentSessionInput,
   requires: "user",
+  // Capa A (#328): confirmación explícita. La propiedad (C) ya la aplica
+  // `canInitiatePayment`; el resultado nunca incluye secretos de Stripe (G).
+  sensitive: { confirm: true },
   handler: (args, ctx) => {
     const actingUser = ctx.actingUser as ActingUser;
     return createPaymentSession(args, { id: actingUser.id, role: actingUser.role });

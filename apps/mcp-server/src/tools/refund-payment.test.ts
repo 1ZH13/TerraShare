@@ -1,19 +1,25 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 
 import mongoose from "@backend/db/mongoose";
-import { AuditEvent, Payment } from "@backend/db/schemas";
-import { refundPayment } from "./refund-payment";
+import { AuditEvent, Notification, Payment, RentalRequest } from "@backend/db/schemas";
+import { refundPayment, refundPreview } from "./refund-payment";
 
 const ADMIN = { id: "user_admin", role: "admin" as const };
 
 function refundInput(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return { paymentId: "pay_paid", confirm: true, ...overrides };
+  return { paymentId: "pay_paid", ...overrides };
 }
 
 // Pagos sembrados con el driver nativo en beforeEach (no en el cuerpo del test).
 beforeEach(async () => {
   await Payment.deleteMany({});
   await AuditEvent.deleteMany({});
+  await Notification.deleteMany({});
+  await RentalRequest.deleteMany({});
+  // Solicitud del pago pay_paid (rr_1): arrendatario user_tenant → destinatario de la notificación (E).
+  await mongoose.connection.db!.collection("rentalrequests").insertMany([
+    { id: "rr_1", landId: "land_a", tenantId: "user_tenant", operation: "alquiler", status: "paid" },
+  ]);
   await mongoose.connection.db!.collection("payments").insertMany([
     // Pagado, sin reembolsos (reembolsable 300).
     { id: "pay_paid", rentalRequestId: "rr_1", amount: 300, currency: "USD", status: "paid", refundedAmount: 0, refunds: [] },
@@ -62,9 +68,34 @@ describe("refund_payment tool (HU-80 #197)", () => {
     expect(refunds[0].amount).toBe(120);
   });
 
-  it("exige confirmación explícita (confirm: true)", async () => {
-    await expect(refundPayment({ paymentId: "pay_paid", confirm: false }, ADMIN)).rejects.toThrow(/confirm/i);
-    await expect(refundPayment({ paymentId: "pay_paid" }, ADMIN)).rejects.toThrow(/confirm/i);
+  it("capa D: bloquea reembolsos por encima del límite configurado (MCP_REFUND_MAX)", async () => {
+    process.env.MCP_REFUND_MAX = "100";
+    try {
+      await expect(refundPayment(refundInput({ amount: 300 }), ADMIN)).rejects.toThrow(/límite/i);
+      // Por debajo del límite sí procede.
+      const res = await refundPayment(refundInput({ amount: 50 }), ADMIN);
+      expect(res.refund.amount).toBe(50);
+    } finally {
+      delete process.env.MCP_REFUND_MAX;
+    }
+  });
+
+  it("capa E: notifica al arrendatario tras el reembolso", async () => {
+    await refundPayment(refundInput({ amount: 120 }), ADMIN);
+    const notif = await Notification.findOne({ userId: "user_tenant", type: "payment_refunded" }).lean();
+    expect(notif).not.toBeNull();
+    expect((notif as { title: string }).title).toContain("Reembolso");
+  });
+
+  it("capa B: refundPreview resume el reembolso sin ejecutarlo", async () => {
+    const preview = await refundPreview({ paymentId: "pay_paid", amount: 120 });
+    expect(preview.paymentId).toBe("pay_paid");
+    expect(preview.refundable).toBe(300);
+    expect(preview.requested).toBe(120);
+    // No debe haber tocado el pago.
+    const payment = await Payment.findOne({ id: "pay_paid" }).lean();
+    expect((payment as { refundedAmount: number }).refundedAmount).toBe(0);
+    expect((payment as { status: string }).status).toBe("paid");
   });
 
   it("falla si el pago no existe", async () => {
