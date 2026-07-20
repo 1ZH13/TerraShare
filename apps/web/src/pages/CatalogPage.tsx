@@ -6,6 +6,7 @@ import { listLands, photoSrc } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
 import EmptyState from "../components/EmptyState";
 import { useFavorites } from "../hooks/useFavorites";
+import { useCompare } from "../hooks/useCompare";
 import "./catalog.css";
 
 type LoadState = "loading" | "ready" | "error";
@@ -40,6 +41,9 @@ export default function CatalogPage() {
 
   // Favoritos (#147): el catálogo vive tras login, así que siempre habilitado.
   const { isFavorite, toggle: toggleFavorite } = useFavorites();
+  
+  // Comparador (#324)
+  const { compareIds, addLand, removeLand, isComparing, isFull } = useCompare();
 
   const [query, setQuery] = useState("");
   const [use, setUse] = useState("todos");
@@ -174,6 +178,12 @@ export default function CatalogPage() {
           Alquiler / Venta
           <span className="cat-soon__tag">Pronto</span>
         </span>
+        
+        {compareIds.length > 0 && (
+          <Link to="/compare" className="cat-btn" style={{ marginLeft: "auto", background: "var(--ts-brand)", color: "black", padding: "0 16px", borderRadius: "999px", display: "inline-flex", alignItems: "center", fontWeight: 600, fontSize: "14px", textDecoration: "none" }}>
+            Comparar ({compareIds.length})
+          </Link>
+        )}
       </div>
 
       {/* lista + mapa */}
@@ -301,9 +311,26 @@ export default function CatalogPage() {
                     : ""}
                 </div>
               </div>
-              <Link to="/lands/$id" params={{ id: selectedLand.id }} className="cat-mapcard__go">
-                Ver
-              </Link>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isComparing(selectedLand.id)) {
+                      removeLand(selectedLand.id);
+                    } else if (!isFull) {
+                      addLand(selectedLand.id);
+                    }
+                  }}
+                  className="cat-mapcard__go"
+                  style={{ background: isComparing(selectedLand.id) ? "var(--border)" : "transparent", color: "var(--text-100)", border: "1px solid var(--border)", opacity: (!isComparing(selectedLand.id) && isFull) ? 0.5 : 1 }}
+                  disabled={!isComparing(selectedLand.id) && isFull}
+                >
+                  {isComparing(selectedLand.id) ? "Quitar" : "+ Comparar"}
+                </button>
+                <Link to="/lands/$id" params={{ id: selectedLand.id }} className="cat-mapcard__go">
+                  Ver
+                </Link>
+              </div>
             </div>
           )}
         </div>

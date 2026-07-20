@@ -22,6 +22,7 @@ import {
 import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc } from "../services/api";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
+import { useCompare } from "../hooks/useCompare";
 import "./detail.css";
 
 const REPORT_REASONS: { value: ReportReason; label: string }[] = [
@@ -91,8 +92,8 @@ export default function LandDetailPage() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [owner, setOwner] = useState<PublicOwnerProfileDto | null>(null);
 
-  // Favoritos (#147): solo consultamos el backend si hay sesión.
   const { isFavorite, toggle: toggleFavorite } = useFavorites({ enabled: Boolean(isSignedIn) });
+  const { compareIds, addLand, removeLand, isComparing, isFull } = useCompare();
 
   const handleToggleFavorite = () => {
     if (!isSignedIn) {
@@ -273,6 +274,27 @@ export default function LandDetailPage() {
           >
             <Flag size={17} /> Reportar
           </button>
+          <button
+            type="button"
+            className={`det-nav__action${isComparing(id!) ? " is-active" : ""}`}
+            title={isComparing(id!) ? "Quitar de comparar" : (isFull ? "Lista de comparación llena" : "Añadir a comparar")}
+            aria-pressed={isComparing(id!)}
+            disabled={!isComparing(id!) && isFull}
+            onClick={() => {
+              if (isComparing(id!)) {
+                removeLand(id!);
+              } else if (!isFull) {
+                addLand(id!);
+              }
+            }}
+          >
+            <Route size={17} /> {isComparing(id!) ? "En comparador" : "Comparar"}
+          </button>
+          {compareIds.length > 0 && (
+            <Link to="/compare" className="det-btn det-btn--primary" style={{ padding: "8px 16px", borderRadius: "999px", marginLeft: "8px" }}>
+              Ver comparador ({compareIds.length})
+            </Link>
+          )}
         </div>
       </nav>
 
