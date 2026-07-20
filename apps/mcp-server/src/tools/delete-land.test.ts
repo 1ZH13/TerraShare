@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 
-import { Land, User } from "@backend/db/schemas";
-import { deleteLand } from "./delete-land";
+import { Land, Notification, User } from "@backend/db/schemas";
+import { deleteLand, deleteLandPreview } from "./delete-land";
 
 const ownerUser = { id: "user_seed", role: "user" };
 const adminUser = { id: "user_admin", role: "admin" };
@@ -16,34 +16,34 @@ describe("delete_land tool (HU-69 #186)", () => {
     );
   });
 
-  it("elimina un terreno existente con confirmación", async () => {
-    const res = await deleteLand({ landId: "land_a", confirm: true }, ownerUser);
-    expect(res).toEqual({ deleted: true, landId: "land_a" });
-    const gone = await Land.findOne({ id: "land_a" }).lean();
-    expect(gone).toBeNull();
+  it("soft-delete: retira el terreno (inactive + deletedAt) sin borrarlo físicamente", async () => {
+    const res = await deleteLand({ landId: "land_a" }, ownerUser);
+    expect(res.deleted).toBe(true);
+    expect(res.recoverable).toBe(true);
+    // El documento sigue existiendo (recuperable), pero inactivo y marcado.
+    const land = await Land.findOne({ id: "land_a" }).lean();
+    expect(land).not.toBeNull();
+    expect((land as { status: string }).status).toBe("inactive");
+    expect((land as { deletedAt: Date | null }).deletedAt).not.toBeNull();
   });
 
   it("admin puede eliminar terrenos de otros", async () => {
-    const res = await deleteLand({ landId: "land_b", confirm: true }, adminUser);
-    expect(res).toEqual({ deleted: true, landId: "land_b" });
+    const res = await deleteLand({ landId: "land_b" }, adminUser);
+    expect(res.deleted).toBe(true);
   });
 
-  it("sin confirm lanza error", async () => {
-    try {
-      await deleteLand({ landId: "land_a" } as never, ownerUser);
-      expect(true).toBe(false);
-    } catch (err) {
-      expect((err as Error).message).toContain("confirmar");
-    }
+  it("capa B: deleteLandPreview resume el terreno sin borrarlo", async () => {
+    const preview = await deleteLandPreview({ landId: "land_a" });
+    expect(preview.landId).toBe("land_a");
+    expect(preview.status).toBe("active");
+    const land = await Land.findOne({ id: "land_a" }).lean();
+    expect((land as { status: string }).status).toBe("active");
   });
 
-  it("confirm=false lanza error", async () => {
-    try {
-      await deleteLand({ landId: "land_a", confirm: false }, ownerUser);
-      expect(true).toBe(false);
-    } catch (err) {
-      expect((err as Error).message).toContain("confirmar");
-    }
+  it("capa E: notifica al dueño tras el retiro", async () => {
+    await deleteLand({ landId: "land_a" }, ownerUser);
+    const notif = await Notification.findOne({ userId: "user_seed", type: "land_deleted" }).lean();
+    expect(notif).not.toBeNull();
   });
 
   it("usuario regular NO puede eliminar terreno de otro", async () => {

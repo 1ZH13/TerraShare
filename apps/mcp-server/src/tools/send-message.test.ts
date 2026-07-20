@@ -42,6 +42,13 @@ describe("send_message tool (HU-83 #200)", () => {
     expect((res as { messageId: string }).messageId).toMatch(/^msg_/);
   });
 
+  it("marca de transparencia: el mensaje queda marcado como enviado vía asistente", async () => {
+    const res = await sendMessage({ chatId: "chat_1", text: "Hola vía agente" }, ownerUser);
+    expect((res as { viaAssistant: boolean }).viaAssistant).toBe(true);
+    const saved = await ChatMessage.findOne({ id: (res as { messageId: string }).messageId }).lean();
+    expect((saved as { viaAssistant: boolean }).viaAssistant).toBe(true);
+  });
+
   it("texto con espacios se trimea", async () => {
     const res = await sendMessage({ chatId: "chat_1", text: "  Mensaje con espacios  " }, ownerUser);
     expect((res as { text: string }).text).toBe("Mensaje con espacios");
