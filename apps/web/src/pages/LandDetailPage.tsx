@@ -18,8 +18,9 @@ import {
   BadgeCheck,
   User,
   Flag,
+  CalendarCheck,
 } from "lucide-react";
-import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc } from "../services/api";
+import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc, createVisit } from "../services/api";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
 import "./detail.css";
@@ -107,6 +108,11 @@ export default function LandDetailPage() {
   const [reportDesc, setReportDesc] = useState("");
   const [reportState, setReportState] = useState<"idle" | "sending" | "done" | "error">("idle");
 
+  const [visitOpen, setVisitOpen] = useState(false);
+  const [visitDate, setVisitDate] = useState("");
+  const [visitNotes, setVisitNotes] = useState("");
+  const [visitState, setVisitState] = useState<"idle" | "sending" | "done" | "error">("idle");
+
   useEffect(() => {
     let active = true;
     getLandById(id!)
@@ -175,6 +181,32 @@ export default function LandDetailPage() {
     } catch (err) {
       console.error("No se pudo enviar el reporte:", err);
       setReportState("error");
+    }
+  };
+
+  const openVisit = () => {
+    if (!isSignedIn) {
+      openSignIn({ redirectUrl: `/lands/${id}` });
+      return;
+    }
+    setVisitState("idle");
+    setVisitOpen(true);
+  };
+
+  const submitVisit = async () => {
+    if (!id || !visitDate) return;
+    setVisitState("sending");
+    try {
+      await createVisit(id, {
+        date: new Date(visitDate).toISOString(),
+        notes: visitNotes.trim() || undefined,
+      });
+      setVisitState("done");
+      setVisitNotes("");
+      setVisitDate("");
+    } catch (err) {
+      console.error("No se pudo agendar la visita:", err);
+      setVisitState("error");
     }
   };
 
@@ -346,6 +378,74 @@ export default function LandDetailPage() {
         </div>
       )}
 
+      {visitOpen && (
+        <div className="det-report" role="dialog" aria-modal="true" aria-label="Agendar Visita">
+          <div className="det-report__box">
+            {visitState === "done" ? (
+              <>
+                <h2 className="det-report__title">Visita Solicitada</h2>
+                <p className="det-report__lead">
+                  El propietario ha sido notificado. Te avisaremos cuando confirme la fecha.
+                </p>
+                <div className="det-report__actions">
+                  <button type="button" className="det-btn det-btn--primary" onClick={() => setVisitOpen(false)}>
+                    Cerrar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="det-report__title">Agendar Visita a «{land.title}»</h2>
+                <p className="det-report__lead">Selecciona una fecha y hora para visitar el terreno.</p>
+
+                <label className="det-report__label" htmlFor="visit-date">Fecha y Hora</label>
+                <input
+                  id="visit-date"
+                  type="datetime-local"
+                  className="det-report__select"
+                  value={visitDate}
+                  onChange={(e) => setVisitDate(e.target.value)}
+                  style={{ width: "100%", padding: "10px", marginBottom: "15px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-card)", color: "white" }}
+                />
+
+                <label className="det-report__label" htmlFor="visit-notes">Notas (opcional)</label>
+                <textarea
+                  id="visit-notes"
+                  className="det-report__textarea"
+                  rows={3}
+                  value={visitNotes}
+                  onChange={(e) => setVisitNotes(e.target.value)}
+                  placeholder="Por ejemplo: 'Me gustaría ver el acceso de agua'..."
+                />
+
+                {visitState === "error" && (
+                  <p className="det-report__error">No se pudo agendar la visita. Revisa los datos o inténtalo más tarde.</p>
+                )}
+
+                <div className="det-report__actions">
+                  <button
+                    type="button"
+                    className="det-btn det-btn--ghost"
+                    onClick={() => setVisitOpen(false)}
+                    disabled={visitState === "sending"}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="det-btn det-btn--primary"
+                    onClick={submitVisit}
+                    disabled={visitState === "sending" || !visitDate}
+                  >
+                    {visitState === "sending" ? "Agendando…" : "Confirmar Cita"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <main id="contenido" className="det-wrap">
         {/* galería */}
         {land.photos && land.photos.length > 0 ? (
@@ -459,6 +559,11 @@ export default function LandDetailPage() {
               <button type="button" className="det-btn det-btn--ghost" onClick={handleContact}>
                 <MessageCircle size={17} /> Preguntar al dueño
               </button>
+              {owner?.id !== user?.id && (
+                <button type="button" className="det-btn det-btn--ghost" onClick={openVisit} style={{ marginTop: "10px", background: "var(--bg-hover)" }}>
+                  <CalendarCheck size={17} /> Agendar Visita
+                </button>
+              )}
 
               <div className="det-divider" />
 
