@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
-import type { LandDto, PublicOwnerProfileDto } from "@terrashare/shared";
+import type { LandDto, PublicOwnerProfileDto, ReviewDto } from "@terrashare/shared";
 import {
   ArrowLeft,
   Heart,
@@ -18,11 +18,14 @@ import {
   BadgeCheck,
   User,
   Flag,
+  Columns2,
 } from "lucide-react";
-import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc } from "../services/api";
+import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc, getUserReviews } from "../services/api";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
+import { useCompareLands } from "../hooks/useCompareLands";
 import "./detail.css";
+import "./compare.css";
 
 const REPORT_REASONS: { value: ReportReason; label: string }[] = [
   { value: "fraude", label: "Fraude o estafa" },
@@ -90,9 +93,26 @@ export default function LandDetailPage() {
   const [land, setLand] = useState<DetailLand | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [owner, setOwner] = useState<PublicOwnerProfileDto | null>(null);
+  const [reviews, setReviews] = useState<ReviewDto[]>([]);
+
+  const averageRating = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : null;
 
   // Favoritos (#147): solo consultamos el backend si hay sesión.
   const { isFavorite, toggle: toggleFavorite } = useFavorites({ enabled: Boolean(isSignedIn) });
+  // Comparador (HU-98 / #324): no requiere login.
+  const {
+    count: compareCount,
+    max: compareMax,
+    isCompared,
+    toggle: toggleCompare,
+  } = useCompareLands();
+  const [compareToast, setCompareToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!compareToast) return;
+    const t = window.setTimeout(() => setCompareToast(null), 2400);
+    return () => window.clearTimeout(t);
+  }, [compareToast]);
 
   const handleToggleFavorite = () => {
     if (!isSignedIn) {
@@ -100,6 +120,14 @@ export default function LandDetailPage() {
       return;
     }
     toggleFavorite(id!).catch((err) => console.error("No se pudo actualizar el guardado:", err));
+  };
+
+  const handleToggleCompare = () => {
+    if (!id) return;
+    const result = toggleCompare(id);
+    if (!result.ok && result.full) {
+      setCompareToast(`Solo puedes comparar hasta ${compareMax} terrenos`);
+    }
   };
 
   const [reportOpen, setReportOpen] = useState(false);
@@ -119,6 +147,9 @@ export default function LandDetailPage() {
           getOwnerPublicProfile(data.ownerId)
             .then((profile) => active && setOwner(profile))
             .catch(() => active && setOwner(null));
+          getUserReviews(data.ownerId)
+            .then((rvs) => active && setReviews(rvs))
+            .catch(() => {});
         }
       })
       .catch((err) => {
@@ -246,6 +277,21 @@ export default function LandDetailPage() {
         <div className="det-nav__actions">
           <button
             type="button"
+            className={`det-nav__action${isCompared(id!) ? " is-active" : ""}`}
+            title={isCompared(id!) ? "Quitar de comparación" : "Añadir a comparación"}
+            aria-pressed={isCompared(id!)}
+            onClick={handleToggleCompare}
+          >
+            <Columns2 size={17} />{" "}
+            {isCompared(id!) ? "En comparación" : "Comparar"}
+          </button>
+          {compareCount > 0 && (
+            <Link to="/compare" className="det-nav__action" title="Ver comparación">
+              Ver ({compareCount}/{compareMax})
+            </Link>
+          )}
+          <button
+            type="button"
             className={`det-nav__action${isFavorite(id!) ? " is-active" : ""}`}
             title={isFavorite(id!) ? "Quitar de guardados" : "Guardar"}
             aria-pressed={isFavorite(id!)}
@@ -275,6 +321,12 @@ export default function LandDetailPage() {
           </button>
         </div>
       </nav>
+
+      {compareToast && (
+        <div className="cmp-toast" role="status">
+          {compareToast}
+        </div>
+      )}
 
       {reportOpen && (
         <div className="det-report" role="dialog" aria-modal="true" aria-label="Reportar terreno">
@@ -473,6 +525,11 @@ export default function LandDetailPage() {
                       <BadgeCheck size={15} className="det-owner__check" aria-label="Verificado" />
                     )}
                   </div>
+                  {averageRating && (
+                    <div style={{ color: "#d97706", fontSize: "0.85rem", fontWeight: 600, marginTop: "2px", marginBottom: "4px" }}>
+                      ★ {averageRating} ({reviews.length} {reviews.length === 1 ? "reseña" : "reseñas"})
+                    </div>
+                  )}
                   <div className="det-owner__role">
                     {owner
                       ? [

@@ -16,6 +16,8 @@ import type {
   PublicOwnerProfileDto,
   ReceiptDto,
   RentalRequestDto,
+  CreateReviewDto,
+  ReviewDto,
 } from "@terrashare/shared";
 
 /**
@@ -419,6 +421,18 @@ export const createReport = async (input: CreateReportInput): Promise<{ id: stri
   return res?.data ?? null;
 };
 
+// ─── Reviews ──────────────────────────────────────────────────────────────────
+
+export const createReview = async (dto: CreateReviewDto): Promise<ReviewDto | null> => {
+  const res = await request<ReviewDto>("POST", "/api/v1/reviews", dto);
+  return res?.data ?? null;
+};
+
+export const getUserReviews = async (userId: string): Promise<ReviewDto[]> => {
+  const res = await request<ReviewDto[]>("GET", `/api/v1/users/${userId}/reviews`);
+  return res?.data ?? [];
+};
+
 export const api = {
   listLands,
   getMyLands,
@@ -440,4 +454,6 @@ export const api = {
   getMyFavorites,
   addFavorite,
   removeFavorite,
+  createReview,
+  getUserReviews,
 };

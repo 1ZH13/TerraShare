@@ -410,6 +410,28 @@ const FavoriteSchema = new Schema<IFavorite>({
   landId: { type: String, required: true },
 }, { timestamps: true });
 
+export interface IReview extends Document {
+  id: string;
+  contractId: string;
+  reviewerId: string;
+  targetUserId: string;
+  landId?: string;
+  rating: number;
+  comment?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ReviewSchema = new Schema<IReview>({
+  id: { type: String, required: true, unique: true },
+  contractId: { type: String, required: true },
+  reviewerId: { type: String, required: true },
+  targetUserId: { type: String, required: true },
+  landId: { type: String },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String },
+}, { timestamps: true });
+
 const BackupRecordSchema = new Schema<IBackupRecord>({
   id: { type: String, required: true, unique: true },
   fileName: { type: String, required: true },
@@ -450,6 +472,10 @@ ReportSchema.index({ reporterId: 1 });
 FavoriteSchema.index({ userId: 1, landId: 1 }, { unique: true });
 // Historial de respaldos ordenado por fecha (#174).
 BackupRecordSchema.index({ createdAt: -1 });
+// Un usuario solo puede dejar una reseña por contrato (#323).
+ReviewSchema.index({ contractId: 1, reviewerId: 1 }, { unique: true });
+ReviewSchema.index({ targetUserId: 1 });
+ReviewSchema.index({ landId: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
@@ -465,6 +491,7 @@ export const IdempotencyKey = mongoose.model<IIdempotencyKey>("IdempotencyKey", 
 export const Favorite = mongoose.model<IFavorite>("Favorite", FavoriteSchema);
 export const Report = mongoose.model<IReport>("Report", ReportSchema);
 export const BackupRecord = mongoose.model<IBackupRecord>("BackupRecord", BackupRecordSchema);
+export const Review = mongoose.model<IReview>("Review", ReviewSchema);
 
 export interface INotification extends Document {
   id: string;

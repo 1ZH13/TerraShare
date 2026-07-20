@@ -118,5 +118,14 @@ export type {
   AuditEventFilterOutput,
 } from "./audit";
 
+// Review schemas
+export {
+  CreateReviewSchema,
+} from "./reviews";
+export type {
+  CreateReviewInput,
+  CreateReviewOutput,
+} from "./reviews";
+
 // Re-export zod for convenience
 export { z } from "zod";

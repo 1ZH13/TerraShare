@@ -92,6 +92,11 @@ export type {
   BackupVerifyStatus,
 } from "./dto/backups";
 
+export type {
+  ReviewDto,
+  CreateReviewDto,
+} from "./dto/reviews";
+
 // Schemas (Zod)
 export * from "./schemas";
 export type { z } from "zod";

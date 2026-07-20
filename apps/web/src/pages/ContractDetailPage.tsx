@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useAuth, useUser } from "@clerk/clerk-react";
+import { ReviewModal } from "../components/ReviewModal";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -20,6 +21,7 @@ export default function ContractDetailPage() {
   const [contract, setContract] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   useEffect(() => {
     if (!user || !contractId) return;
@@ -83,7 +85,30 @@ export default function ContractDetailPage() {
             <p style={{ margin: 0 }}><strong>Período:</strong> {contract.terms?.startsAt || "—"} → {contract.terms?.endsAt || "—"}</p>
             <p style={{ margin: 0 }}><strong>Creado:</strong> {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : "—"}</p>
           </div>
+
+          {contract.status === "completed" && (
+            <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+              <button
+                onClick={() => setShowReviewModal(true)}
+                className="btn-primary"
+                style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+              >
+                Dejar una reseña
+              </button>
+            </div>
+          )}
         </div>
+      )}
+
+      {showReviewModal && contract && (
+        <ReviewModal
+          contractId={contract.id}
+          onClose={() => setShowReviewModal(false)}
+          onSuccess={() => {
+            setShowReviewModal(false);
+            alert("¡Reseña enviada con éxito!");
+          }}
+        />
       )}
     </div>
   );
