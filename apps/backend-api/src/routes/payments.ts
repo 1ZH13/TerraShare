@@ -114,7 +114,10 @@ function getStripeClient() {
     return null;
   }
 
-  if (env.stripeSecretKey === "sk_test_placeholder") {
+  if (
+    env.stripeSecretKey === "sk_test_placeholder" ||
+    env.stripeSecretKey === "sk_test_your_stripe_secret_key"
+  ) {
     return null;
   }
 
