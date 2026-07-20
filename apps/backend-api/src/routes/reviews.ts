@@ -1,17 +1,20 @@
 import { Hono } from "hono";
-import { ulid } from "ulid";
 import { Review, Contract, RentalRequest } from "../db/schemas";
 import { validateBody } from "../lib/validate";
 import { success, failure } from "../lib/api-response";
 import { requireAuth } from "../middleware/require-auth";
-import { CreateReviewSchema } from "shared";
+import { CreateReviewSchema } from "@terrashare/shared";
 import type { AppEnv } from "../types";
 
 export const reviewRoutes = new Hono<AppEnv>();
 
-reviewRoutes.post("/reviews", requireAuth, validateBody(CreateReviewSchema), async (c) => {
+reviewRoutes.post("/reviews", requireAuth, async (c) => {
   const user = c.get("user");
-  const data = c.req.valid("json");
+  const parsed = await validateBody(c, CreateReviewSchema);
+  if (!parsed.success) {
+    return failure(c, 400, "BAD_REQUEST", "Validation error", parsed.errors);
+  }
+  const data = parsed.data;
 
   // Validar contrato
   const contract = await Contract.findOne({ id: data.contractId });
@@ -44,7 +47,7 @@ reviewRoutes.post("/reviews", requireAuth, validateBody(CreateReviewSchema), asy
     landId = rentalReq.landId;
   }
 
-  const reviewId = ulid();
+  const reviewId = crypto.randomUUID();
   const review = new Review({
     id: reviewId,
     contractId: data.contractId,
