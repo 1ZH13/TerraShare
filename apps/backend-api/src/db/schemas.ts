@@ -489,3 +489,28 @@ const NotificationSchema = new Schema<INotification>({
 }, { timestamps: false });
 
 export const Notification = mongoose.models.Notification || mongoose.model<INotification>("Notification", NotificationSchema);
+
+export interface IReview extends Document {
+  id: string;
+  contractId: string;
+  authorId: string;
+  targetUserId: string;
+  rating: number;
+  comment?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ReviewSchema = new Schema<IReview>({
+  id: { type: String, required: true, unique: true },
+  contractId: { type: String, required: true },
+  authorId: { type: String, required: true },
+  targetUserId: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: String,
+}, { timestamps: true });
+
+ReviewSchema.index({ contractId: 1, authorId: 1 }, { unique: true });
+ReviewSchema.index({ targetUserId: 1 });
+
+export const Review = mongoose.model<IReview>("Review", ReviewSchema);

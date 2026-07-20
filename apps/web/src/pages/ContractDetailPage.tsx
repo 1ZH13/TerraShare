@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useAuth, useUser } from "@clerk/clerk-react";
+import { Star } from "lucide-react";
+import { api } from "../services/api";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -20,6 +22,11 @@ export default function ContractDetailPage() {
   const [contract, setContract] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [reviewState, setReviewState] = useState<"idle" | "sending" | "success" | "error">("idle");
 
   useEffect(() => {
     if (!user || !contractId) return;
@@ -43,6 +50,21 @@ export default function ContractDetailPage() {
   }, [user, contractId]);
 
   const status = contract ? statusConfig[contract.status] || statusConfig.draft : null;
+
+  const handleSubmitReview = async () => {
+    if (!contractId || rating === 0) return;
+    setReviewState("sending");
+    try {
+      await api.createReview({ contractId, rating, comment });
+      setReviewState("success");
+    } catch (e: any) {
+      if (e.message && e.message.includes("already reviewed")) {
+        setReviewState("success");
+      } else {
+        setReviewState("error");
+      }
+    }
+  };
 
   return (
     <div>
@@ -83,6 +105,65 @@ export default function ContractDetailPage() {
             <p style={{ margin: 0 }}><strong>Período:</strong> {contract.terms?.startsAt || "—"} → {contract.terms?.endsAt || "—"}</p>
             <p style={{ margin: 0 }}><strong>Creado:</strong> {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : "—"}</p>
           </div>
+        </div>
+      )}
+
+      {contract?.status === "completed" && (
+        <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Dejar una reseña</h3>
+          {reviewState === "success" ? (
+            <p style={{ color: "var(--success)", fontWeight: 500, margin: 0 }}>¡Gracias por tu reseña!</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <p style={{ margin: 0, fontSize: "0.9rem", opacity: 0.8 }}>Califica tu experiencia con el usuario.</p>
+              <div style={{ display: "flex", gap: "4px" }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "4px",
+                      color: (hoverRating || rating) >= star ? "var(--ts-brand)" : "rgba(255,255,255,0.2)",
+                    }}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setRating(star)}
+                  >
+                    <Star fill={(hoverRating || rating) >= star ? "currentColor" : "none"} size={28} />
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Escribe un comentario (opcional)..."
+                style={{
+                  width: "100%",
+                  minHeight: "80px",
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(0,0,0,0.2)",
+                  color: "inherit",
+                  fontFamily: "inherit",
+                }}
+              />
+              {reviewState === "error" && (
+                <p style={{ color: "var(--danger)", margin: 0, fontSize: "0.85rem" }}>Hubo un error al enviar la reseña. Inténtalo de nuevo.</p>
+              )}
+              <button
+                onClick={handleSubmitReview}
+                disabled={rating === 0 || reviewState === "sending"}
+                className="btn btn-primary"
+                style={{ alignSelf: "flex-start", padding: "0.5rem 1.5rem", borderRadius: "8px", background: "var(--ts-brand)", color: "black", fontWeight: 600, border: "none", cursor: "pointer", opacity: (rating === 0 || reviewState === "sending") ? 0.5 : 1 }}
+              >
+                {reviewState === "sending" ? "Enviando..." : "Enviar reseña"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

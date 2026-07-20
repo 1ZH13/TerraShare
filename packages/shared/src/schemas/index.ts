@@ -113,6 +113,7 @@ export type {
 export {
   AuditEventFilterSchema,
 } from "./audit";
+export * from "./reviews";
 export type {
   AuditEventFilterInput,
   AuditEventFilterOutput,

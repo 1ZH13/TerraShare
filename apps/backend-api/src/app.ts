@@ -25,6 +25,7 @@ import { metricsRoutes } from "./routes/metrics";
 import { privacyRoutes } from "./routes/privacy";
 import { reportRoutes } from "./routes/reports";
 import { backupRoutes } from "./routes/backups";
+import { reviewRoutes } from "./routes/reviews";
 import type { AppEnv } from "./types";
 import { corsAllowHeaders, resolveCorsOrigin } from "./config/env";
 
@@ -56,6 +57,7 @@ export function createApp() {
   app.use("/api/v1/admin*", requireAuth, rateLimitByUser(200));
   app.use("/api/v1/analytics*", requireAuth, rateLimitByUser(200));
   app.use("/api/v1/reports*", requireAuth, rateLimitByUser(200));
+  app.use("/api/v1/reviews*", requireAuth, rateLimitByUser(200));
 
   app.get("/", (c) => {
     return c.json({
@@ -81,6 +83,7 @@ export function createApp() {
   app.route("/api/v1", metricsRoutes);
   app.route("/api/v1", privacyRoutes);
   app.route("/api/v1", reportRoutes);
+  app.route("/api/v1", reviewRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 

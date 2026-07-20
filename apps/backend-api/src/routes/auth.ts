@@ -35,12 +35,21 @@ authRoutes.get("/users/:userId/public", async (c) => {
   // Nº de terrenos publicados (activos): señal de confianza real y barata.
   const activeLandsCount = await Land.countDocuments({ ownerId: userId, status: "active" });
 
+  const { Review } = await import("../db/schemas");
+  const reviews = await Review.find({ targetUserId: userId }).lean();
+  let averageRating = undefined;
+  if (reviews.length > 0) {
+    const sum = reviews.reduce((acc, r) => acc + (r as any).rating, 0);
+    averageRating = sum / reviews.length;
+  }
+
   return success(c, {
     id: userId,
     displayName,
     verified,
     memberSince,
     activeLandsCount,
+    averageRating,
   });
 });
 

@@ -18,6 +18,7 @@ import {
   BadgeCheck,
   User,
   Flag,
+  Star,
 } from "lucide-react";
 import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc } from "../services/api";
 import type { ReportReason } from "../services/api";
@@ -474,6 +475,12 @@ export default function LandDetailPage() {
                     )}
                   </div>
                   <div className="det-owner__role">
+                    {owner?.averageRating !== undefined && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", color: "var(--ts-brand)" }}>
+                        <Star size={14} fill="currentColor" /> {owner.averageRating.toFixed(1)}
+                      </span>
+                    )}
+                    {owner?.averageRating !== undefined && " · "}
                     {owner
                       ? [
                           owner.memberSince ? `Miembro desde ${formatMemberSince(owner.memberSince)}` : null,
