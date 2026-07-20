@@ -27,9 +27,8 @@ reviewRoutes.post("/reviews", requireAuth, async (c) => {
     return failure(c, 400, "VALIDATION_ERROR", "Contract must be completed to leave a review");
   }
 
-  // AuthUser must be sender
-  // Wait, the client sends receiverId and contractId. We just enforce sender is authUser.
-  // Actually, authUser must be a participant in the contract, and receiver must be the other participant.
+  // El autor (authUser) debe ser una de las partes del contrato; el receptor
+  // (body.receiverId) debe ser la otra parte.
   if (authUser.id !== contract.ownerId && authUser.id !== contract.tenantId) {
     return failure(c, 403, "FORBIDDEN", "Not a participant of this contract");
   }
