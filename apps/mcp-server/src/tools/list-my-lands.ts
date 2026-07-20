@@ -26,7 +26,8 @@ export async function listMyLands(rawInput: { actingUserId: string | null }): Pr
     throw new ToolError("Se requiere un usuario autenticado");
   }
 
-  const query = { ownerId: rawInput.actingUserId };
+  // Excluye terrenos con borrado lógico (soft-delete, #328).
+  const query = { ownerId: rawInput.actingUserId, deletedAt: null };
   const docs = await Land.find(query).sort({ createdAt: -1 }).lean();
 
   const items = (docs as unknown as Record<string, unknown>[]).map((d) => {

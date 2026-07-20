@@ -22,7 +22,8 @@ export type GetLandInput = z.infer<z.ZodObject<typeof getLandInput>>;
 export async function getLand(rawInput: unknown): Promise<Record<string, unknown>> {
   const input = z.object(getLandInput).parse(rawInput);
 
-  const land = await Land.findOne({ id: input.landId }).lean();
+  // Excluye terrenos con borrado lógico (soft-delete, #328).
+  const land = await Land.findOne({ id: input.landId, deletedAt: null }).lean();
   if (!land) throw new ToolError("Terreno no encontrado");
 
   const { _id, __v, ...rest } = land as unknown as Record<string, unknown>;

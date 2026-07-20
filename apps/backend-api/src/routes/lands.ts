@@ -170,7 +170,9 @@ landRoutes.get("/lands", async (c) => {
 // landId and this route becomes unreachable (404).
 landRoutes.get("/lands/me", requireAuth, rateLimitByUser(200), async (c) => {
   const authUser = c.get("authUser");
-  const docs = (await Land.find({ ownerId: authUser.id }).lean()) as unknown as Record<string, unknown>[];
+  // Excluye terrenos con borrado lógico (soft-delete, #328). `deletedAt: null`
+  // en MongoDB también coincide con documentos que no tienen el campo (antiguos).
+  const docs = (await Land.find({ ownerId: authUser.id, deletedAt: null }).lean()) as unknown as Record<string, unknown>[];
   const lands = docs.map((d) => clean<LandRecord>(d)!);
   return success(c, lands);
 });

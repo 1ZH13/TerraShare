@@ -128,7 +128,8 @@ adminRoutes.get("/admin/lands", requireAuth, requireAdmin, async (c) => {
   const status = c.req.query("status");
   const search = c.req.query("search")?.toLowerCase();
 
-  const query: Record<string, any> = {};
+  // Excluye terrenos con borrado lógico (soft-delete, #328).
+  const query: Record<string, any> = { deletedAt: null };
   if (status && ["draft", "active", "inactive"].includes(status)) {
     query.status = status;
   }

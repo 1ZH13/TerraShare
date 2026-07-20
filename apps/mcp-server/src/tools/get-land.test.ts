@@ -1,4 +1,6 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, beforeEach } from "bun:test";
+
+import { Land } from "@backend/db/schemas";
 import { getLand } from "./get-land";
 
 describe("get_land tool (HU-64 #181)", () => {
@@ -34,5 +36,29 @@ describe("get_land tool (HU-64 #181)", () => {
     const land = result as Record<string, unknown>;
     expect(land).not.toHaveProperty("_id");
     expect(land).not.toHaveProperty("__v");
+  });
+});
+
+// Follow-up soft-delete (#328): un terreno con `deletedAt` no debe encontrarse.
+// El terreno se siembra en beforeEach (write) y el test solo lee, para evitar el
+// patrón write-then-read en el cuerpo (que cuelga con bun:test + memory-server).
+describe("get_land — filtro soft-delete (#328 follow-up)", () => {
+  beforeEach(async () => {
+    await Land.create({
+      id: "land_gone",
+      ownerId: "user_seed",
+      title: "Terreno retirado",
+      area: 5,
+      allowedUses: ["agricultura"],
+      location: { province: "Panama", district: "Panama" },
+      priceRule: { currency: "USD", pricePerMonth: 100 },
+      status: "inactive",
+      operation: "alquiler",
+      deletedAt: new Date(),
+    });
+  });
+
+  it("no encuentra un terreno con soft-delete", async () => {
+    await expect(getLand({ landId: "land_gone" })).rejects.toThrow(/no encontrado/i);
   });
 });
