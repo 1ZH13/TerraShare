@@ -20,10 +20,15 @@ enforceProductionSecurity({
 
 const app = createApp();
 
+import { startSavedSearchAlerts } from "./cron/saved-searches-alerts";
+
 async function init() {
   try {
     await connectMongoose();
     console.log("[backend-api] Using MongoDB database (Mongoose)");
+
+    // Start background jobs
+    startSavedSearchAlerts();
 
     // Migraciones versionadas (#173): aplica las pendientes al arrancar, de forma
     // idempotente. Se puede desactivar con RUN_MIGRATIONS=false (p. ej. si se

@@ -10,12 +10,17 @@ import type {
   ChatMessageDto,
   CreateLandDto,
   CreateRentalRequestDto,
+  CreateSavedSearchPayload,
   ExternalContactDto,
   LandDto,
   PaymentDto,
   PublicOwnerProfileDto,
   ReceiptDto,
   RentalRequestDto,
+  SavedSearchDto,
+  VisitDto,
+  CreateVisitPayload,
+  UpdateVisitStatusPayload
 } from "@terrashare/shared";
 
 /**
@@ -224,6 +229,40 @@ export const addFavorite = async (landId: string): Promise<void> => {
 /** DELETE /api/v1/users/me/favorites/:landId — quita un terreno de guardados. */
 export const removeFavorite = async (landId: string): Promise<void> => {
   await request("DELETE", `/api/v1/users/me/favorites/${landId}`);
+};
+
+// ─── Saved Searches ──────────────────────────────────────────────────────────
+
+export const getSavedSearches = async (): Promise<SavedSearchDto[]> => {
+  const res = await request<SavedSearchDto[]>("GET", "/api/v1/users/me/saved-searches");
+  return res?.data ?? [];
+};
+
+export const createSavedSearch = async (payload: CreateSavedSearchPayload): Promise<SavedSearchDto> => {
+  const res = await request<SavedSearchDto>("POST", "/api/v1/users/me/saved-searches", payload);
+  return res.data;
+};
+
+export const deleteSavedSearch = async (id: string): Promise<{ deleted: boolean }> => {
+  const res = await request<{ deleted: boolean }>("DELETE", `/api/v1/users/me/saved-searches/${id}`);
+  return res.data;
+};
+
+// ─── Visits ──────────────────────────────────────────────────────────────────
+
+export const createVisit = async (landId: string, payload: CreateVisitPayload): Promise<VisitDto> => {
+  const res = await request<VisitDto>("POST", `/api/v1/lands/${landId}/visits`, payload);
+  return res.data;
+};
+
+export const getVisits = async (): Promise<{ asVisitor: VisitDto[], asOwner: VisitDto[] }> => {
+  const res = await request<{ asVisitor: VisitDto[], asOwner: VisitDto[] }>("GET", "/api/v1/users/me/visits");
+  return res.data;
+};
+
+export const updateVisitStatus = async (id: string, payload: UpdateVisitStatusPayload): Promise<VisitDto> => {
+  const res = await request<VisitDto>("PATCH", `/api/v1/visits/${id}/status`, payload);
+  return res.data;
 };
 
 // ─── Payments ─────────────────────────────────────────────────────────────────

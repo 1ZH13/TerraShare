@@ -94,4 +94,6 @@ export type {
 
 // Schemas (Zod)
 export * from "./schemas";
+export * from "./schemas/saved-searches";
+export * from "./schemas/visits";
 export type { z } from "zod";

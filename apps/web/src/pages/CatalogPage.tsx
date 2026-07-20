@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { LandDto } from "@terrashare/shared";
-import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX, Heart } from "lucide-react";
-import { listLands, photoSrc } from "../services/api";
+import { Search, Sprout, MapPin, DollarSign, Tag, ChevronDown, ImageIcon, SearchX, Heart, Save } from "lucide-react";
+import { listLands, photoSrc, createSavedSearch } from "../services/api";
 import PanamaMap from "../components/PanamaMap";
 import EmptyState from "../components/EmptyState";
 import { useFavorites } from "../hooks/useFavorites";
@@ -40,7 +40,11 @@ export default function CatalogPage() {
 
   // Favoritos (#147): el catálogo vive tras login, así que siempre habilitado.
   const { isFavorite, toggle: toggleFavorite } = useFavorites();
-
+  
+  // Comparador (#324)
+  // const { compareIds, addLand, removeLand, isComparing, isFull } = useCompare();
+  
+  const [saveSearchStatus, setSaveSearchStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [query, setQuery] = useState("");
   const [use, setUse] = useState("todos");
   const [province, setProvince] = useState("todas");
@@ -90,6 +94,27 @@ export default function CatalogPage() {
   }, [lands, use, province, maxPrice, query]);
 
   const selectedLand = filtered.find((l) => l.id === selectedId) ?? filtered[0] ?? null;
+
+  const handleSaveSearch = async () => {
+    setSaveSearchStatus("saving");
+    try {
+      await createSavedSearch({
+        name: `Búsqueda: ${query || use !== "todos" ? formatUse(use) : "General"}`,
+        filters: {
+          use: use !== "todos" ? use : undefined,
+          province: province !== "todas" ? province : undefined,
+          maxPrice: maxPrice < 1_000_000 ? maxPrice : undefined,
+          query: query || undefined
+        }
+      });
+      setSaveSearchStatus("success");
+      setTimeout(() => setSaveSearchStatus("idle"), 3000);
+    } catch (e) {
+      console.error(e);
+      setSaveSearchStatus("error");
+      setTimeout(() => setSaveSearchStatus("idle"), 3000);
+    }
+  };
 
   return (
     <div className="cat">
@@ -184,6 +209,22 @@ export default function CatalogPage() {
               ? `${filtered.length} terreno${filtered.length === 1 ? "" : "s"} · ordenar por `
               : "Cargando terrenos · "}
             <strong>Recientes</strong>
+            
+            {/* {compareIds.length > 0 && (
+              <Link to="/compare" className="cat-btn" style={{ marginLeft: "auto", background: "var(--ts-brand)", color: "black", padding: "0 16px", borderRadius: "999px", display: "inline-flex", alignItems: "center", fontWeight: 600, fontSize: "14px", textDecoration: "none" }}>
+                Comparar ({compareIds.length})
+              </Link>
+            )} */}
+            
+            <button
+              onClick={handleSaveSearch}
+              disabled={saveSearchStatus === "saving" || saveSearchStatus === "success"}
+              className="cat-btn"
+              style={{ marginLeft: "auto", background: saveSearchStatus === "success" ? "var(--success)" : "rgba(255,255,255,0.1)", color: "white", padding: "0 16px", borderRadius: "999px", display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: 600, fontSize: "14px", border: "none", cursor: "pointer" }}
+            >
+              <Save size={15} /> 
+              {saveSearchStatus === "saving" ? "Guardando..." : saveSearchStatus === "success" ? "Guardada" : "Guardar búsqueda"}
+            </button>
           </div>
 
           {status === "loading" ? (

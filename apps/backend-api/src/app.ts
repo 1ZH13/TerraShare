@@ -25,6 +25,8 @@ import { metricsRoutes } from "./routes/metrics";
 import { privacyRoutes } from "./routes/privacy";
 import { reportRoutes } from "./routes/reports";
 import { backupRoutes } from "./routes/backups";
+import { savedSearchRoutes } from "./routes/saved-searches";
+import { visitRoutes } from "./routes/visits";
 import type { AppEnv } from "./types";
 import { corsAllowHeaders, resolveCorsOrigin } from "./config/env";
 
@@ -81,6 +83,8 @@ export function createApp() {
   app.route("/api/v1", metricsRoutes);
   app.route("/api/v1", privacyRoutes);
   app.route("/api/v1", reportRoutes);
+  app.route("/api/v1", savedSearchRoutes);
+  app.route("/api/v1", visitRoutes);
 
   app.notFound((c) => failure(c, 404, "NOT_FOUND", "Route not found"));
 

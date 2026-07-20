@@ -77,6 +77,8 @@ export default function AppLayout({ children }: { children?: ReactNode }) {
   const userMenuItems: UserMenuItem[] = [
     { label: "Mi perfil", onClick: () => navigate({ to: "/dashboard/profile" }) },
     { label: "Mis terrenos", onClick: () => navigate({ to: "/dashboard/lands" }) },
+    { label: "Visitas", onClick: () => navigate({ to: "/dashboard/visits" }) },
+    { label: "Búsquedas", onClick: () => navigate({ to: "/dashboard/saved-searches" }) },
     { label: "Pagos", onClick: () => navigate({ to: "/dashboard/payments" }) },
   ];
   // El acceso al panel admin solo se ofrece a cuentas admin (issue #251).

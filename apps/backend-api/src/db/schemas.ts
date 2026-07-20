@@ -489,3 +489,57 @@ const NotificationSchema = new Schema<INotification>({
 }, { timestamps: false });
 
 export const Notification = mongoose.models.Notification || mongoose.model<INotification>("Notification", NotificationSchema);
+
+const reviewSchema = new Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    contractId: { type: String, required: true },
+    authorId: { type: String, required: true },
+    targetUserId: { type: String, required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String },
+  },
+  { timestamps: true }
+);
+
+reviewSchema.index({ contractId: 1, authorId: 1 }, { unique: true });
+
+const savedSearchSchema = new Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    userId: { type: String, required: true },
+    name: { type: String, required: true },
+    filters: {
+      use: { type: String },
+      province: { type: String },
+      maxPrice: { type: Number },
+      query: { type: String }
+    },
+    lastAlertSentAt: { type: Date }
+  },
+  { timestamps: true }
+);
+
+savedSearchSchema.index({ userId: 1 });
+
+const visitSchema = new Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    landId: { type: String, required: true },
+    visitorId: { type: String, required: true },
+    ownerId: { type: String, required: true },
+    date: { type: Date, required: true },
+    status: { type: String, enum: ["pending", "accepted", "rejected", "completed", "cancelled"], default: "pending" },
+    notes: { type: String }
+  },
+  { timestamps: true }
+);
+
+visitSchema.index({ landId: 1, visitorId: 1 });
+visitSchema.index({ ownerId: 1 });
+visitSchema.index({ visitorId: 1 });
+
+export const Review = mongoose.models.Review || mongoose.model("Review", reviewSchema);
+export const SavedSearch = mongoose.models.SavedSearch || mongoose.model("SavedSearch", savedSearchSchema);
+export const Visit = mongoose.models.Visit || mongoose.model("Visit", visitSchema);
+
