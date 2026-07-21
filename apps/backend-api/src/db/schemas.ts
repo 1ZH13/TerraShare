@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+﻿import mongoose, { Schema, Document } from "mongoose";
 
 export type LandUse = "agricultura" | "ganaderia" | "forestal" | "acuicultura" | "mixto" | "otro";
 export type LandStatus = "draft" | "active" | "inactive";
@@ -67,7 +67,7 @@ export interface ILand extends Document {
   features?: string[];
   /** Terreno verificado por TerraShare (identidad y linderos) (#150). */
   verified?: boolean;
-  /** Borrado lógico (soft-delete): fecha de borrado, o null/ausente si activo (#328). */
+  /** Borrado l├│gico (soft-delete): fecha de borrado, o null/ausente si activo (#328). */
   deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -145,7 +145,7 @@ export interface IChatMessage extends Document {
   chatId: string;
   senderId: string;
   text: string;
-  /** Marca de transparencia: el mensaje se envió mediante un asistente/agente (#328). */
+  /** Marca de transparencia: el mensaje se envi├│ mediante un asistente/agente (#328). */
   viaAssistant?: boolean;
   createdAt: Date;
 }
@@ -170,7 +170,7 @@ export interface ILead extends Document {
 
 /**
  * Evento de webhook de Stripe ya procesado (HU-42 #160). Se registra por
- * `eventId` (único) para que reentregas del mismo evento no repitan efectos.
+ * `eventId` (├║nico) para que reentregas del mismo evento no repitan efectos.
  */
 export interface IWebhookEvent extends Document {
   eventId: string;
@@ -180,7 +180,7 @@ export interface IWebhookEvent extends Document {
 }
 
 /**
- * Clave de idempotencia de una operación de pago (HU-42 #160). Mapea la
+ * Clave de idempotencia de una operaci├│n de pago (HU-42 #160). Mapea la
  * `Idempotency-Key` del cliente al pago creado, para que un reintento devuelva
  * el mismo pago en vez de crear (y cobrar) uno nuevo.
  */
@@ -207,8 +207,8 @@ export interface IReport extends Document {
 
 /**
  * Registro (ledger) de un respaldo cifrado de MongoDB (HU-56 #174). Persiste la
- * huella del artefacto (checksum/tamaño) y el resultado de la última
- * restauración *probada*, para dar visibilidad al equipo de operaciones.
+ * huella del artefacto (checksum/tama├▒o) y el resultado de la ├║ltima
+ * restauraci├│n *probada*, para dar visibilidad al equipo de operaciones.
  */
 export type BackupStatus = "completed" | "failed";
 export type BackupVerifyStatus = "pending" | "passed" | "failed";
@@ -233,6 +233,17 @@ export interface IBackupRecord extends Document {
 export interface IFavorite extends Document {
   userId: string;
   landId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IReview extends Document {
+  id: string;
+  contractId: string;
+  senderId: string;
+  receiverId: string;
+  rating: number;
+  comment?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -425,8 +436,17 @@ const BackupRecordSchema = new Schema<IBackupRecord>({
   verifyDetail: Schema.Types.Mixed,
 }, { timestamps: true });
 
-// Índices secundarios (antes vivían en el driver nativo config/database.ts; se
-// migran aquí para que Mongoose sea la única fuente de índices — #135 A-1/A-6).
+const ReviewSchema = new Schema<IReview>({
+  id: { type: String, required: true, unique: true },
+  contractId: { type: String, required: true },
+  senderId: { type: String, required: true },
+  receiverId: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: String,
+}, { timestamps: true });
+
+// ├ìndices secundarios (antes viv├¡an en el driver nativo config/database.ts; se
+// migran aqu├¡ para que Mongoose sea la ├║nica fuente de ├¡ndices ÔÇö #135 A-1/A-6).
 LandSchema.index({ ownerId: 1 });
 LandSchema.index({ status: 1 });
 RentalRequestSchema.index({ landId: 1 });
@@ -439,17 +459,20 @@ ChatSchema.index({ landId: 1 });
 ChatMessageSchema.index({ chatId: 1, createdAt: 1 });
 AuditEventSchema.index({ entity: 1, entityId: 1 });
 LeadSchema.index({ email: 1 });
-// TTL: las claves/eventos caducan a los 30 días (Stripe recomienda conservar
-// las claves de idempotencia ≥24 h). El unique index es el guardián real. #160
+// TTL: las claves/eventos caducan a los 30 d├¡as (Stripe recomienda conservar
+// las claves de idempotencia ÔëÑ24 h). El unique index es el guardi├ín real. #160
 WebhookEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
 IdempotencyKeySchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
 ReportSchema.index({ status: 1 });
 ReportSchema.index({ targetType: 1, targetId: 1 });
 ReportSchema.index({ reporterId: 1 });
-// Un usuario no puede guardar el mismo terreno dos veces (guardián de idempotencia).
+// Un usuario no puede guardar el mismo terreno dos veces (guardi├ín de idempotencia).
 FavoriteSchema.index({ userId: 1, landId: 1 }, { unique: true });
 // Historial de respaldos ordenado por fecha (#174).
 BackupRecordSchema.index({ createdAt: -1 });
+
+ReviewSchema.index({ contractId: 1, senderId: 1 }, { unique: true });
+ReviewSchema.index({ receiverId: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
@@ -465,6 +488,7 @@ export const IdempotencyKey = mongoose.model<IIdempotencyKey>("IdempotencyKey", 
 export const Favorite = mongoose.model<IFavorite>("Favorite", FavoriteSchema);
 export const Report = mongoose.model<IReport>("Report", ReportSchema);
 export const BackupRecord = mongoose.model<IBackupRecord>("BackupRecord", BackupRecordSchema);
+export const Review = mongoose.models.Review || mongoose.model<IReview>("Review", ReviewSchema);
 
 export interface INotification extends Document {
   id: string;
@@ -489,3 +513,24 @@ const NotificationSchema = new Schema<INotification>({
 }, { timestamps: false });
 
 export const Notification = mongoose.models.Notification || mongoose.model<INotification>("Notification", NotificationSchema);
+
+export interface ISavedSearch extends Document {
+  id: string;
+  userId: string;
+  name: string;
+  filters: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const SavedSearchSchema = new Schema<ISavedSearch>({
+  id: { type: String, required: true, unique: true },
+  userId: { type: String, required: true },
+  name: { type: String, required: true },
+  filters: { type: Schema.Types.Mixed, required: true },
+}, { timestamps: true });
+
+SavedSearchSchema.index({ userId: 1 });
+
+export const SavedSearch = mongoose.models.SavedSearch
+  || mongoose.model<ISavedSearch>("SavedSearch", SavedSearchSchema);

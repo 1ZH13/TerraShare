@@ -9,6 +9,7 @@ import { requireAuth } from "../middleware/require-auth";
 import { rateLimitByUser } from "../middleware/rate-limit";
 import { createAuditEvent as createAudit } from "../store/audit";
 import { Land } from "../db/schemas";
+import { matchSavedSearches } from "../lib/match-saved-searches";
 import {
   ALLOWED_CONTENT_TYPES,
   MAX_PHOTO_BYTES,
@@ -224,6 +225,10 @@ landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
   };
 
   await Land.create(land);
+
+  matchSavedSearches(land as any).catch((err) =>
+    console.error({ level: "error", message: "Failed to match saved searches", error: err.message }),
+  );
 
   await createAudit({
     actor: authUser,
