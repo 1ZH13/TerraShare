@@ -448,8 +448,9 @@ export const createReview = async (input: {
 };
 
 /** GET /api/v1/users/:userId/reviews — reseñas de un usuario. */
-export const getReviewsByUser = async (userId: string): Promise<ReviewDto[]> => {
-  const res = await request<ReviewDto[]>("GET", `/api/v1/users/${userId}/reviews`);
+export const getReviewsByUser = async (userId: string, contractId?: string): Promise<ReviewDto[]> => {
+  const params = contractId ? `?contractId=${encodeURIComponent(contractId)}` : "";
+  const res = await request<ReviewDto[]>("GET", `/api/v1/users/${userId}/reviews${params}`);
   return res?.data ?? [];
 };
 

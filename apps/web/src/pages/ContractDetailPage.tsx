@@ -51,7 +51,7 @@ export default function ContractDetailPage() {
   useEffect(() => {
     if (!contract || contract.status !== "completed") return;
     const receiverId = user?.id === contract.ownerId ? contract.tenantId : contract.ownerId;
-    getReviewsByUser(receiverId).then((r) => {
+    getReviewsByUser(receiverId, contractId).then((r) => {
       setReviews(r);
       const mine = r.find((rev) => rev.senderId === user?.id);
       if (mine) setMyReview(mine);

@@ -58,9 +58,10 @@ reviewRoutes.post("/reviews", requireAuth, async (c) => {
 
 reviewRoutes.get("/users/:userId/reviews", async (c) => {
   const userId = c.req.param("userId");
-  const reviews = await Review.find({ receiverId: userId })
-    .sort({ createdAt: -1 })
-    .lean();
+  const contractId = c.req.query("contractId");
+  const query: Record<string, unknown> = { receiverId: userId };
+  if (contractId) query.contractId = contractId;
+  const reviews = await Review.find(query).sort({ createdAt: -1 }).lean();
   return success(c, reviews);
 });
 
