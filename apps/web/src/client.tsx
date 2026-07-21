@@ -1,18 +1,34 @@
 import { StrictMode, startTransition } from "react";
-import { hydrateRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import { RouterProvider } from "@tanstack/react-router";
 import { StartClient } from "@tanstack/react-start/client";
+import { getRouter } from "./router";
 
-// Entrada del cliente de TanStack Start.
+// La app arranca en dos modos distintos y el montaje NO es el mismo en ambos:
 //
-// El servidor emite el documento completo desde `__root.tsx` (<html>…<body>), así
-// que la hidratación va sobre `document`: no existe ningún contenedor `#root`.
-// Antes se montaba con `createRoot(document.getElementById("root"))`, que era
-// `null`, y la app NUNCA hidrataba — sin hidratación no corre nada del cliente
-// (ni Clerk ni los manejadores de eventos), aunque el HTML del servidor se viera.
+// - Producción: se despliega como SPA client-only. `scripts/serve-static.mjs`
+//   (y el Dockerfile) generan un `index.html` con `<div id="root">`, así que se
+//   monta ahí con `createRoot`. Es también lo que prueban los E2E.
 //
-// `StartClient` reconstruye el router con los datos de hidratación que envía el
-// servidor; crear uno aparte con `getRouter()` se saltaba ese protocolo.
+// - Desarrollo (`bun run dev`): TanStack Start hace SSR y `__root.tsx` emite el
+//   documento completo (<html>…<body>). Ahí NO existe `#root`, y montar sobre
+//   él dejaba `createRoot(null)` → "Target container is not a DOM element". La
+//   app nunca hidrataba: el HTML se veía, pero nada del cliente corría (ni
+//   Clerk ni los manejadores de eventos), así que era imposible iniciar sesión.
+//   Para ese caso se hidrata el documento con `StartClient`, que reconstruye el
+//   router con los datos de hidratación del servidor.
 startTransition(() => {
+  const container = document.getElementById("root");
+
+  if (container) {
+    createRoot(container).render(
+      <StrictMode>
+        <RouterProvider router={getRouter()} />
+      </StrictMode>,
+    );
+    return;
+  }
+
   hydrateRoot(
     document,
     <StrictMode>
