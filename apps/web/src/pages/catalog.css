@@ -311,3 +311,28 @@
   color: var(--ts-green);
   font-size: 13.5px;
 }
+
+/* Paginador del catálogo (#366) */
+.cat-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 22px 0 8px;
+}
+
+.cat-pager__btn {
+  padding: 9px 18px;
+  border-radius: var(--ts-radius-pill);
+  border: 1px solid var(--ts-border);
+  background: var(--ts-surface);
+  color: var(--ts-text);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cat-pager__btn:hover:not(:disabled) { background: var(--ts-paper-tint); }
+.cat-pager__btn:disabled { opacity: 0.45; cursor: default; }
+
+.cat-pager__status { color: var(--ts-sage-2); font-size: 13.5px; }

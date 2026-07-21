@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import type { LandDto } from "@terrashare/shared";
 import {
@@ -16,9 +16,19 @@ import {
   Bookmark,
   BookmarkPlus,
 } from "lucide-react";
-import { listLands, photoSrc } from "../services/api";
+import {
+  getLandFacets,
+  photoSrc,
+  searchLands,
+  type LandFacets,
+  type LandsPagination,
+} from "../services/api";
 import { formatLandPriceShort, monthlyPrice } from "../lib/land-price";
 import {
+  ANY_OPERATION,
+  ANY_PROVINCE,
+  ANY_USE,
+  NO_PRICE_LIMIT,
   type CatalogFilterState,
   filtersToParams,
   hasAnyFilter,
@@ -45,6 +55,9 @@ const USE_LABELS: Record<string, string> = {
   mixto: "Mixto",
   otro: "Otro",
 };
+
+/** Terrenos por página en el catálogo (#366). */
+const PAGE_SIZE = 12;
 
 const PRICE_OPTIONS = [
   { label: "Precio", value: 1_000_000 },
@@ -115,6 +128,13 @@ export default function CatalogPage() {
   const currentFilters: CatalogFilterState = { q: query, use, province, operation, maxPrice };
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Paginación real contra el servidor (#366).
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<LandsPagination>({
+    page: 1, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 1,
+  });
+  const [facets, setFacets] = useState<LandFacets>({ provinces: [], uses: [] });
+
   useEffect(() => {
     if (!compareToast) return;
     const t = window.setTimeout(() => setCompareToast(null), 2400);
@@ -128,63 +148,80 @@ export default function CatalogPage() {
     }
   };
 
+  // Las opciones de los desplegables salen de un endpoint aparte, calculado
+  // sobre TODOS los terrenos publicados. Antes se derivaban de la lista
+  // cargada; con la paginación en el servidor eso solo vería la página actual
+  // y las opciones irían desapareciendo al navegar (#366).
   useEffect(() => {
     let active = true;
-    // El catálogo filtra, ordena y pinta el mapa **en el cliente**, así que
-    // necesita el conjunto completo. Sin `pageSize`, el backend devolvía su
-    // página por defecto de 20 y el resto de terrenos era inalcanzable: no hay
-    // paginador en esta pantalla, así que desaparecían sin previo aviso.
-    // 100 es el máximo que admite la ruta; por encima de esa escala habría que
-    // mover los filtros al servidor y paginar de verdad (#366).
-    listLands({ pageSize: 100 })
-      .then((data) => {
-        if (!active) return;
-        setLands(data);
-        setStatus("ready");
+    getLandFacets()
+      .then((f) => {
+        if (active) setFacets(f);
       })
-      .catch((err) => {
-        console.error("Error cargando catálogo:", err);
-        if (active) setStatus("error");
+      .catch(() => {
+        /* Sin facetas los desplegables quedan vacíos, pero el catálogo funciona. */
       });
     return () => {
       active = false;
     };
   }, []);
 
-  const useOptions = useMemo(
-    () => [...new Set(lands.map((l) => l.allowedUses?.[0]).filter((v): v is NonNullable<typeof v> => Boolean(v)))],
-    [lands],
-  );
-  const provinceOptions = useMemo(
-    () => [...new Set(lands.map((l) => l.location?.province).filter((v): v is string => Boolean(v)))],
-    [lands],
-  );
+  // El texto se escribe letra a letra: sin esperar, cada tecla dispararía una
+  // petición. El resto de filtros son desplegables y se aplican al momento.
+  const [debouncedQuery, setDebouncedQuery] = useState(initialFilters.q);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQuery(query), 300);
+    return () => window.clearTimeout(t);
+  }, [query]);
 
-  const filtered = useMemo(() => {
-    return lands.filter((land) => {
-      const landUse = land.allowedUses?.[0] ?? "otro";
-      const matchesUse = use === "todos" || landUse === use;
-      const matchesProvince = province === "todas" || land.location?.province === province;
-      // El filtro de precio solo aplica a lo que se alquila: un terreno de solo
-      // venta no tiene renta con la que compararse, y contarlo como 0 lo colaba
-      // en todos los tramos «hasta $X».
-      const monthly = monthlyPrice(land);
-      const matchesPrice = maxPrice >= 1_000_000 || (monthly !== null && monthly <= maxPrice);
-      // «ambas» cuenta para las dos caras del filtro.
-      const matchesOperation =
-        operation === "todas"
-        || land.operation === operation
-        || land.operation === "ambas";
-      const haystack = [land.title, land.location?.province, land.location?.district, land.description]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      const matchesQuery = !query || haystack.includes(query.toLowerCase());
-      return matchesUse && matchesProvince && matchesPrice && matchesOperation && matchesQuery;
-    });
-  }, [lands, use, province, maxPrice, operation, query]);
+  // Volver a la primera página cuando cambian los criterios: quedarse en la
+  // página 4 de un resultado que ahora tiene una sola deja la pantalla vacía.
+  //
+  // Cambiar un filtro estando en una página distinta de la 1 dispara dos
+  // peticiones (una por el criterio, otra por el salto de página), porque
+  // `page` y los filtros son estados separados. Se acepta a conciencia: unificar
+  // todo en un único objeto de estado evitaría la petición de más, pero
+  // obligaría a leer cada `select` desde dentro de ese objeto y enreda el
+  // componente para ahorrar una llamada que el usuario no percibe.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery, use, province, operation, maxPrice]);
 
-  const selectedLand = filtered.find((l) => l.id === selectedId) ?? filtered[0] ?? null;
+  useEffect(() => {
+    let active = true;
+    setStatus((prev) => (prev === "ready" ? "ready" : "loading"));
+
+    searchLands({
+      q: debouncedQuery.trim() || undefined,
+      type: use !== ANY_USE ? use : undefined,
+      province: province !== ANY_PROVINCE ? province : undefined,
+      operation: operation !== ANY_OPERATION ? operation : undefined,
+      priceMax: maxPrice < NO_PRICE_LIMIT ? maxPrice : undefined,
+      page,
+      pageSize: PAGE_SIZE,
+    })
+      .then((res) => {
+        if (!active) return;
+        setLands(res.items);
+        setPagination(res.pagination);
+        setSelectedId(null);
+        setStatus("ready");
+      })
+      .catch((err) => {
+        console.error("Error cargando catálogo:", err);
+        if (active) setStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [debouncedQuery, use, province, operation, maxPrice, page]);
+
+  const useOptions = facets.uses;
+  const provinceOptions = facets.provinces;
+
+  // El servidor ya devuelve la página filtrada: aquí no se vuelve a filtrar.
+  const selectedLand = lands.find((l) => l.id === selectedId) ?? lands[0] ?? null;
 
   return (
     <div className="cat">
@@ -313,8 +350,12 @@ export default function CatalogPage() {
       <div className="cat-body">
         <div className="cat-listcol">
           <div className="cat-listhead">
+            {/* El total viene del servidor, no del tamaño de la página: decir
+                «12 terrenos» cuando hay 36 es justo el fallo de #365. */}
             {status === "ready"
-              ? `${filtered.length} terreno${filtered.length === 1 ? "" : "s"} · ordenar por `
+              ? `${pagination.totalItems} terreno${pagination.totalItems === 1 ? "" : "s"}${
+                  pagination.totalPages > 1 ? ` · página ${pagination.page} de ${pagination.totalPages}` : ""
+                } · ordenar por `
               : "Cargando terrenos · "}
             <strong>Recientes</strong>
           </div>
@@ -329,7 +370,7 @@ export default function CatalogPage() {
             <p className="cat-state cat-state--error">
               No pudimos cargar el catálogo ahora mismo. Vuelve a intentarlo en un momento.
             </p>
-          ) : filtered.length === 0 ? (
+          ) : lands.length === 0 ? (
             <EmptyState
               icon={SearchX}
               title="Sin resultados"
@@ -346,7 +387,7 @@ export default function CatalogPage() {
             />
           ) : (
             <div className="cat-list">
-              {filtered.map((land) => {
+              {lands.map((land) => {
                 const monthly = monthlyPrice(land);
                 return (
                   <button
@@ -437,11 +478,35 @@ export default function CatalogPage() {
               })}
             </div>
           )}
+
+          {status === "ready" && pagination.totalPages > 1 && (
+            <nav className="cat-pager" aria-label="Paginación del catálogo">
+              <button
+                type="button"
+                className="cat-pager__btn"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pagination.page <= 1}
+              >
+                Anterior
+              </button>
+              <span className="cat-pager__status" aria-live="polite">
+                Página {pagination.page} de {pagination.totalPages}
+              </span>
+              <button
+                type="button"
+                className="cat-pager__btn"
+                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                disabled={pagination.page >= pagination.totalPages}
+              >
+                Siguiente
+              </button>
+            </nav>
+          )}
         </div>
 
         <div className="cat-mapcol">
           <PanamaMap
-            lands={filtered}
+            lands={lands}
             selectedLand={selectedLand}
             onSelectLand={(land) => setSelectedId(land.id)}
           />
