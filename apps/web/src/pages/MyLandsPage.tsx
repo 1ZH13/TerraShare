@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { LandDto } from "@terrashare/shared";
 import { Plus, Eye, Inbox, MapPin, Map } from "lucide-react";
-import { getMyLands } from "../services/api";
+import { getMyLands, photoSrc } from "../services/api";
 import EmptyState from "../components/EmptyState";
 import "./mylands.css";
 
@@ -21,6 +21,26 @@ const USE_LABELS: Record<string, string> = {
 function useLabel(use?: string): string {
   if (!use) return "Terreno";
   return USE_LABELS[use] ?? use;
+}
+
+/**
+ * Precio a mostrar según la operación del terreno.
+ *
+ * Un terreno de solo venta no tiene renta mensual, así que la tarjeta anunciaba
+ * «$0/mes» en vez del precio de venta (#363).
+ */
+function priceLabel(land: LandDto): string {
+  const monthly = land.priceRule?.pricePerMonth;
+  const sale = land.salePrice;
+
+  if (land.operation === "venta") {
+    return sale ? `$${sale.toLocaleString("es-PA")} en venta` : "Precio a convenir";
+  }
+  const rent = monthly ? `$${monthly.toLocaleString("es-PA")}/mes` : "Precio a convenir";
+  if (land.operation === "ambas" && sale) {
+    return `${rent} · $${sale.toLocaleString("es-PA")} en venta`;
+  }
+  return rent;
 }
 
 export default function MyLandsPage() {
@@ -89,16 +109,19 @@ export default function MyLandsPage() {
             return (
               <Link key={land.id} to="/lands/$id" params={{ id: land.id }} className="ml-card">
                 <div className="ml-card__media">
-                  <div className="ml-card__photo" aria-hidden="true">
-                    <MapPin size={26} strokeWidth={1.4} />
-                  </div>
+                  {land.photos?.[0] ? (
+                    <img className="ml-card__img" src={photoSrc(land.photos[0])} alt="" />
+                  ) : (
+                    <div className="ml-card__photo" aria-hidden="true">
+                      <MapPin size={26} strokeWidth={1.4} />
+                    </div>
+                  )}
                   <span className={`ml-card__badge ${badgeCls}`}>{badgeLabel}</span>
                 </div>
                 <div className="ml-card__body">
                   <div className="ml-card__title">{land.title}</div>
                   <div className="ml-card__meta">
-                    {useLabel(land.allowedUses?.[0])} · $
-                    {land.priceRule?.pricePerMonth?.toLocaleString("es-PA")}/mes
+                    {useLabel(land.allowedUses?.[0])} · {priceLabel(land)}
                   </div>
                   {/* TODO(#136): sin métricas de vistas/solicitudes por terreno todavía. */}
                   <div className="ml-card__stats">

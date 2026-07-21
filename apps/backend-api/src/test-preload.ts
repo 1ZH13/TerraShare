@@ -1,13 +1,17 @@
 // Test preload: spins up an in-memory MongoDB, connects both data layers
 // (native driver + mongoose), and seeds it from the in-memory store fixtures
 // before every test. Wired via bunfig.toml `[test].preload`.
+// Primero de todo: fija las variables de entorno que `config/env` valida al
+// evaluarse. Cualquier import que arrastre `env` debe venir después.
+import "./setup-test-env";
+
 import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
-import "./setup-test-env";
 import mongoose from "mongoose";
 import { connectMongoose, disconnectMongoose } from "./db/mongoose";
 import { __resetRateLimit } from "./middleware/rate-limit";
+import { invalidateSecuritySettingsCache } from "./lib/security-settings";
 import { getStore, resetStore } from "./store/in-memory-db";
 
 // Maps the in-memory store collections to the Mongo collection names the routes
@@ -27,6 +31,9 @@ function fixtures(): Record<string, Record<string, unknown>[]> {
     // Incluida aunque el store no la siembre: así la colección se vacía entre
     // tests y las notificaciones que crea un test no se filtran al siguiente.
     notifications: [...store.notifications.values()],
+    // El panel de seguridad guarda aquí la exigencia de 2FA (#362). Se vacía
+    // entre tests para que un ajuste no se filtre y bloquee al siguiente.
+    appsettings: [],
   } as unknown as Record<string, Record<string, unknown>[]>;
 }
 
@@ -54,6 +61,9 @@ beforeEach(async () => {
   // Reset the module-level rate-limit counter so cumulative suite requests from
   // the shared test IP don't trip the IP limit and cause spurious 429s.
   __resetRateLimit();
+  // La caché de ajustes de seguridad guarda el valor 10 s; si no se limpia, un
+  // test arrastra la configuración del anterior.
+  invalidateSecuritySettingsCache();
   await seedDatabase();
 });
 

@@ -55,7 +55,12 @@ export default function VisitModal({ landTitle, onSubmit, onClose }: VisitModalP
         aria-modal="true"
         aria-label="Agendar visita"
         style={{
-          background: "var(--surface, #1a1a2e)",
+          // `--surface` no existe: el token del sistema se llama `--ts-surface`.
+          // Sin definir, el modal caía al azul marino de reserva, que no pega
+          // con la paleta verde en ningún tema (#363).
+          background: "var(--ts-surface)",
+          color: "var(--ts-text)",
+          border: "1px solid var(--ts-border)",
           borderRadius: "12px", padding: "2rem",
           maxWidth: "460px", width: "90%",
           boxShadow: "0 20px 60px rgba(0,0,0,0.3)",

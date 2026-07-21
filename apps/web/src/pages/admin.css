@@ -346,3 +346,68 @@
   .adm-main { padding: 24px 20px; }
   .adm-rep__grid { grid-template-columns: 1fr; }
 }
+
+/* ─── Panel de seguridad (#362) ───────────────────────────────────────────── */
+
+.adm-sec { display: grid; gap: 18px; max-width: 760px; }
+
+.adm-sec__head { display: flex; gap: 14px; align-items: flex-start; }
+
+.adm-sec__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+}
+.adm-sec__icon.is-on { color: var(--ts-green); background: var(--ts-tint-green-2); }
+.adm-sec__icon.is-off { color: var(--ts-ink-3, #6b6b63); background: var(--ts-tint-2, #ececed); }
+
+.adm-sec__text { color: var(--ts-sage-2); font-size: 14px; line-height: 1.55; margin: 6px 0 0; }
+.adm-sec__text code {
+  font-size: 12.5px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--ts-tint-2, #ececed);
+  color: var(--ts-text);
+}
+
+.adm-sec__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ts-beige);
+}
+.adm-sec__state { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.adm-sec__origin { color: var(--ts-sage-2); font-size: 13px; }
+
+.adm-sec__warn {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #9a6b1f;
+  background: #f5e9d0;
+}
+.adm-sec__warn svg { flex: none; margin-top: 2px; }
+
+.adm-sec__steps {
+  margin: 16px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  color: var(--ts-sage-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.adm-sec__steps strong { color: var(--ts-text); font-weight: 600; }

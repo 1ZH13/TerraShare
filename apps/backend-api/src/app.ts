@@ -12,6 +12,7 @@ import { requireAuth } from "./middleware/require-auth";
 import { authRoutes } from "./routes/auth";
 import { healthRoutes } from "./routes/health";
 import { adminRoutes } from "./routes/admin";
+import { adminSecurityRoutes } from "./routes/admin-security";
 import { landRoutes } from "./routes/lands";
 import { favoriteRoutes } from "./routes/favorites";
 import { leadRoutes } from "./routes/leads";
@@ -71,6 +72,7 @@ export function createApp() {
   app.route("/api/v1", healthRoutes);
   app.route("/api/v1", authRoutes);
   app.route("/api/v1", adminRoutes);
+  app.route("/api/v1", adminSecurityRoutes);
   app.route("/api/v1", backupRoutes);
   app.route("/api/v1", landRoutes);
   app.route("/api/v1", favoriteRoutes);

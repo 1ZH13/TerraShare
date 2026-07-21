@@ -2,6 +2,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 process.env.ALLOW_DEV_AUTH_BYPASS = "true";
+// Marcador de posición: `test-preload` lo sustituye sin condiciones por la URI
+// del servidor en memoria en cuanto arranca. Existe porque `config/env` valida
+// la variable con zod al evaluarse, y basta con que un módulo importe `env`
+// antes de ese momento para que toda la suite reviente. En local no se notaba:
+// el `.env` de desarrollo ya traía la variable, así que solo fallaba en CI.
+process.env.MONGODB_URI = process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017/terrashare-test";
 process.env.CLERK_JWKS_URL = process.env.CLERK_JWKS_URL ?? "https://example.test/.well-known/jwks.json";
 process.env.CLERK_ISSUER = process.env.CLERK_ISSUER ?? "https://example.test";
 process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "sk_test_placeholder";
