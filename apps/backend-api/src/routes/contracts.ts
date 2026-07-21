@@ -11,7 +11,7 @@ import {
 } from "../lib/auth-helpers";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
-import { Contract, AuditEvent, RentalRequest, Land } from "../db/schemas";
+import { Contract, AuditEvent, RentalRequest, Land, User } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 export const contractRoutes = new Hono<AppEnv>();
@@ -254,10 +254,13 @@ contractRoutes.get("/contracts/:id/pdf", requireAuth, async (c) => {
   doc.text(`Estado: ${contract.status}`);
   doc.moveDown();
 
+  const owner = await User.findOne({ clerkUserId: contract.ownerId }).lean();
+  const tenant = await User.findOne({ clerkUserId: contract.tenantId }).lean();
+
   doc.fontSize(14).text("Partes");
   doc.fontSize(12);
-  doc.text(`Propietario: ${contract.ownerId}`);
-  doc.text(`Arrendatario: ${contract.tenantId}`);
+  doc.text(`Propietario: ${owner?.profile?.fullName ?? contract.ownerId}`);
+  doc.text(`Arrendatario: ${tenant?.profile?.fullName ?? contract.tenantId}`);
   doc.moveDown();
 
   doc.fontSize(14).text("Terminos");
@@ -271,8 +274,8 @@ contractRoutes.get("/contracts/:id/pdf", requireAuth, async (c) => {
     doc.fontSize(14).text("Firma");
     doc.fontSize(12);
     doc.text("Ambas partes han firmado electronicamente este contrato.");
-    if (contract.createdAt) {
-      doc.text(`Fecha de creacion: ${new Date(contract.createdAt).toLocaleDateString("es-PA")}`);
+    if (contract.terms?.signedAt) {
+      doc.text(`Fecha de firma: ${new Date(contract.terms.signedAt).toLocaleDateString("es-PA")}`);
     }
   }
 
