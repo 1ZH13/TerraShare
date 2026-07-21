@@ -15,6 +15,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { listLands, photoSrc } from "../services/api";
+import { formatLandPriceShort, monthlyPrice } from "../lib/land-price";
 import PanamaMap from "../components/LazyPanamaMap";
 import EmptyState from "../components/EmptyState";
 import { useFavorites } from "../hooks/useFavorites";
@@ -69,6 +70,9 @@ export default function CatalogPage() {
   const [use, setUse] = useState("todos");
   const [province, setProvince] = useState("todas");
   const [maxPrice, setMaxPrice] = useState(1_000_000);
+  // Tipo de operación (#365). El campo `operation` existe en el backend desde
+  // #249; el filtro llevaba desde entonces pintado como «Pronto».
+  const [operation, setOperation] = useState("todas");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,7 +90,13 @@ export default function CatalogPage() {
 
   useEffect(() => {
     let active = true;
-    listLands()
+    // El catálogo filtra, ordena y pinta el mapa **en el cliente**, así que
+    // necesita el conjunto completo. Sin `pageSize`, el backend devolvía su
+    // página por defecto de 20 y el resto de terrenos era inalcanzable: no hay
+    // paginador en esta pantalla, así que desaparecían sin previo aviso.
+    // 100 es el máximo que admite la ruta; por encima de esa escala habría que
+    // mover los filtros al servidor y paginar de verdad (#366).
+    listLands({ pageSize: 100 })
       .then((data) => {
         if (!active) return;
         setLands(data);
@@ -113,18 +123,26 @@ export default function CatalogPage() {
   const filtered = useMemo(() => {
     return lands.filter((land) => {
       const landUse = land.allowedUses?.[0] ?? "otro";
-      const price = land.priceRule?.pricePerMonth ?? 0;
       const matchesUse = use === "todos" || landUse === use;
       const matchesProvince = province === "todas" || land.location?.province === province;
-      const matchesPrice = price <= maxPrice;
+      // El filtro de precio solo aplica a lo que se alquila: un terreno de solo
+      // venta no tiene renta con la que compararse, y contarlo como 0 lo colaba
+      // en todos los tramos «hasta $X».
+      const monthly = monthlyPrice(land);
+      const matchesPrice = maxPrice >= 1_000_000 || (monthly !== null && monthly <= maxPrice);
+      // «ambas» cuenta para las dos caras del filtro.
+      const matchesOperation =
+        operation === "todas"
+        || land.operation === operation
+        || land.operation === "ambas";
       const haystack = [land.title, land.location?.province, land.location?.district, land.description]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       const matchesQuery = !query || haystack.includes(query.toLowerCase());
-      return matchesUse && matchesProvince && matchesPrice && matchesQuery;
+      return matchesUse && matchesProvince && matchesPrice && matchesOperation && matchesQuery;
     });
-  }, [lands, use, province, maxPrice, query]);
+  }, [lands, use, province, maxPrice, operation, query]);
 
   const selectedLand = filtered.find((l) => l.id === selectedId) ?? filtered[0] ?? null;
 
@@ -202,15 +220,23 @@ export default function CatalogPage() {
           </span>
         </label>
 
-        {/* TODO(#140): el tipo de operación (alquiler/venta) aún no existe en el
-            backend; el filtro se muestra como "próximamente". */}
-        <span className="cat-pill cat-pill--soon" role="note" title="Disponible próximamente">
+        <label className="cat-pill">
           <span className="cat-pill__icon">
             <Tag size={15} />
           </span>
-          Alquiler / Venta
-          <span className="cat-soon__tag">Pronto</span>
-        </span>
+          <select
+            value={operation}
+            onChange={(e) => setOperation(e.target.value)}
+            aria-label="Filtrar por tipo de operación"
+          >
+            <option value="todas">Alquiler / Venta</option>
+            <option value="alquiler">En alquiler</option>
+            <option value="venta">En venta</option>
+          </select>
+          <span className="cat-pill__chev">
+            <ChevronDown size={14} />
+          </span>
+        </label>
       </div>
 
       {/* lista + mapa */}
@@ -251,7 +277,7 @@ export default function CatalogPage() {
           ) : (
             <div className="cat-list">
               {filtered.map((land) => {
-                const price = land.priceRule?.pricePerMonth;
+                const monthly = monthlyPrice(land);
                 return (
                   <button
                     key={land.id}
@@ -326,13 +352,13 @@ export default function CatalogPage() {
                         <MapPin size={14} /> {land.location?.province} · {land.area} ha
                       </div>
                       <div className="cat-card__price">
-                        {typeof price === "number" ? (
+                        {monthly !== null ? (
                           <>
-                            ${price.toLocaleString("es-PA")}
+                            ${monthly.toLocaleString("es-PA")}
                             <span>/mes</span>
                           </>
                         ) : (
-                          <span style={{ fontSize: "14px" }}>Precio a consultar</span>
+                          <span style={{ fontSize: "14px" }}>{formatLandPriceShort(land)}</span>
                         )}
                       </div>
                     </div>
@@ -354,10 +380,7 @@ export default function CatalogPage() {
               <div style={{ minWidth: 0 }}>
                 <div className="cat-mapcard__title">{selectedLand.title}</div>
                 <div className="cat-mapcard__sub">
-                  {selectedLand.location?.province}
-                  {typeof selectedLand.priceRule?.pricePerMonth === "number"
-                    ? ` · $${selectedLand.priceRule.pricePerMonth.toLocaleString("es-PA")}/mes`
-                    : ""}
+                  {selectedLand.location?.province} · {formatLandPriceShort(selectedLand)}
                 </div>
               </div>
               <div className="cat-mapcard__actions">

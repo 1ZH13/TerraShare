@@ -31,5 +31,9 @@
       "@terrashare/shared": ["../../packages/shared/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  /* Los unitarios corren con el runner de Bun (`bun run test:unit`), que trae
+     sus propios tipos. `tsc` no los conoce y no vale la pena añadir una
+     dependencia de tipos solo para eso. */
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

@@ -545,7 +545,10 @@ export function buildDemoData(): Built {
       location: {
         province: spec.province,
         district: spec.district,
-        corregimiento: pick(PROVINCES[spec.province] ?? [spec.district]),
+        // Se omite a propósito: la lista por provincia son DISTRITOS, y
+        // reutilizarla aquí ponía cosas como «corregimiento: David» dentro de
+        // Boquete. Mejor no mostrar el dato que mostrarlo mal.
+        corregimiento: undefined,
         lat: 7.5 + rng() * 1.9,
         lng: -82.5 + rng() * 4.5,
       },

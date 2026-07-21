@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CalendarClock } from "lucide-react";
+import { FIELD_STYLE, BUTTON_STYLE, PRIMARY_BUTTON_STYLE } from "./modal-styles";
 
 interface VisitModalProps {
   landTitle: string;
@@ -80,7 +81,7 @@ export default function VisitModal({ landTitle, onSubmit, onClose }: VisitModalP
               value={date}
               min={todayIso()}
               onChange={(e) => setDate(e.target.value)}
-              style={{ width: "100%", marginTop: "0.25rem", padding: "0.5rem", borderRadius: "8px" }}
+              style={FIELD_STYLE}
             />
           </label>
           <label style={{ flex: 1, fontSize: "0.85rem" }}>
@@ -89,7 +90,7 @@ export default function VisitModal({ landTitle, onSubmit, onClose }: VisitModalP
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              style={{ width: "100%", marginTop: "0.25rem", padding: "0.5rem", borderRadius: "8px" }}
+              style={FIELD_STYLE}
             />
           </label>
         </div>
@@ -100,7 +101,7 @@ export default function VisitModal({ landTitle, onSubmit, onClose }: VisitModalP
           onChange={(e) => setMessage(e.target.value)}
           maxLength={500}
           rows={3}
-          style={{ width: "100%", padding: "0.5rem", borderRadius: "8px", resize: "vertical" }}
+          style={{ ...FIELD_STYLE, marginTop: 0, resize: "vertical" }}
         />
 
         {error && (
@@ -111,7 +112,7 @@ export default function VisitModal({ landTitle, onSubmit, onClose }: VisitModalP
           <button
             type="button"
             onClick={onClose}
-            style={{ padding: "0.5rem 1rem", borderRadius: "8px", cursor: "pointer" }}
+            style={BUTTON_STYLE}
           >
             Cancelar
           </button>
@@ -120,11 +121,9 @@ export default function VisitModal({ landTitle, onSubmit, onClose }: VisitModalP
             onClick={handleSubmit}
             disabled={submitting || !date || !time}
             style={{
-              padding: "0.5rem 1rem", borderRadius: "8px",
+              ...PRIMARY_BUTTON_STYLE,
               cursor: submitting ? "default" : "pointer",
               opacity: submitting || !date || !time ? 0.6 : 1,
-              display: "inline-flex", alignItems: "center", gap: "0.4rem",
-              fontSize: "0.9rem", fontWeight: 600,
             }}
           >
             <CalendarClock size={16} />

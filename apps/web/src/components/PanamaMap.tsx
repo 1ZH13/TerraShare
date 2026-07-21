@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap } from "react-l
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
+import { formatLandPriceShort } from "../lib/land-price";
 import { getLandPosition } from "../data/province-centers";
 
 type LandLike = Record<string, any>;
@@ -83,7 +84,7 @@ function MapPin({ land, onClick }: { land: LandLike; onClick: (land: LandLike) =
           <span className="popup-badge">{land.allowedUses?.[0]}</span>
           <h4>{land.title}</h4>
           <p>{land.location?.province} · {land.location?.district}</p>
-          <strong>${land.priceRule?.pricePerMonth}/mes</strong>
+          <strong>{formatLandPriceShort(land)}</strong>
         </div>
       </Popup>
     </Marker>
