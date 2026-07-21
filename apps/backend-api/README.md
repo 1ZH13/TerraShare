@@ -101,7 +101,32 @@ bun install
 bun run dev
 bun run build
 bun run test  # unit tests del store y routes
+bun run migrate
+bun run seed:demo  # datos de demostración (BORRA y repuebla)
 ```
+
+### Datos de demostración
+
+`bun run seed:demo` deja la base con un juego de datos **coherente** para
+recorrer la app: terrenos con fotos, solicitudes en los siete estados,
+contratos en los cuatro, pagos (incluidos reembolsos), chats con conversación,
+favoritos, reportes, reseñas, búsquedas guardadas, visitas y notificaciones.
+
+Todo cuelga de cuentas reales de Clerk, porque las rutas filtran por
+`authUser.id`, que *es* el id de Clerk: sin eso una sesión real no ve nada
+suyo. La cuenta principal aparece a la vez como **dueña** (los terrenos
+`land_me_*`) y como **arrendataria** (solicitudes sobre los de Alice), para
+que las dos caras del producto tengan datos en la misma sesión.
+
+Para sembrar contra otra cuenta, sin tocar el código:
+
+```bash
+SEED_MAIN_CLERK_ID=user_xxxxxxxx bun run seed:demo
+```
+
+El script aplica las migraciones pendientes antes de escribir y borra las
+colecciones de negocio (no `_migrations`). Se niega a correr con
+`NODE_ENV=production` salvo `--force`.
 
 ## Testing y CI
 
