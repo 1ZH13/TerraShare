@@ -237,6 +237,17 @@ export interface IFavorite extends Document {
   updatedAt: Date;
 }
 
+export interface IReview extends Document {
+  id: string;
+  contractId: string;
+  senderId: string;
+  receiverId: string;
+  rating: number;
+  comment?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const UserSchema = new Schema<IUser>({
   clerkUserId: { type: String, required: true, unique: true },
   email: { type: String, required: true },
@@ -425,6 +436,15 @@ const BackupRecordSchema = new Schema<IBackupRecord>({
   verifyDetail: Schema.Types.Mixed,
 }, { timestamps: true });
 
+const ReviewSchema = new Schema<IReview>({
+  id: { type: String, required: true, unique: true },
+  contractId: { type: String, required: true },
+  senderId: { type: String, required: true },
+  receiverId: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: String,
+}, { timestamps: true });
+
 // Índices secundarios (antes vivían en el driver nativo config/database.ts; se
 // migran aquí para que Mongoose sea la única fuente de índices — #135 A-1/A-6).
 LandSchema.index({ ownerId: 1 });
@@ -451,6 +471,9 @@ FavoriteSchema.index({ userId: 1, landId: 1 }, { unique: true });
 // Historial de respaldos ordenado por fecha (#174).
 BackupRecordSchema.index({ createdAt: -1 });
 
+ReviewSchema.index({ contractId: 1, senderId: 1 }, { unique: true });
+ReviewSchema.index({ receiverId: 1 });
+
 export const User = mongoose.model<IUser>("User", UserSchema);
 export const Land = mongoose.model<ILand>("Land", LandSchema);
 export const RentalRequest = mongoose.model<IRentalRequest>("RentalRequest", RentalRequestSchema);
@@ -465,6 +488,7 @@ export const IdempotencyKey = mongoose.model<IIdempotencyKey>("IdempotencyKey", 
 export const Favorite = mongoose.model<IFavorite>("Favorite", FavoriteSchema);
 export const Report = mongoose.model<IReport>("Report", ReportSchema);
 export const BackupRecord = mongoose.model<IBackupRecord>("BackupRecord", BackupRecordSchema);
+export const Review = mongoose.models.Review || mongoose.model<IReview>("Review", ReviewSchema);
 
 export interface INotification extends Document {
   id: string;

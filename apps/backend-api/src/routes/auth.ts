@@ -5,7 +5,7 @@ import { success } from "../lib/api-response";
 import { validateBody } from "../lib/validate";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { getStore } from "../store/in-memory-db";
-import { User, Land } from "../db/schemas";
+import { User, Land, Review } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 export const authRoutes = new Hono<AppEnv>();
@@ -35,12 +35,20 @@ authRoutes.get("/users/:userId/public", async (c) => {
   // Nº de terrenos publicados (activos): señal de confianza real y barata.
   const activeLandsCount = await Land.countDocuments({ ownerId: userId, status: "active" });
 
+  const reviews = await Review.find({ receiverId: userId }).select("rating").lean();
+  const totalReviews = reviews.length;
+  const averageRating = totalReviews > 0
+    ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
+    : 0;
+
   return success(c, {
     id: userId,
     displayName,
     verified,
     memberSince,
     activeLandsCount,
+    averageRating,
+    totalReviews,
   });
 });
 
