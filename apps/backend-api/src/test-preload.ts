@@ -24,6 +24,9 @@ function fixtures(): Record<string, Record<string, unknown>[]> {
     chats: [...store.chats.values()],
     chatmessages: [...store.chatMessages.values()].flat(),
     auditevents: [...store.auditEvents.values()],
+    // Incluida aunque el store no la siembre: así la colección se vacía entre
+    // tests y las notificaciones que crea un test no se filtran al siguiente.
+    notifications: [...store.notifications.values()],
   } as unknown as Record<string, Record<string, unknown>[]>;
 }
 
