@@ -18,20 +18,45 @@ export default defineConfig({
     baseURL: "http://localhost:5173",
     trace: "on-first-retry"
   },
-  // El E2E prueba el build de producción (client-only, servido estáticamente),
-  // no `bun run dev`: en dev, TanStack Start hace SSR e incompatibiliza con el
-  // client entry usado en producción. Así se prueba el mismo artefacto que se
-  // despliega. El build tarda, por eso el timeout más alto.
-  webServer: {
-    command: "bun run preview:static",
-    url: "http://localhost:5173",
-    reuseExistingServer: !process.env.CI,
-    timeout: 180000
-  },
+  // Se levantan los DOS modos en que arranca la app, porque el montaje difiere
+  // y cada uno tiene fallos propios:
+  //
+  // - 5173: build de producción (SPA client-only servida estáticamente). Es el
+  //   artefacto que se despliega y contra el que corre la suite principal.
+  // - 5174: `bun run dev`, donde TanStack Start hace SSR del documento entero.
+  //
+  // Probar solo producción dejaba ciego todo lo específico del SSR: así pasaron
+  // desapercibidos #354 (la app nunca hidrataba en dev) y el crash de Leaflet
+  // que tumbaba el catálogo (#358).
+  webServer: [
+    {
+      command: "bun run preview:static",
+      url: "http://localhost:5173",
+      reuseExistingServer: !process.env.CI,
+      // El build tarda, por eso el timeout más alto.
+      timeout: 180000
+    },
+    {
+      command: "bunx vite dev --port 5174 --strictPort",
+      url: "http://localhost:5174",
+      reuseExistingServer: !process.env.CI,
+      timeout: 180000
+    }
+  ],
   projects: [
     {
       name: "chromium",
+      // Las `.ssr.spec.js` son del proyecto `dev-ssr`: apuntan al otro servidor.
+      testIgnore: /\.ssr\.spec\.js$/,
       use: { ...devices["Desktop Chrome"] }
+    },
+    {
+      // Mismas pruebas de interactividad, contra el servidor de desarrollo:
+      // aquí el documento llega renderizado por el servidor, así que si la
+      // hidratación no engancha, el marcado se ve pero nada responde.
+      name: "dev-ssr",
+      testMatch: /\.ssr\.spec\.js$/,
+      use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:5174" }
     },
     {
       name: "firefox",

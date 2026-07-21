@@ -105,7 +105,10 @@ jobs:
         env:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-      - run: bun run test:e2e -- --project=chromium
+      # `dev-ssr` corre las pruebas de interactividad contra `vite dev`, donde la
+      # app se renderiza en el servidor. Es el modo que nadie probaba y por donde
+      # se colaron #354 (la app no hidrataba) y el crash de Leaflet (#358).
+      - run: bun run test:e2e -- --project=chromium --project=dev-ssr
         env:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
