@@ -101,8 +101,12 @@ export const listAdminLands = (filters: AdminLandFilters = {}) => {
   const params = new URLSearchParams();
   if (filters.status) params.set("status", filters.status);
   if (filters.search) params.set("search", filters.search);
-  const qs = params.toString();
-  return request<LandDto[]>("GET", `/api/v1/admin/lands${qs ? `?${qs}` : ""}`);
+  // La ruta pagina a 20 por defecto y la pantalla no tiene paginador, así que
+  // los terrenos restantes quedaban fuera del alcance del admin — y esta es la
+  // pantalla de moderación (#370). 100 es el máximo que admite la ruta; por
+  // encima de esa escala hace falta paginador de verdad, igual que en #366.
+  params.set("pageSize", "100");
+  return request<LandDto[]>("GET", `/api/v1/admin/lands?${params.toString()}`);
 };
 
 /** PATCH /api/v1/admin/lands/:landId/status — { status: "active"|"inactive"|"rejected" } */

@@ -144,7 +144,7 @@ export default function ContractsPage() {
                     <strong>Período:</strong> {contract.terms?.startsAt || "—"} → {contract.terms?.endsAt || "—"}
                   </p>
                   <p style={{ margin: "0.25rem 0" }}>
-                    <strong>Creado:</strong> {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : "—"}
+                    <strong>Creado:</strong> {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString("es-PA", { dateStyle: "medium" }) : "—"}
                   </p>
                 </div>
               </div>

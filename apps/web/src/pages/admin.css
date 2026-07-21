@@ -230,7 +230,7 @@
 .adm-badge--amber { color: #9a6b1f; background: #f5e9d0; }
 .adm-badge--red { color: #9a3b2c; background: #f7e0da; }
 .adm-badge--teal { color: #2f6b63; background: #e3ecec; }
-.adm-badge--muted { color: var(--ts-ink-3, #6b6b63); background: var(--ts-tint-2, #ececed); }
+.adm-badge--muted { color: var(--ts-ink-3); background: var(--ts-tint-2); }
 
 /* Spinner para acciones en curso (respaldos #174). */
 @keyframes admSpin { to { transform: rotate(360deg); } }
@@ -363,14 +363,14 @@
   border-radius: 12px;
 }
 .adm-sec__icon.is-on { color: var(--ts-green); background: var(--ts-tint-green-2); }
-.adm-sec__icon.is-off { color: var(--ts-ink-3, #6b6b63); background: var(--ts-tint-2, #ececed); }
+.adm-sec__icon.is-off { color: var(--ts-ink-3); background: var(--ts-tint-2); }
 
 .adm-sec__text { color: var(--ts-sage-2); font-size: 14px; line-height: 1.55; margin: 6px 0 0; }
 .adm-sec__text code {
   font-size: 12.5px;
   padding: 1px 5px;
   border-radius: 5px;
-  background: var(--ts-tint-2, #ececed);
+  background: var(--ts-tint-2);
   color: var(--ts-text);
 }
 

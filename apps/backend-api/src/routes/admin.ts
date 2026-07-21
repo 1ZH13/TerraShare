@@ -154,6 +154,9 @@ adminRoutes.get("/admin/lands", requireAuth, requireAdmin, async (c) => {
     ownerEmail: ownerMap.get(l.ownerId)?.email ?? l.ownerId,
     title: l.title,
     status: l.status,
+    // La tabla del panel tiene una columna «Uso» que sin esto no podía llenarse
+    // nunca: mostraba «—» en todas las filas (#370).
+    allowedUses: l.allowedUses,
     createdAt: l.createdAt,
   }));
 
