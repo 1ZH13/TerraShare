@@ -534,3 +534,36 @@ SavedSearchSchema.index({ userId: 1 });
 
 export const SavedSearch = mongoose.models.SavedSearch
   || mongoose.model<ISavedSearch>("SavedSearch", SavedSearchSchema);
+
+export interface IVisit extends Document {
+  id: string;
+  landId: string;
+  tenantId: string;
+  ownerId: string;
+  proposedDate: string;
+  proposedTime: string;
+  message?: string;
+  status: "pending" | "confirmed" | "rescheduled" | "rejected";
+  responseMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const VisitSchema = new Schema<IVisit>({
+  id: { type: String, required: true, unique: true },
+  landId: { type: String, required: true },
+  tenantId: { type: String, required: true },
+  ownerId: { type: String, required: true },
+  proposedDate: { type: String, required: true },
+  proposedTime: { type: String, required: true },
+  message: String,
+  status: { type: String, enum: ["pending", "confirmed", "rescheduled", "rejected"], default: "pending" },
+  responseMessage: String,
+}, { timestamps: true });
+
+VisitSchema.index({ landId: 1 });
+VisitSchema.index({ tenantId: 1 });
+VisitSchema.index({ ownerId: 1 });
+
+export const Visit = mongoose.models.Visit
+  || mongoose.model<IVisit>("Visit", VisitSchema);
