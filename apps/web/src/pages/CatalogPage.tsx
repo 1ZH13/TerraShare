@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import type { LandDto } from "@terrashare/shared";
 import {
   Search,
@@ -13,9 +13,21 @@ import {
   Heart,
   Columns2,
   ArrowRight,
+  Bookmark,
+  BookmarkPlus,
 } from "lucide-react";
 import { listLands, photoSrc } from "../services/api";
 import { formatLandPriceShort, monthlyPrice } from "../lib/land-price";
+import {
+  type CatalogFilterState,
+  filtersToParams,
+  hasAnyFilter,
+  describeFilters,
+  paramsToFilters,
+  suggestName,
+} from "../lib/catalog-filters";
+import { createSavedSearch } from "../services/api";
+import SaveSearchModal from "../components/SaveSearchModal";
 import PanamaMap from "../components/LazyPanamaMap";
 import EmptyState from "../components/EmptyState";
 import { useFavorites } from "../hooks/useFavorites";
@@ -47,8 +59,25 @@ function formatUse(use?: string): string {
   return USE_LABELS[use] ?? use;
 }
 
+/**
+ * Opciones del desplegable de precio, añadiendo el valor activo si no está
+ * entre las predefinidas.
+ *
+ * Una búsqueda guardada puede traer cualquier tope (p. ej. $1.500). Sin esto,
+ * el `select` no encuentra su valor, se queda mostrando «Precio» y el usuario
+ * ve un filtro aplicado que la interfaz niega estar aplicando.
+ */
+function priceOptionsWith(active: number) {
+  if (active >= 1_000_000 || PRICE_OPTIONS.some((o) => o.value === active)) {
+    return PRICE_OPTIONS;
+  }
+  return [...PRICE_OPTIONS, { label: `Hasta $${active.toLocaleString("es-PA")}`, value: active }]
+    .sort((a, b) => a.value - b.value);
+}
+
 export default function CatalogPage() {
   const navigate = useNavigate();
+  const search = useSearch({ strict: false });
 
   const [lands, setLands] = useState<LandDto[]>([]);
   const [status, setStatus] = useState<LoadState>("loading");
@@ -66,13 +95,24 @@ export default function CatalogPage() {
   } = useCompareLands();
   const [compareToast, setCompareToast] = useState<string | null>(null);
 
-  const [query, setQuery] = useState("");
-  const [use, setUse] = useState("todos");
-  const [province, setProvince] = useState("todas");
-  const [maxPrice, setMaxPrice] = useState(1_000_000);
+  // Los filtros pueden venir en la URL: así una búsqueda guardada se «aplica»
+  // navegando aquí, y de paso el catálogo filtrado es un enlace compartible
+  // (HU-99 / #368).
+  const initialFilters = paramsToFilters(search as Record<string, unknown>);
+
+  const [query, setQuery] = useState(initialFilters.q);
+  const [use, setUse] = useState(initialFilters.use);
+  const [province, setProvince] = useState(initialFilters.province);
+  const [maxPrice, setMaxPrice] = useState(initialFilters.maxPrice);
   // Tipo de operación (#365). El campo `operation` existe en el backend desde
   // #249; el filtro llevaba desde entonces pintado como «Pronto».
-  const [operation, setOperation] = useState("todas");
+  const [operation, setOperation] = useState(initialFilters.operation);
+
+  // Guardar búsqueda (HU-99 / #368).
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState("");
+
+  const currentFilters: CatalogFilterState = { q: query, use, province, operation, maxPrice };
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -209,7 +249,7 @@ export default function CatalogPage() {
             onChange={(e) => setMaxPrice(Number(e.target.value))}
             aria-label="Filtrar por precio"
           >
-            {PRICE_OPTIONS.map((opt) => (
+            {priceOptionsWith(maxPrice).map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -237,7 +277,37 @@ export default function CatalogPage() {
             <ChevronDown size={14} />
           </span>
         </label>
+
+        {/* Guardar la búsqueda actual (HU-99 / #368). Sin criterios no tiene
+            sentido: una alerta «de cualquier terreno» sería solo ruido. */}
+        <button
+          type="button"
+          className="cat-pill cat-pill--action"
+          onClick={() => { setSaveFeedback(""); setSaveOpen(true); }}
+          disabled={!hasAnyFilter(currentFilters)}
+          title={
+            hasAnyFilter(currentFilters)
+              ? "Guardar esta búsqueda y recibir avisos"
+              : "Elige algún filtro para poder guardar la búsqueda"
+          }
+        >
+          <span className="cat-pill__icon">
+            <BookmarkPlus size={15} />
+          </span>
+          Guardar búsqueda
+        </button>
+
+        <Link to="/dashboard/searches" className="cat-pill cat-pill--action">
+          <span className="cat-pill__icon">
+            <Bookmark size={15} />
+          </span>
+          Mis búsquedas
+        </Link>
       </div>
+
+      {saveFeedback && (
+        <p className="cat-savefeedback" role="status">{saveFeedback}</p>
+      )}
 
       {/* lista + mapa */}
       <div className="cat-body">
@@ -427,6 +497,18 @@ export default function CatalogPage() {
         <div className="cmp-toast" role="status">
           {compareToast}
         </div>
+      )}
+
+      {saveOpen && (
+        <SaveSearchModal
+          summary={describeFilters(filtersToParams(currentFilters))}
+          suggestedName={suggestName(currentFilters)}
+          onClose={() => setSaveOpen(false)}
+          onSubmit={async (name) => {
+            await createSavedSearch({ name, filters: filtersToParams(currentFilters) });
+            setSaveFeedback(`Búsqueda «${name}» guardada. Te avisaremos de los terrenos que encajen.`);
+          }}
+        />
       )}
     </div>
   );

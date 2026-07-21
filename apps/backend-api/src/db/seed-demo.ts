@@ -812,10 +812,14 @@ export function buildDemoData(): Built {
   );
 
   // ── Búsquedas guardadas de la cuenta principal ─────────────────────────────
+  // Las claves son las que entienden el emparejador (`lib/match-saved-searches`)
+  // y la interfaz (`web/src/lib/catalog-filters`): province, district, use,
+  // operation, q, priceMin y priceMax. Sembrar otras (`maxPrice`, `maxSalePrice`)
+  // deja búsquedas que ni avisan ni se pueden reaplicar desde el catálogo.
   const savedSearches = [
     {
       id: "search_001", userId: ME, name: "Ganadería en Coclé hasta $1.500",
-      filters: { province: "Coclé", use: "ganaderia", maxPrice: 1500, operation: "alquiler" },
+      filters: { province: "Coclé", use: "ganaderia", priceMax: 1500, operation: "alquiler" },
       createdAt: daysAgo(28), updatedAt: daysAgo(28),
     },
     {
@@ -824,8 +828,8 @@ export function buildDemoData(): Built {
       createdAt: daysAgo(14), updatedAt: daysAgo(14),
     },
     {
-      id: "search_003", userId: ME, name: "Lotes en venta bajo $150.000",
-      filters: { operation: "venta", maxSalePrice: 150000 },
+      id: "search_003", userId: ME, name: "Terrenos en venta",
+      filters: { operation: "venta" },
       createdAt: daysAgo(4), updatedAt: daysAgo(4),
     },
     {
