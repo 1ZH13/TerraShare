@@ -36,6 +36,7 @@ export default function UserDashboardLayout({ children, onSignOut }: UserDashboa
     { label: "Mis solicitudes", onClick: () => navigate({ to: "/dashboard" }) },
     { label: "Mis terrenos", onClick: () => navigate({ to: "/dashboard/lands" }) },
     { label: "Contratos", onClick: () => navigate({ to: "/dashboard/contracts" }) },
+    { label: "Visitas", onClick: () => navigate({ to: "/dashboard/visits" }) },
     { label: "Pagos", onClick: () => navigate({ to: "/dashboard/payments" }) },
     { label: "Privacidad", onClick: () => navigate({ to: "/dashboard/privacy" }) },
   ];

@@ -491,6 +491,82 @@ export const deleteSavedSearch = async (id: string): Promise<boolean> => {
   return res?.ok ?? false;
 };
 
+// ─── Visitas (HU-100 / #326) ────────────────────────────────────────────────
+
+export type VisitStatus = "pending" | "confirmed" | "rescheduled" | "rejected";
+
+export interface VisitDto {
+  id: string;
+  landId: string;
+  tenantId: string;
+  ownerId: string;
+  proposedDate: string;
+  proposedTime: string;
+  message?: string;
+  status: VisitStatus;
+  responseMessage?: string;
+  createdAt: string;
+}
+
+/** POST /api/v1/lands/:landId/visits — solicitar una visita a un terreno. */
+export const createVisit = async (
+  landId: string,
+  input: { proposedDate: string; proposedTime: string; message?: string },
+): Promise<VisitDto | null> => {
+  const res = await request<VisitDto>("POST", `/api/v1/lands/${landId}/visits`, input);
+  return res?.data ?? null;
+};
+
+/** GET /api/v1/users/me/visits — visitas donde participo (como dueño o interesado). */
+export const listMyVisits = async (): Promise<VisitDto[]> => {
+  const res = await request<VisitDto[]>("GET", "/api/v1/users/me/visits");
+  return res?.data ?? [];
+};
+
+/** PATCH /api/v1/visits/:id — el dueño confirma, reprograma o rechaza. */
+export const respondToVisit = async (
+  visitId: string,
+  input: {
+    status: Exclude<VisitStatus, "pending">;
+    responseMessage?: string;
+    proposedDate?: string;
+    proposedTime?: string;
+  },
+): Promise<VisitDto | null> => {
+  const res = await request<VisitDto>("PATCH", `/api/v1/visits/${visitId}`, input);
+  return res?.data ?? null;
+};
+
+// ─── Contrato en PDF (HU-101 / #327) ────────────────────────────────────────
+
+/**
+ * GET /api/v1/contracts/:id/pdf — descarga el contrato. El endpoint exige
+ * autenticación y devuelve binario, así que no pasa por `request` (que asume
+ * JSON): se pide el blob con las mismas cabeceras y se dispara la descarga.
+ */
+export const downloadContractPdf = async (contractId: string): Promise<void> => {
+  const headers = await buildHeaders();
+  delete headers["Content-Type"];
+
+  const res = await fetch(`${BASE_URL}/api/v1/contracts/${contractId}/pdf`, { headers });
+  if (!res.ok) {
+    throw new Error("No se pudo descargar el contrato");
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `contrato-${contractId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+};
+
 export const api = {
   listLands,
   getMyLands,
@@ -518,4 +594,8 @@ export const api = {
   createSavedSearch,
   listSavedSearches,
   deleteSavedSearch,
+  createVisit,
+  listMyVisits,
+  respondToVisit,
+  downloadContractPdf,
 };

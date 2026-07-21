@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { useAuth, useUser } from "@clerk/clerk-react";
-import { Star } from "lucide-react";
+import { Star, Download } from "lucide-react";
 import ReviewModal from "../components/ReviewModal";
-import { createReview, getReviewsByUser, type ReviewDto } from "../services/api";
+import { createReview, getReviewsByUser, downloadContractPdf, type ReviewDto } from "../services/api";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -26,6 +26,9 @@ export default function ContractDetailPage() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [myReview, setMyReview] = useState<ReviewDto | null>(null);
   const [reviews, setReviews] = useState<ReviewDto[]>([]);
+  // Descarga del contrato en PDF (HU-101 / #327).
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
 
   useEffect(() => {
     if (!user || !contractId) return;
@@ -76,6 +79,19 @@ export default function ContractDetailPage() {
   const status = contract ? statusConfig[contract.status] || statusConfig.draft : null;
   const canReview = contract?.status === "completed" && user && !myReview;
 
+  const handleDownloadPdf = async () => {
+    if (!contract) return;
+    setDownloading(true);
+    setDownloadError("");
+    try {
+      await downloadContractPdf(contract.id);
+    } catch (e) {
+      setDownloadError(e instanceof Error ? e.message : "No se pudo descargar el PDF");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div>
       <div className="section-header">
@@ -115,6 +131,26 @@ export default function ContractDetailPage() {
             <p style={{ margin: 0 }}><strong>Período:</strong> {contract.terms?.startsAt || "—"} → {contract.terms?.endsAt || "—"}</p>
             <p style={{ margin: 0 }}><strong>Creado:</strong> {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : "—"}</p>
           </div>
+
+          {/* Descargar el contrato en PDF (HU-101 / #327). */}
+          <button
+            onClick={handleDownloadPdf}
+            disabled={downloading}
+            style={{
+              marginTop: "1rem", padding: "0.5rem 1.25rem", borderRadius: "8px",
+              cursor: downloading ? "default" : "pointer", fontSize: "0.9rem", fontWeight: 600,
+              display: "flex", alignItems: "center", gap: "0.5rem",
+              opacity: downloading ? 0.6 : 1,
+            }}
+          >
+            <Download size={16} /> {downloading ? "Generando…" : "Descargar PDF"}
+          </button>
+
+          {downloadError && (
+            <p style={{ color: "var(--danger, #dc2626)", fontSize: "0.85rem", margin: "0.5rem 0 0" }}>
+              {downloadError}
+            </p>
+          )}
 
           {canReview && (
             <button
