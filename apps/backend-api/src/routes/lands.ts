@@ -43,6 +43,7 @@ function buildLandQuery(params: {
   use?: string;
   province?: string;
   district?: string;
+  operation?: string;
   priceMin?: number;
   priceMax?: number;
   availableFrom?: string;
@@ -52,6 +53,20 @@ function buildLandQuery(params: {
   const query: Record<string, unknown> = { status: "active" };
 
   if (params.use) query.allowedUses = params.use;
+
+  // ── Operación (#366) ──
+  // Se resuelve como un conjunto de operaciones admisibles y se aplica UNA vez,
+  // porque dos criterios distintos lo restringen: el filtro explícito de
+  // operación y el de precio.
+  const ALL_OPERATIONS = ["alquiler", "venta", "ambas"];
+  let operations = ALL_OPERATIONS;
+
+  // «ambas» satisface tanto a quien busca alquiler como a quien busca compra,
+  // igual que en el catálogo y en el emparejador de búsquedas guardadas.
+  if (params.operation && params.operation !== "todas") {
+    operations = operations.filter((op) => op === params.operation || op === "ambas");
+  }
+
   if (params.province) {
     query["location.province"] = new RegExp(`^${escapeRegex(params.province)}$`, "i");
   }
@@ -64,6 +79,17 @@ function buildLandQuery(params: {
     if (params.priceMin !== undefined) price.$gte = params.priceMin;
     if (params.priceMax !== undefined) price.$lte = params.priceMax;
     query["priceRule.pricePerMonth"] = price;
+    // El precio filtra la RENTA, así que solo puede estrechar el conjunto a lo
+    // que se alquila: un terreno de solo venta lleva `pricePerMonth: 0` y
+    // colaba en cualquier tramo «hasta $X» (mismo fallo corregido en la
+    // interfaz en #365 y en el emparejador en #368). Si alguien pide «en venta»
+    // *y* un máximo mensual, la intersección queda vacía — que es la respuesta
+    // honesta: una venta no tiene renta con la que comparar.
+    operations = operations.filter((op) => op !== "venta");
+  }
+
+  if (operations.length !== ALL_OPERATIONS.length) {
+    query.operation = { $in: operations };
   }
 
   const and: Record<string, unknown>[] = [];
@@ -83,9 +109,29 @@ function buildLandQuery(params: {
       ],
     });
   }
-  if (and.length > 0) query.$and = and;
+  // Texto libre (#366). Antes usaba `$text`, que solo cubre el índice de texto
+  // (título + descripción) y empareja palabras completas con stemming. El
+  // catálogo, que filtraba en el cliente, buscaba SUBCADENAS y también por
+  // provincia y distrito: al mover el filtro al servidor, `$text` habría hecho
+  // que escribir «Coclé» o «boque» no devolviera nada.
+  //
+  // El regex reproduce el comportamiento anterior (insensible a mayúsculas,
+  // sensible a acentos, igual que el `includes` que sustituye). No usa índice,
+  // así que a escala grande habrá que pasar a un buscador de verdad — pero eso
+  // es un cambio de producto, no una regresión silenciosa.
+  if (params.q) {
+    const rx = new RegExp(escapeRegex(params.q.trim()), "i");
+    and.push({
+      $or: [
+        { title: rx },
+        { description: rx },
+        { "location.province": rx },
+        { "location.district": rx },
+      ],
+    });
+  }
 
-  if (params.q) query.$text = { $search: params.q };
+  if (and.length > 0) query.$and = and;
 
   return query;
 }
@@ -123,6 +169,7 @@ landRoutes.get("/lands", async (c) => {
     use: c.req.query("use"),
     province: c.req.query("province"),
     district: c.req.query("district"),
+    operation: c.req.query("operation"),
     priceMin: getOptionalNumericQuery(c, "priceMin"),
     priceMax: getOptionalNumericQuery(c, "priceMax"),
     availableFrom: c.req.query("availableFrom"),
@@ -164,6 +211,31 @@ landRoutes.get("/lands", async (c) => {
       totalItems,
       totalPages,
     },
+  });
+});
+
+/**
+ * Valores disponibles para los desplegables del catálogo (#366).
+ *
+ * Antes la interfaz los derivaba de los terrenos que tenía cargados. Con el
+ * filtrado y la paginación en el servidor eso ya no vale: solo vería los de la
+ * página actual y las opciones irían desapareciendo al navegar.
+ *
+ * Se calculan sobre TODOS los terrenos publicados, sin aplicar los filtros
+ * activos, para que las opciones no bailen mientras el usuario filtra.
+ *
+ * Debe registrarse antes de "/lands/:landId", o "facets" se interpreta como un
+ * id de terreno y esta ruta se vuelve inalcanzable.
+ */
+landRoutes.get("/lands/facets", async (c) => {
+  const [provinces, uses] = await Promise.all([
+    Land.distinct("location.province", { status: "active" }),
+    Land.distinct("allowedUses", { status: "active" }),
+  ]);
+
+  return success(c, {
+    provinces: (provinces as string[]).filter(Boolean).sort((a, b) => a.localeCompare(b, "es")),
+    uses: (uses as string[]).filter(Boolean).sort(),
   });
 });
 

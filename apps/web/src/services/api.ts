@@ -93,6 +93,10 @@ export interface CatalogFilters {
   type?: string;
   province?: string;
   district?: string;
+  /** Texto libre: título, descripción, provincia y distrito (#366). */
+  q?: string;
+  /** "alquiler" | "venta"; «ambas» satisface a las dos (#366). */
+  operation?: string;
   priceMax?: number;
   availableFrom?: string;
   sort?: string;
@@ -101,26 +105,69 @@ export interface CatalogFilters {
   pageSize?: number;
 }
 
-/** GET /api/v1/lands — listado con filtros (use, province, district, priceMax, availableFrom, sort, order) */
-export const listLands = async (filters: CatalogFilters = {}): Promise<LandDto[]> => {
+/** Metadatos de paginación que devuelve `GET /api/v1/lands`. */
+export interface LandsPagination {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface LandsPage {
+  items: LandDto[];
+  pagination: LandsPagination;
+}
+
+function catalogParams(filters: CatalogFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.type) params.set("use", filters.type);
   if (filters.province) params.set("province", filters.province);
   if (filters.district) params.set("district", filters.district);
+  if (filters.q) params.set("q", filters.q);
+  if (filters.operation) params.set("operation", filters.operation);
   if (filters.priceMax) params.set("priceMax", String(filters.priceMax));
   if (filters.availableFrom) params.set("availableFrom", filters.availableFrom);
   if (filters.sort) params.set("sort", filters.sort);
   if (filters.order) params.set("order", filters.order);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
-  const qs = params.toString();
-  const res = await request<{ items?: LandDto[] } | LandDto[]>(
-    "GET",
-    `/api/v1/lands${qs ? `?${qs}` : ""}`,
-  );
-  const data = res?.data as any;
-  return data?.items ?? data ?? [];
+  return params;
+}
+
+/**
+ * GET /api/v1/lands conservando los metadatos de paginación (#366).
+ *
+ * `listLands` los descarta y devuelve solo los elementos, que es lo que
+ * necesitan la landing y la home; el catálogo necesita el total para poder
+ * paginar y para no volver a decir «20 terrenos» cuando hay 36.
+ */
+export const searchLands = async (filters: CatalogFilters = {}): Promise<LandsPage> => {
+  const qs = catalogParams(filters).toString();
+  const res = await request<LandsPage>("GET", `/api/v1/lands${qs ? `?${qs}` : ""}`);
+  const data = res?.data as unknown as Partial<LandsPage> | LandDto[] | undefined;
+
+  if (Array.isArray(data)) {
+    return {
+      items: data,
+      pagination: { page: 1, pageSize: data.length, totalItems: data.length, totalPages: 1 },
+    };
+  }
+
+  const items = data?.items ?? [];
+  return {
+    items,
+    pagination: data?.pagination ?? {
+      page: 1,
+      pageSize: items.length,
+      totalItems: items.length,
+      totalPages: 1,
+    },
+  };
 };
+
+/** GET /api/v1/lands — listado con filtros (use, province, district, priceMax, availableFrom, sort, order) */
+export const listLands = async (filters: CatalogFilters = {}): Promise<LandDto[]> =>
+  (await searchLands(filters)).items;
 
 /** GET /api/v1/lands/me - lista lands del usuario actual */
 export const getMyLands = async (): Promise<LandDto[]> => {
@@ -598,4 +645,15 @@ export const api = {
   listMyVisits,
   respondToVisit,
   downloadContractPdf,
+};
+
+/** GET /api/v1/lands/facets — valores para los desplegables del catálogo (#366). */
+export interface LandFacets {
+  provinces: string[];
+  uses: string[];
+}
+
+export const getLandFacets = async (): Promise<LandFacets> => {
+  const res = await request<LandFacets>("GET", "/api/v1/lands/facets");
+  return res?.data ?? { provinces: [], uses: [] };
 };

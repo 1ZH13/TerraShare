@@ -72,6 +72,8 @@ interface AdminUserFilters {
 interface AdminLandFilters {
   status?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 // ─── Users ───────────────────────────────────────────────────────────────────
@@ -101,11 +103,8 @@ export const listAdminLands = (filters: AdminLandFilters = {}) => {
   const params = new URLSearchParams();
   if (filters.status) params.set("status", filters.status);
   if (filters.search) params.set("search", filters.search);
-  // La ruta pagina a 20 por defecto y la pantalla no tiene paginador, así que
-  // los terrenos restantes quedaban fuera del alcance del admin — y esta es la
-  // pantalla de moderación (#370). 100 es el máximo que admite la ruta; por
-  // encima de esa escala hace falta paginador de verdad, igual que en #366.
-  params.set("pageSize", "100");
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
   return request<LandDto[]>("GET", `/api/v1/admin/lands?${params.toString()}`);
 };
 

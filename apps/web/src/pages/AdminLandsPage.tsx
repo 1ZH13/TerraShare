@@ -17,6 +17,9 @@ const USE_LABELS: Record<string, string> = {
   otro: "Otro",
 };
 
+/** Terrenos por página en el panel (#366). */
+const PAGE_SIZE = 20;
+
 const STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: "Borrador", cls: "adm-badge--amber" },
   active: { label: "Publicada", cls: "adm-badge--green" },
@@ -30,19 +33,42 @@ export default function AdminLandsPage() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  // Paginación real (#366). Antes se pedían 100 de golpe como parche a que la
+  // pantalla mostrara 20 de 36 sin avisar (#370).
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Al cambiar los criterios se vuelve a la primera página: quedarse en la 3 de
+  // un resultado que ahora tiene una sola deja la tabla vacía.
+  useEffect(() => {
+    setPage(1);
+  }, [filter, search]);
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    const filters: { status?: string; search?: string } = {};
+    const filters: { status?: string; search?: string; page?: number; pageSize?: number } = {
+      page,
+      pageSize: PAGE_SIZE,
+    };
     if (filter !== "all") filters.status = filter;
     if (search.trim()) filters.search = search.trim();
 
     listAdminLands(filters)
-      .then((res) => setLands((((res.data as unknown) as { items?: AdminLand[] })?.items ?? [])))
+      .then((res) => {
+        const data = (res.data as unknown) as {
+          items?: AdminLand[];
+          total?: number;
+          pagination?: { page: number; totalPages: number };
+        };
+        setLands(data?.items ?? []);
+        setTotal(data?.total ?? data?.items?.length ?? 0);
+        setTotalPages(data?.pagination?.totalPages ?? 1);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, [filter, search]);
+  }, [filter, search, page]);
 
   const handleUpdateStatus = async (landId: string, nextStatus: string) => {
     try {
@@ -136,7 +162,23 @@ export default function AdminLandsPage() {
 
       {!loading && !error && lands.length > 0 && (
         <div className="adm-foot">
-          <span>{lands.length} terreno{lands.length !== 1 ? "s" : ""}</span>
+          {/* El total sale del servidor, no del tamaño de la página. */}
+          <span>{total} terreno{total !== 1 ? "s" : ""}</span>
+          {totalPages > 1 && (
+            <div className="adm-pager">
+              <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+                Anterior
+              </button>
+              <span aria-live="polite">Página {page} de {totalPages}</span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>
