@@ -95,6 +95,48 @@ describe("visits routes", () => {
     expect(res.response.status).toBe(403);
   });
 
+  it("owner can reschedule a visit", async () => {
+    const created = await requestJson("/api/v1/lands/land_seed_01/visits", {
+      method: "POST",
+      headers: { "x-dev-user-id": "user_tenant_01" },
+      body: { proposedDate: "2026-08-15", proposedTime: "10:00" },
+    });
+    const visitId = created.payload.data.id;
+    const res = await requestJson(`/api/v1/visits/${visitId}`, {
+      method: "PATCH",
+      headers: { "x-dev-user-id": "user_owner_01" },
+      body: { status: "rescheduled", proposedDate: "2026-09-01", proposedTime: "14:00" },
+    });
+    expect(res.response.status).toBe(200);
+    expect(res.payload.data.status).toBe("rescheduled");
+    expect(res.payload.data.proposedDate).toBe("2026-09-01");
+    expect(res.payload.data.proposedTime).toBe("14:00");
+  });
+
+  it("returns 404 for nonexistent visit PATCH", async () => {
+    const res = await requestJson("/api/v1/visits/nonexistent", {
+      method: "PATCH",
+      headers: { "x-dev-user-id": "user_owner_01" },
+      body: { status: "confirmed" },
+    });
+    expect(res.response.status).toBe(404);
+  });
+
+  it("rejects invalid status value", async () => {
+    const created = await requestJson("/api/v1/lands/land_seed_01/visits", {
+      method: "POST",
+      headers: { "x-dev-user-id": "user_tenant_01" },
+      body: { proposedDate: "2026-08-15", proposedTime: "10:00" },
+    });
+    const visitId = created.payload.data.id;
+    const res = await requestJson(`/api/v1/visits/${visitId}`, {
+      method: "PATCH",
+      headers: { "x-dev-user-id": "user_owner_01" },
+      body: { status: "invalid_status" },
+    });
+    expect(res.response.status).toBe(400);
+  });
+
   it("owner can reject a visit", async () => {
     const created = await requestJson("/api/v1/lands/land_seed_01/visits", {
       method: "POST",

@@ -64,6 +64,11 @@ visitRoutes.patch("/visits/:id", requireAuth, async (c) => {
     proposedTime?: string;
   }>();
 
+  const allowedStatuses = ["confirmed", "rescheduled", "rejected"];
+  if (!allowedStatuses.includes(body.status)) {
+    return failure(c, 400, "VALIDATION_ERROR", `Invalid status. Must be one of: ${allowedStatuses.join(", ")}`);
+  }
+
   const visit = await Visit.findOne({ id: visitId }).lean();
   if (!visit) {
     return failure(c, 404, "NOT_FOUND", "Visit not found");
