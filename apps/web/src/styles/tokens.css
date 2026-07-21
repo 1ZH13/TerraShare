@@ -36,6 +36,12 @@
   --ts-beige: #ece2cd;
   --ts-beige-2: #e0dbcb;
 
+  /* neutro frío para chips apagados y fragmentos de código (#370). Se usaban en
+     admin.css antes de existir, con un respaldo claro fijo: en tema oscuro eso
+     pintaba una caja casi blanca con el texto crema encima, ilegible. */
+  --ts-tint-2: #ececed;
+  --ts-ink-3: #6b6b63;
+
   /* texto */
   --ts-text: #24312a;          /* principal */
   --ts-text-secondary: #55654f;
@@ -112,6 +118,8 @@
   --ts-border: #33403a;
   --ts-beige: #2a332c;
   --ts-beige-2: #313a33;
+  --ts-tint-2: #2f3a33;
+  --ts-ink-3: #97a998;
 
   /* texto */
   --ts-text: #ece4d3;
@@ -154,6 +162,8 @@
     --ts-border: #33403a;
     --ts-beige: #2a332c;
     --ts-beige-2: #313a33;
+    --ts-tint-2: #2f3a33;
+    --ts-ink-3: #97a998;
 
     --ts-text: #ece4d3;
     --ts-text-secondary: #b7c1b3;

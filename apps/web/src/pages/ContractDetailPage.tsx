@@ -138,7 +138,7 @@ export default function ContractDetailPage() {
           <div style={{ fontSize: "0.9rem", opacity: 0.75, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
             <p style={{ margin: 0 }}><strong>Solicitud:</strong> {shortId(contract.rentalRequestId)}</p>
             <p style={{ margin: 0 }}><strong>Período:</strong> {contract.terms?.startsAt || "—"} → {contract.terms?.endsAt || "—"}</p>
-            <p style={{ margin: 0 }}><strong>Creado:</strong> {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : "—"}</p>
+            <p style={{ margin: 0 }}><strong>Creado:</strong> {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString("es-PA", { dateStyle: "medium" }) : "—"}</p>
           </div>
 
           {/* Descargar el contrato en PDF (HU-101 / #327). */}

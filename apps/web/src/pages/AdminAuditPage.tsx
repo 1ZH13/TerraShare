@@ -115,7 +115,7 @@ export default function AdminAuditPage() {
                 <tbody>
                   {pageEvents.map((e) => (
                     <tr key={e.id}>
-                      <td style={{ fontSize: "0.8rem" }}>{new Date(e.createdAt).toLocaleString()}</td>
+                      <td style={{ fontSize: "0.8rem" }}>{new Date(e.createdAt).toLocaleString("es-PA", { dateStyle: "medium", timeStyle: "short" })}</td>
                       <td><span className={`role-badge role-${e.actorRole}`}>{e.actorRole}</span></td>
                       <td>{entityLabels[e.entity] || e.entity}</td>
                       <td>{actionLabels[e.action] || e.action}</td>
