@@ -70,3 +70,43 @@ describe("contracts and audit routes", () => {
     expect(Array.isArray(payload.data)).toBe(true);
   });
 });
+
+describe("contract PDF export (HU-101 #327)", () => {
+  it("exports contract as PDF for owner", async () => {
+    const res = await requestJson("/api/v1/contracts/contract_seed_01/pdf", {
+      headers: { "x-dev-user-id": "user_owner_01" },
+    });
+    expect(res.response.status).toBe(200);
+    expect(res.response.headers.get("content-type")).toContain("application/pdf");
+  });
+
+  it("tenant can download contract PDF", async () => {
+    const res = await requestJson("/api/v1/contracts/contract_seed_01/pdf", {
+      headers: { "x-dev-user-id": "user_tenant_01" },
+    });
+    expect(res.response.status).toBe(200);
+    expect(res.response.headers.get("content-type")).toContain("application/pdf");
+  });
+
+  it("admin can download contract PDF", async () => {
+    const res = await requestJson("/api/v1/contracts/contract_seed_01/pdf", {
+      headers: { "x-dev-user-id": "user_admin_01", "x-dev-role": "admin" },
+    });
+    expect(res.response.status).toBe(200);
+    expect(res.response.headers.get("content-type")).toContain("application/pdf");
+  });
+
+  it("rejects PDF export for non-party", async () => {
+    const res = await requestJson("/api/v1/contracts/contract_seed_01/pdf", {
+      headers: { "x-dev-user-id": "random_stranger" },
+    });
+    expect(res.response.status).toBe(403);
+  });
+
+  it("returns 404 for non-existent contract PDF", async () => {
+    const res = await requestJson("/api/v1/contracts/nonexistent/pdf", {
+      headers: { "x-dev-user-id": "user_owner_01" },
+    });
+    expect(res.response.status).toBe(404);
+  });
+});

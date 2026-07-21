@@ -513,3 +513,61 @@ const NotificationSchema = new Schema<INotification>({
 }, { timestamps: false });
 
 export const Notification = mongoose.models.Notification || mongoose.model<INotification>("Notification", NotificationSchema);
+
+/** Búsqueda guardada de un usuario; alimenta las alertas de nuevos terrenos (HU-99 #325). */
+export interface ISavedSearch extends Document {
+  id: string;
+  userId: string;
+  name: string;
+  filters: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const SavedSearchSchema = new Schema<ISavedSearch>({
+  id: { type: String, required: true, unique: true },
+  userId: { type: String, required: true },
+  name: { type: String, required: true },
+  filters: { type: Schema.Types.Mixed, required: true },
+}, { timestamps: true });
+
+SavedSearchSchema.index({ userId: 1 });
+
+export const SavedSearch = mongoose.models.SavedSearch
+  || mongoose.model<ISavedSearch>("SavedSearch", SavedSearchSchema);
+
+/** Solicitud de visita a un terreno, propuesta por un interesado (HU-100 #326). */
+export type VisitStatus = "pending" | "confirmed" | "rescheduled" | "rejected";
+
+export interface IVisit extends Document {
+  id: string;
+  landId: string;
+  tenantId: string;
+  ownerId: string;
+  proposedDate: string;
+  proposedTime: string;
+  message?: string;
+  status: VisitStatus;
+  responseMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const VisitSchema = new Schema<IVisit>({
+  id: { type: String, required: true, unique: true },
+  landId: { type: String, required: true },
+  tenantId: { type: String, required: true },
+  ownerId: { type: String, required: true },
+  proposedDate: { type: String, required: true },
+  proposedTime: { type: String, required: true },
+  message: String,
+  status: { type: String, enum: ["pending", "confirmed", "rescheduled", "rejected"], default: "pending" },
+  responseMessage: String,
+}, { timestamps: true });
+
+VisitSchema.index({ landId: 1 });
+VisitSchema.index({ tenantId: 1 });
+VisitSchema.index({ ownerId: 1 });
+
+export const Visit = mongoose.models.Visit
+  || mongoose.model<IVisit>("Visit", VisitSchema);

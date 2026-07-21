@@ -8,7 +8,8 @@ import { getNumericQuery, getOptionalNumericQuery } from "../lib/request-utils";
 import { requireAuth } from "../middleware/require-auth";
 import { rateLimitByUser } from "../middleware/rate-limit";
 import { createAuditEvent as createAudit } from "../store/audit";
-import { Land } from "../db/schemas";
+import { Land, type ILand } from "../db/schemas";
+import { matchSavedSearches } from "../lib/match-saved-searches";
 import {
   ALLOWED_CONTENT_TYPES,
   MAX_PHOTO_BYTES,
@@ -407,6 +408,20 @@ landRoutes.patch("/lands/:landId/status", requireAuth, rateLimitByUser(200), asy
   };
 
   await Land.findOneAndUpdate({ id: landId }, { $set: { status, updatedAt: updated.updatedAt } });
+
+  // Alertas de búsquedas guardadas (HU-99 #325): se disparan al PUBLICARSE el
+  // terreno (transición a `active`), no al crearlo en `draft`, y solo cuando
+  // realmente cambia de estado, para no repetir avisos.
+  if (status === "active" && current.status !== "active") {
+    matchSavedSearches(updated as unknown as ILand).catch((err) =>
+      console.error({
+        level: "error",
+        message: "Failed to match saved searches",
+        landId,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+  }
 
   await createAudit({
     actor: authUser,
