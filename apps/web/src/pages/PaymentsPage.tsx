@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { shortId } from "../lib/short-id";
 import { Link } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { PaymentDto } from "@terrashare/shared";
@@ -128,7 +129,7 @@ export default function PaymentsPage() {
               <div key={p.id} className="pay-row">
                 <span className="pay-cell--date">{isPending ? "Pendiente" : formatDate(p.createdAt)}</span>
                 <span className="pay-cell--land">
-                  {p.landTitle || `Solicitud #${p.rentalRequestId?.slice(0, 8) ?? "—"}`}
+                  {p.landTitle || `Solicitud #${shortId(p.rentalRequestId)}`}
                 </span>
                 <span>${(p.amount ?? 0).toLocaleString("es-PA")}</span>
                 <span>

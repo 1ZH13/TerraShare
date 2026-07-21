@@ -17,6 +17,8 @@ const STATUS_LABELS: Record<string, string> = {
   paid: "Pagados",
   failed: "Fallidos",
   cancelled: "Cancelados",
+  partially_refunded: "Reembolso parcial",
+  refunded: "Reembolsados",
 };
 
 function formatMoney(amount: number, currency: string): string {
@@ -72,7 +74,7 @@ export default function AdminReconciliationPage() {
             </div>
             <div className="adm-stat">
               <div className="adm-stat__value">{totalPaid}</div>
-              <div className="adm-stat__label">Pagos pagados</div>
+              <div className="adm-stat__label">Pagos cobrados</div>
             </div>
             {report.totals.map((t) => (
               <div className="adm-stat" key={`stat-${t.currency}`}>
@@ -84,22 +86,24 @@ export default function AdminReconciliationPage() {
 
           <h2 className="adm-title" style={{ fontSize: 20, marginTop: 8 }}>Totales por moneda</h2>
           <div className="adm-table" style={{ marginBottom: 26 }}>
-            <div className="adm-trow adm-trow--head" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr" }}>
+            <div className="adm-trow adm-trow--head" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr" }}>
               <span>Moneda</span>
               <span>Pagos</span>
               <span>Bruto</span>
               <span>Comisión</span>
+              <span>Reembolsado</span>
               <span>Neto</span>
             </div>
             {report.totals.length === 0 ? (
-              <div className="adm-empty">Aún no hay pagos pagados.</div>
+              <div className="adm-empty">Aún no hay pagos cobrados.</div>
             ) : (
               report.totals.map((t) => (
-                <div key={t.currency} className="adm-trow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr" }}>
+                <div key={t.currency} className="adm-trow" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr" }}>
                   <span className="adm-cell--strong">{t.currency}</span>
                   <span>{t.paidCount}</span>
                   <span>{formatMoney(t.grossAmount, t.currency)}</span>
                   <span className="adm-cell--muted">{formatMoney(t.platformFeeAmount, t.currency)}</span>
+                  <span className="adm-cell--muted">{formatMoney(t.refundedAmount ?? 0, t.currency)}</span>
                   <span className="adm-cell--strong">{formatMoney(t.netAmount, t.currency)}</span>
                 </div>
               ))

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { shortId } from "../lib/short-id";
 import { useParams } from "@tanstack/react-router";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { Star, Download } from "lucide-react";
@@ -96,7 +97,7 @@ export default function ContractDetailPage() {
     <div>
       <div className="section-header">
         <h1>Detalle de contrato</h1>
-        <p>Contrato #{contractId?.slice(0, 8)}</p>
+        <p>Contrato #{shortId(contractId)}</p>
       </div>
 
       {loading && (
@@ -114,7 +115,7 @@ export default function ContractDetailPage() {
       {contract && status && (
         <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "1rem" }}>
-            <h3 style={{ margin: 0 }}>Contrato #{contract.id?.slice(0, 8)}</h3>
+            <h3 style={{ margin: 0 }}>Contrato #{shortId(contract.id)}</h3>
             <span style={{
               padding: "0.25rem 0.75rem",
               borderRadius: "999px",
@@ -127,7 +128,7 @@ export default function ContractDetailPage() {
             </span>
           </div>
           <div style={{ fontSize: "0.9rem", opacity: 0.75, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <p style={{ margin: 0 }}><strong>Solicitud:</strong> {contract.rentalRequestId?.slice(0, 8) || "—"}</p>
+            <p style={{ margin: 0 }}><strong>Solicitud:</strong> {shortId(contract.rentalRequestId)}</p>
             <p style={{ margin: 0 }}><strong>Período:</strong> {contract.terms?.startsAt || "—"} → {contract.terms?.endsAt || "—"}</p>
             <p style={{ margin: 0 }}><strong>Creado:</strong> {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString() : "—"}</p>
           </div>

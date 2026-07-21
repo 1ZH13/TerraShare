@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { shortId } from "../lib/short-id";
 import { useAuth, useUser } from "@clerk/clerk-react";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
@@ -80,9 +81,9 @@ export default function ContractsPage() {
               <div key={contract.id} className="glass-panel">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "1rem" }}>
                   <div>
-                    <h3 style={{ margin: 0 }}>Contrato #{contract.id.slice(0, 8)}</h3>
+                    <h3 style={{ margin: 0 }}>Contrato #{shortId(contract.id)}</h3>
                     <p style={{ margin: "0.25rem 0", opacity: 0.6, fontSize: "0.85rem" }}>
-                      Solicitud: {contract.rentalRequestId?.slice(0, 8)}
+                      Solicitud: {shortId(contract.rentalRequestId)}
                     </p>
                   </div>
                   <span style={{

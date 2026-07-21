@@ -25,6 +25,8 @@ export interface ReconciliationCurrencyTotalsDto {
   paidCount: number;
   grossAmount: number;
   platformFeeAmount: number;
+  /** Suma devuelta a los arrendatarios; ya está descontada del `netAmount`. */
+  refundedAmount: number;
   netAmount: number;
 }
 
@@ -50,7 +52,24 @@ const PAYMENT_STATUSES: PaymentStatus[] = [
   "paid",
   "failed",
   "cancelled",
+  "partially_refunded",
+  "refunded",
 ];
+
+/**
+ * Estados en los que el dinero **sí entró**. Un reembolso parcial sigue siendo
+ * un cobro (se devolvió una parte, no el cobro entero), y uno total también
+ * ocurrió aunque después se revirtiera: dejarlos fuera de los totales escondía
+ * movimientos reales del informe, que es justo lo que una conciliación existe
+ * para no perder. La devolución se resta aparte, en `refundedAmount`.
+ */
+const COLLECTED_STATUSES: PaymentStatus[] = ["paid", "partially_refunded", "refunded"];
+
+/**
+ * Estados en los que el cobro **sigue en pie** hoy. Un reembolso total deja la
+ * solicitud sin cobro vigente, así que no cuenta aquí.
+ */
+const STILL_COLLECTED_STATUSES: PaymentStatus[] = ["paid", "partially_refunded"];
 
 interface ReconPayment {
   id: string;
@@ -60,6 +79,7 @@ interface ReconPayment {
   currency: BusinessCurrency;
   platformFeeAmount?: number;
   netAmount?: number;
+  refundedAmount?: number;
 }
 
 interface ReconRequest {
@@ -83,7 +103,9 @@ export function reconcile(
   const requestById = new Map(requests.map((r) => [r.id, r]));
   const contractByRequest = new Set(contracts.map((c) => c.rentalRequestId));
   const paidPaymentRequestIds = new Set(
-    payments.filter((p) => p.status === "paid").map((p) => p.rentalRequestId),
+    payments
+      .filter((p) => STILL_COLLECTED_STATUSES.includes(p.status))
+      .map((p) => p.rentalRequestId),
   );
 
   const paymentsByStatus = Object.fromEntries(
@@ -96,7 +118,7 @@ export function reconcile(
   for (const p of payments) {
     paymentsByStatus[p.status] = (paymentsByStatus[p.status] ?? 0) + 1;
 
-    if (p.status !== "paid") continue;
+    if (!COLLECTED_STATUSES.includes(p.status)) continue;
 
     const totals =
       totalsByCurrency.get(p.currency) ??
@@ -105,12 +127,16 @@ export function reconcile(
         paidCount: 0,
         grossAmount: 0,
         platformFeeAmount: 0,
+        refundedAmount: 0,
         netAmount: 0,
       } satisfies ReconciliationCurrencyTotalsDto);
+    const refunded = p.refundedAmount ?? 0;
     totals.paidCount += 1;
     totals.grossAmount = round2(totals.grossAmount + p.amount);
     totals.platformFeeAmount = round2(totals.platformFeeAmount + (p.platformFeeAmount ?? 0));
-    totals.netAmount = round2(totals.netAmount + (p.netAmount ?? p.amount));
+    totals.refundedAmount = round2(totals.refundedAmount + refunded);
+    // El neto es lo que queda del cobro tras la comisión y las devoluciones.
+    totals.netAmount = round2(totals.netAmount + (p.netAmount ?? p.amount) - refunded);
     totalsByCurrency.set(p.currency, totals);
 
     const request = requestById.get(p.rentalRequestId);
@@ -164,7 +190,7 @@ export function reconcile(
 
 export async function buildReconciliationReport(): Promise<ReconciliationReportDto> {
   const [payments, requests, contracts] = await Promise.all([
-    Payment.find().select("id rentalRequestId status amount currency platformFeeAmount netAmount").lean(),
+    Payment.find().select("id rentalRequestId status amount currency platformFeeAmount netAmount refundedAmount").lean(),
     RentalRequest.find().select("id status").lean(),
     Contract.find().select("rentalRequestId").lean(),
   ]);
