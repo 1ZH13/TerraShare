@@ -27,4 +27,6 @@ export interface PublicOwnerProfileDto {
   /** ISO date; null si no se conoce. */
   memberSince: string | null;
   activeLandsCount: number;
+  averageRating: number;
+  totalReviews: number;
 }

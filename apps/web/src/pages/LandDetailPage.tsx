@@ -18,8 +18,9 @@ import {
   BadgeCheck,
   User,
   Flag,
+  Star,
 } from "lucide-react";
-import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc } from "../services/api";
+import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc, getRatingByUser } from "../services/api";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
 import "./detail.css";
@@ -90,6 +91,7 @@ export default function LandDetailPage() {
   const [land, setLand] = useState<DetailLand | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [owner, setOwner] = useState<PublicOwnerProfileDto | null>(null);
+  const [ownerRating, setOwnerRating] = useState<{ averageRating: number; totalReviews: number } | null>(null);
 
   // Favoritos (#147): solo consultamos el backend si hay sesión.
   const { isFavorite, toggle: toggleFavorite } = useFavorites({ enabled: Boolean(isSignedIn) });
@@ -119,6 +121,9 @@ export default function LandDetailPage() {
           getOwnerPublicProfile(data.ownerId)
             .then((profile) => active && setOwner(profile))
             .catch(() => active && setOwner(null));
+          getRatingByUser(data.ownerId)
+            .then((rating) => active && setOwnerRating(rating))
+            .catch(() => {});
         }
       })
       .catch((err) => {
@@ -473,6 +478,13 @@ export default function LandDetailPage() {
                       <BadgeCheck size={15} className="det-owner__check" aria-label="Verificado" />
                     )}
                   </div>
+                  {ownerRating && ownerRating.totalReviews > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", margin: "0.15rem 0" }}>
+                      <Star size={13} fill="#facc15" color="#facc15" />
+                      <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>{ownerRating.averageRating}</span>
+                      <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>({ownerRating.totalReviews})</span>
+                    </div>
+                  )}
                   <div className="det-owner__role">
                     {owner
                       ? [

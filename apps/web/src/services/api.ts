@@ -419,6 +419,46 @@ export const createReport = async (input: CreateReportInput): Promise<{ id: stri
   return res?.data ?? null;
 };
 
+// ─── Reviews (#97) ────────────────────────────────────────────────────────────
+
+export interface ReviewDto {
+  id: string;
+  contractId: string;
+  senderId: string;
+  receiverId: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+}
+
+export interface RatingDto {
+  averageRating: number;
+  totalReviews: number;
+}
+
+/** POST /api/v1/reviews — dejar una reseña. */
+export const createReview = async (input: {
+  contractId: string;
+  receiverId: string;
+  rating: number;
+  comment?: string;
+}): Promise<ReviewDto | null> => {
+  const res = await request<ReviewDto>("POST", "/api/v1/reviews", input);
+  return res?.data ?? null;
+};
+
+/** GET /api/v1/users/:userId/reviews — reseñas de un usuario. */
+export const getReviewsByUser = async (userId: string): Promise<ReviewDto[]> => {
+  const res = await request<ReviewDto[]>("GET", `/api/v1/users/${userId}/reviews`);
+  return res?.data ?? [];
+};
+
+/** GET /api/v1/users/:userId/rating — calificación promedio. */
+export const getRatingByUser = async (userId: string): Promise<RatingDto> => {
+  const res = await request<RatingDto>("GET", `/api/v1/users/${userId}/rating`);
+  return res?.data ?? { averageRating: 0, totalReviews: 0 };
+};
+
 export const api = {
   listLands,
   getMyLands,
@@ -440,4 +480,7 @@ export const api = {
   getMyFavorites,
   addFavorite,
   removeFavorite,
+  createReview,
+  getReviewsByUser,
+  getRatingByUser,
 };
