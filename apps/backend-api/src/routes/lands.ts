@@ -226,10 +226,6 @@ landRoutes.post("/lands", requireAuth, rateLimitByUser(200), async (c) => {
 
   await Land.create(land);
 
-  matchSavedSearches(land as any).catch((err) =>
-    console.error({ level: "error", message: "Failed to match saved searches", error: err.message }),
-  );
-
   await createAudit({
     actor: authUser,
     entity: "land",
@@ -420,6 +416,11 @@ landRoutes.patch("/lands/:landId/status", requireAuth, rateLimitByUser(200), asy
     entityId: landId,
     metadata: { status },
   });
+
+  if (status === "active") {
+    const fullLand = await Land.findOne({ id: landId }).lean();
+    if (fullLand) matchSavedSearches(fullLand as any).catch(console.error);
+  }
 
   return success(c, updated);
 });
