@@ -41,7 +41,11 @@ export default function ReviewModal({ contractId, receiverId, onSubmit, onClose 
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "var(--surface, #1a1a2e)",
+          // Mismo caso que en VisitModal: `--surface` no existe, el token es
+          // `--ts-surface`, y sin él salía un azul marino ajeno al tema (#363).
+          background: "var(--ts-surface)",
+          color: "var(--ts-text)",
+          border: "1px solid var(--ts-border)",
           borderRadius: "12px", padding: "2rem",
           maxWidth: "480px", width: "90%",
           boxShadow: "0 20px 60px rgba(0,0,0,0.3)",

@@ -514,6 +514,25 @@ const NotificationSchema = new Schema<INotification>({
 
 export const Notification = mongoose.models.Notification || mongoose.model<INotification>("Notification", NotificationSchema);
 
+/**
+ * Ajuste de la aplicación editable en caliente (#362). Sustituye a las
+ * variables de entorno para lo que un administrador debe poder cambiar sin
+ * reiniciar el servicio, como la exigencia de 2FA.
+ */
+export interface IAppSetting extends Document {
+  key: string;
+  value: unknown;
+  updatedAt: Date;
+}
+
+const AppSettingSchema = new Schema<IAppSetting>({
+  key: { type: String, required: true, unique: true },
+  value: { type: Schema.Types.Mixed },
+}, { timestamps: true });
+
+export const AppSetting = mongoose.models.AppSetting
+  || mongoose.model<IAppSetting>("AppSetting", AppSettingSchema);
+
 /** Búsqueda guardada de un usuario; alimenta las alertas de nuevos terrenos (HU-99 #325). */
 export interface ISavedSearch extends Document {
   id: string;

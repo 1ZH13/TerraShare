@@ -6,6 +6,7 @@ import { failure } from "../lib/api-response";
 import type { AuthContextUser } from "../types";
 import { resolveClerkAuthUser } from "../lib/clerk-user";
 import { getStore } from "../store/in-memory-db";
+import { isAdminMfaRequired } from "../lib/security-settings";
 import { User } from "../db/schemas";
 import type { AppEnv } from "../types";
 
@@ -140,6 +141,23 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   }
 };
 
+/**
+ * Solo comprueba el rol, **sin** la exigencia de 2FA.
+ *
+ * Es la salida de emergencia del panel de seguridad (#362): si la exigencia
+ * está activa y el admin no tiene 2FA en su cuenta, todas las rutas `/admin/*`
+ * le responden 403 — incluida la que serviría para desactivarla. Sin esta
+ * excepción, encender el interruptor sin 2FA configurado deja la cuenta fuera
+ * de su propio panel y solo se puede arreglar tocando la base a mano.
+ */
+export const requireAdminRoleOnly: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const authUser = c.get("authUser");
+  if (!authUser || authUser.role !== "admin") {
+    return failure(c, 403, "FORBIDDEN", "Admin role required");
+  }
+  await next();
+};
+
 export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
   const authUser = c.get("authUser");
   if (!authUser || authUser.role !== "admin") {
@@ -148,7 +166,9 @@ export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
 
   const hasDevHeader = Boolean(c.req.header("x-dev-user-id") || c.req.header("x-dev-role"));
   const isDevBypass = hasDevHeader && env.allowDevAuthBypass;
-  if (env.requireAdminMfa && !isDevBypass && authUser.mfaVerified !== true) {
+  // El ajuste guardado manda sobre `REQUIRE_ADMIN_MFA`, para poder cambiarlo
+  // desde el panel sin reiniciar el servicio.
+  if (!isDevBypass && (await isAdminMfaRequired()) && authUser.mfaVerified !== true) {
     return failure(c, 403, "MFA_REQUIRED", "Admin must have MFA enabled");
   }
 

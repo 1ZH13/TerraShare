@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useClerk } from "@clerk/clerk-react";
-import { LayoutDashboard, Flag, Map, Users, Mail, LogOut, Sprout, ScrollText, Activity, Scale, CreditCard, DatabaseBackup } from "lucide-react";
+import { LayoutDashboard, Flag, Map, Users, Mail, LogOut, Sprout, ScrollText, Activity, Scale, CreditCard, DatabaseBackup, ShieldCheck } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import "../pages/admin.css";
 
@@ -21,6 +21,7 @@ const NAV = [
   { to: "/dashboard/admin/audit", label: "Auditoria", icon: ScrollText },
   { to: "/dashboard/admin/observability", label: "Observabilidad", icon: Activity },
   { to: "/dashboard/admin/backups", label: "Respaldos", icon: DatabaseBackup },
+  { to: "/dashboard/admin/security", label: "Seguridad", icon: ShieldCheck },
 ];
 
 /** Layout editorial del panel admin: sidebar oscuro + contenido. Sustituye al

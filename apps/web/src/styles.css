@@ -14,6 +14,44 @@
   --glass-shadow: 0 8px 32px rgba(11, 95, 55, 0.08);
 }
 
+/* Tema oscuro para la paleta heredada (#363).
+   Esta hoja es anterior al sistema de tokens `--ts-*` y fijaba una paleta solo
+   clara, pero varias pantallas del panel siguen usándola (contratos, auditoría,
+   privacidad). En tema oscuro el resultado era ilegible: `--leaf-900` es un
+   verde casi negro para los títulos, `--ink-900` el texto, y `.glass-panel` un
+   degradado blanco — es decir, título verde oscuro sobre fondo oscuro y texto
+   crema sobre panel casi blanco.
+   Se redefinen aquí las mismas variables para que la hoja siga al tema, en vez
+   de retocar cada regla que las consume. El selector replica la cascada de
+   `styles/tokens.css`: elección explícita primero, preferencia del SO después. */
+:root[data-theme="dark"] {
+  --leaf-700: #4f8a61;
+  --leaf-900: #7fae8a;         /* títulos: sube a un verde claro legible sobre oscuro */
+  --ink-900: #ece4d3;          /* texto principal: crema */
+  --paper: #1b241d;
+  --danger: #e08074;
+  --success: #6fbf94;
+  --ring: rgba(127, 174, 138, 0.35);
+  --glass-bg: rgba(38, 48, 40, 0.72);
+  --glass-border: rgba(236, 228, 211, 0.12);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --leaf-700: #4f8a61;
+    --leaf-900: #7fae8a;
+    --ink-900: #ece4d3;
+    --paper: #1b241d;
+    --danger: #e08074;
+    --success: #6fbf94;
+    --ring: rgba(127, 174, 138, 0.35);
+    --glass-bg: rgba(38, 48, 40, 0.72);
+    --glass-border: rgba(236, 228, 211, 0.12);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -62,28 +100,24 @@ a {
   position: relative;
 }
 
+/* El degradado y el borde salen de variables (no de un blanco fijo) para que el
+   panel siga al tema: en oscuro era un rectángulo casi blanco que dejaba el
+   texto crema encima ilegible (#363). */
 .glass-panel {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.75) 0%, 
-    rgba(255, 255, 255, 0.55) 100%);
+  background: var(--glass-bg);
+  color: var(--ink-900);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
   padding: clamp(1.5rem, 3vw, 2.5rem);
-  box-shadow: 
-    0 8px 32px rgba(11, 95, 55, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  box-shadow: var(--glass-shadow);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .glass-panel:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 12px 40px rgba(11, 95, 55, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.06),
-    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  box-shadow: var(--glass-shadow), 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .glass-card {

@@ -231,3 +231,24 @@ export const createBackup = () => request<BackupRecordDto>("POST", "/api/v1/admi
 /** POST /api/v1/admin/backups/:id/verify — restauración probada. */
 export const verifyBackup = (id: string) =>
   request<BackupRecordDto>("POST", `/api/v1/admin/backups/${id}/verify`);
+
+// ─── Seguridad: 2FA de administradores (#362) ────────────────────────────────
+
+export interface AdminSecuritySettingsDto {
+  /** Si ahora mismo se exige 2FA para entrar a `/admin/*`. */
+  requireAdminMfa: boolean;
+  /** `stored` = alguien lo fijó desde el panel; `environment` = valor por defecto. */
+  source: "stored" | "environment";
+  /** Lo que diría `REQUIRE_ADMIN_MFA` si nadie lo hubiera tocado. */
+  environmentDefault: boolean;
+  /** Si la cuenta que consulta tiene la 2FA activa en Clerk. */
+  callerMfaEnabled: boolean;
+}
+
+/** GET /api/v1/admin/security-settings */
+export const getSecuritySettings = () =>
+  request<AdminSecuritySettingsDto>("GET", "/api/v1/admin/security-settings");
+
+/** PATCH /api/v1/admin/security-settings — activa o desactiva la exigencia de 2FA. */
+export const setRequireAdminMfa = (requireAdminMfa: boolean) =>
+  request<AdminSecuritySettingsDto>("PATCH", "/api/v1/admin/security-settings", { requireAdminMfa });
