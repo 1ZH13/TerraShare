@@ -86,6 +86,8 @@ export interface ReconciliationCurrencyTotalsDto {
   paidCount: number;
   grossAmount: number;
   platformFeeAmount: number;
+  /** Suma devuelta a los arrendatarios; ya está descontada del `netAmount`. */
+  refundedAmount: number;
   netAmount: number;
 }
 

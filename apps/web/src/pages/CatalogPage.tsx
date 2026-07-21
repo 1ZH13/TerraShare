@@ -15,7 +15,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { listLands, photoSrc } from "../services/api";
-import PanamaMap from "../components/PanamaMap";
+import PanamaMap from "../components/LazyPanamaMap";
 import EmptyState from "../components/EmptyState";
 import { useFavorites } from "../hooks/useFavorites";
 import { useCompareLands } from "../hooks/useCompareLands";

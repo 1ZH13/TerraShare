@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { shortId } from "../lib/short-id";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { ChatDto, LandDto, RentalRequestDto, RentalRequestStatus } from "@terrashare/shared";
@@ -179,7 +180,7 @@ function BuscoHome({ name }: { name: string }) {
                   ) : status.foot === "wait" ? (
                     <div className="hm-req__note">Esperando respuesta del propietario</div>
                   ) : (
-                    <div className="hm-req__note">Solicitud #{req.id.slice(0, 8)}</div>
+                    <div className="hm-req__note">Solicitud #{shortId(req.id)}</div>
                   )}
                 </div>
               );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { shortId } from "../lib/short-id";
 import type { FormEvent } from "react";
 import { useParams, Link } from "@tanstack/react-router";
 import { loadStripe } from "@stripe/stripe-js";
@@ -216,7 +217,7 @@ export default function PaymentPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="dl-head__title">{isSale ? "Trato de compra" : "Trato de alquiler"}</div>
               <div className="dl-head__meta">
-                {isSale ? "Oferta" : "Solicitud"} #{requestId?.slice(0, 8)}
+                {isSale ? "Oferta" : "Solicitud"} #{shortId(requestId)}
               </div>
             </div>
             <span className="dl-head__status">Aprobada · falta pago</span>
