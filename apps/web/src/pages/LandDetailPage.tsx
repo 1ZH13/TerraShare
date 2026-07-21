@@ -19,8 +19,10 @@ import {
   User,
   Flag,
   Star,
+  CalendarClock,
 } from "lucide-react";
-import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc, getRatingByUser } from "../services/api";
+import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc, getRatingByUser, createVisit } from "../services/api";
+import VisitModal from "../components/VisitModal";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
 import "./detail.css";
@@ -92,6 +94,9 @@ export default function LandDetailPage() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [owner, setOwner] = useState<PublicOwnerProfileDto | null>(null);
   const [ownerRating, setOwnerRating] = useState<{ averageRating: number; totalReviews: number } | null>(null);
+  // Agendar visita (HU-100 / #326).
+  const [visitOpen, setVisitOpen] = useState(false);
+  const [visitFeedback, setVisitFeedback] = useState("");
 
   // Favoritos (#147): solo consultamos el backend si hay sesión.
   const { isFavorite, toggle: toggleFavorite } = useFavorites({ enabled: Boolean(isSignedIn) });
@@ -269,6 +274,18 @@ export default function LandDetailPage() {
           >
             <Share2 size={17} />
           </button>
+          {/* Agendar visita (HU-100): solo tiene sentido si no soy el dueño. */}
+          {isSignedIn && user?.id !== land.ownerId && (
+            <button
+              type="button"
+              className="det-nav__action"
+              title="Agendar visita"
+              aria-label="Agendar visita"
+              onClick={() => { setVisitFeedback(""); setVisitOpen(true); }}
+            >
+              <CalendarClock size={17} /> Visitar
+            </button>
+          )}
           <button
             type="button"
             className="det-nav__action"
@@ -280,6 +297,23 @@ export default function LandDetailPage() {
           </button>
         </div>
       </nav>
+
+      {visitFeedback && (
+        <p className="det-visit-feedback" role="status" style={{ padding: "0 1rem" }}>
+          {visitFeedback}
+        </p>
+      )}
+
+      {visitOpen && (
+        <VisitModal
+          landTitle={land.title}
+          onClose={() => setVisitOpen(false)}
+          onSubmit={async (proposedDate, proposedTime, message) => {
+            await createVisit(land.id, { proposedDate, proposedTime, message: message || undefined });
+            setVisitFeedback("Solicitud de visita enviada. Puedes seguirla en «Mis Visitas».");
+          }}
+        />
+      )}
 
       {reportOpen && (
         <div className="det-report" role="dialog" aria-modal="true" aria-label="Reportar terreno">
