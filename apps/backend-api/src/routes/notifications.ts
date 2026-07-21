@@ -3,58 +3,74 @@ import { Hono } from "hono";
 import { failure, success } from "../lib/api-response";
 import { canReadNotification } from "../lib/auth-helpers";
 import { requireAuth } from "../middleware/require-auth";
-import { getStore } from "../store/in-memory-db";
+import { Notification } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 export const notificationRoutes = new Hono<AppEnv>();
 
-// TODO(#136): notifications currently live only in the in-memory store and no
-// flow creates them yet, so this returns an empty list until a later feature
-// generates notifications (e.g. on rental-request status changes). Do not seed
-// fake data here.
-notificationRoutes.get("/notifications", requireAuth, (c) => {
+/**
+ * Centro de notificaciones. Lee y escribe sobre el modelo `Notification` de
+ * Mongo, que es donde las generan realmente los flujos del producto: alertas de
+ * búsquedas guardadas (HU-99) y las acciones sensibles del servidor MCP (#328).
+ *
+ * Antes estas rutas leían del store en memoria, que nadie alimentaba, así que
+ * todas esas notificaciones quedaban invisibles para el usuario.
+ */
+
+/** Quita los campos internos de Mongo de un documento `lean`. */
+function clean<T>(doc: Record<string, unknown> | null | undefined): T | undefined {
+  if (!doc) return undefined;
+  const { _id, __v, ...rest } = doc;
+  return rest as T;
+}
+
+notificationRoutes.get("/notifications", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
 
-  const items = Array.from(store.notifications.values())
-    .filter((n) => n.userId === authUser.id)
-    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const docs = (await Notification.find({ userId: authUser.id })
+    .sort({ createdAt: -1 })
+    .lean()) as unknown as Record<string, unknown>[];
 
-  return success(c, items);
+  return success(c, docs.map((d) => clean(d)));
 });
 
-notificationRoutes.get("/notifications/:notificationId", requireAuth, (c) => {
+notificationRoutes.get("/notifications/:notificationId", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
-  const notification = store.notifications.get(c.req.param("notificationId"));
 
-  if (!notification) {
+  const doc = (await Notification.findOne({ id: c.req.param("notificationId") })
+    .lean()) as Record<string, unknown> | null;
+  if (!doc) {
     return failure(c, 404, "NOT_FOUND", "Notification not found");
   }
 
-  if (!canReadNotification(authUser, notification)) {
+  if (!canReadNotification(authUser, doc as unknown as { userId: string })) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this notification");
   }
 
-  return success(c, notification);
+  return success(c, clean(doc));
 });
 
-notificationRoutes.patch("/notifications/:notificationId/read", requireAuth, (c) => {
+notificationRoutes.patch("/notifications/:notificationId/read", requireAuth, async (c) => {
   const authUser = c.get("authUser");
-  const store = getStore();
-  const notification = store.notifications.get(c.req.param("notificationId"));
+  const notificationId = c.req.param("notificationId");
 
-  if (!notification) {
+  const doc = (await Notification.findOne({ id: notificationId })
+    .lean()) as Record<string, unknown> | null;
+  if (!doc) {
     return failure(c, 404, "NOT_FOUND", "Notification not found");
   }
 
-  if (!canReadNotification(authUser, notification)) {
+  if (!canReadNotification(authUser, doc as unknown as { userId: string })) {
     return failure(c, 403, "FORBIDDEN", "Not allowed to access this notification");
   }
 
-  notification.read = true;
-  notification.readAt = new Date().toISOString();
-  store.notifications.set(notification.id, notification);
+  await Notification.updateOne(
+    { id: notificationId },
+    { $set: { read: true, readAt: new Date().toISOString() } },
+  );
 
-  return success(c, notification);
+  const updated = (await Notification.findOne({ id: notificationId })
+    .lean()) as Record<string, unknown> | null;
+
+  return success(c, clean(updated));
 });

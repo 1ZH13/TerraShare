@@ -101,12 +101,16 @@ describe("saved-search alerts (#325)", () => {
   }
 
   /**
-   * Las alertas se persisten en el modelo `Notification` de Mongo. Nota: hoy
-   * `GET /notifications` lee del store en memoria, así que se consulta el modelo
-   * directamente (ver follow-up de unificación del centro de notificaciones).
+   * Cuenta las alertas tal y como las ve el usuario: a través del centro de
+   * notificaciones (`GET /notifications`), que desde #350 lee de Mongo. Así se
+   * verifica el camino completo: la alerta se genera y llega al usuario.
    */
   async function notifCount(userId: string = seeker): Promise<number> {
-    return Notification.countDocuments({ userId, type: "saved_search_match" });
+    const res = await requestJson("/api/v1/notifications", {
+      headers: { "x-dev-user-id": userId },
+    });
+    const items = (res.payload?.data ?? []) as { type: string }[];
+    return items.filter((n) => n.type === "saved_search_match").length;
   }
 
   it("no alerta mientras el terreno sigue en borrador, y alerta al publicarlo", async () => {
