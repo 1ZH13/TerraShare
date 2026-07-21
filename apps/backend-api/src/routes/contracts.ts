@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import PDFDocument from "pdfkit";
 import { CreateContractSchema, UpdateContractStatusSchema } from "@terrashare/shared";
 
 import { failure, success } from "../lib/api-response";
@@ -10,7 +11,7 @@ import {
 } from "../lib/auth-helpers";
 import { requireAdmin, requireAuth } from "../middleware/require-auth";
 import { createAuditEvent } from "../store/audit";
-import { Contract, AuditEvent, RentalRequest, Land } from "../db/schemas";
+import { Contract, AuditEvent, RentalRequest, Land, User } from "../db/schemas";
 import type { AppEnv } from "../types";
 
 export const contractRoutes = new Hono<AppEnv>();
@@ -221,4 +222,75 @@ contractRoutes.get("/audit-events/:eventId", requireAuth, requireAdmin, async (c
   }
 
   return success(c, event);
+});
+
+// ─── PDF Export (HU-101 / #327) ──────────────────────────────────────────────
+
+contractRoutes.get("/contracts/:id/pdf", requireAuth, async (c) => {
+  const authUser = c.get("authUser");
+  const contractId = c.req.param("id");
+
+  const contract = await Contract.findOne({ id: contractId }).lean();
+  if (!contract) {
+    return failure(c, 404, "NOT_FOUND", "Contract not found");
+  }
+
+  if (!canReadContract(authUser, contract)) {
+    return failure(c, 403, "FORBIDDEN", "You are not a party to this contract");
+  }
+
+  const doc = new PDFDocument({ size: "letter", margin: 50 });
+
+  const chunks: Buffer[] = [];
+  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+
+  const pdfReady = new Promise<Buffer>((resolve) => {
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+  });
+
+  doc.fontSize(20).text("TerraShare - Contrato de Arrendamiento", { align: "center" });
+  doc.moveDown();
+  doc.fontSize(12).text(`Contrato #: ${contract.id}`);
+  doc.text(`Estado: ${contract.status}`);
+  doc.moveDown();
+
+  const owner = await User.findOne({ clerkUserId: contract.ownerId }).lean();
+  const tenant = await User.findOne({ clerkUserId: contract.tenantId }).lean();
+
+  doc.fontSize(14).text("Partes");
+  doc.fontSize(12);
+  doc.text(`Propietario: ${owner?.profile?.fullName ?? contract.ownerId}`);
+  doc.text(`Arrendatario: ${tenant?.profile?.fullName ?? contract.tenantId}`);
+  doc.moveDown();
+
+  doc.fontSize(14).text("Terminos");
+  doc.fontSize(12);
+  if (contract.terms?.summary) doc.text(`Resumen: ${contract.terms.summary}`);
+  if (contract.terms?.startsAt) doc.text(`Inicio: ${new Date(contract.terms.startsAt).toLocaleDateString("es-PA")}`);
+  if (contract.terms?.endsAt) doc.text(`Fin: ${new Date(contract.terms.endsAt).toLocaleDateString("es-PA")}`);
+  doc.moveDown();
+
+  if (contract.status === "active" || contract.status === "completed") {
+    doc.fontSize(14).text("Firma");
+    doc.fontSize(12);
+    doc.text("Ambas partes han firmado electronicamente este contrato.");
+    if (contract.terms?.signedAt) {
+      doc.text(`Fecha de firma: ${new Date(contract.terms.signedAt).toLocaleDateString("es-PA")}`);
+    }
+  }
+
+  doc.moveDown(2);
+  doc.fontSize(10).text("Generado por TerraShare", { align: "center" });
+
+  doc.end();
+
+  const pdfBuffer = await pdfReady;
+
+  return new Response(new Uint8Array(pdfBuffer), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="contrato-${contract.id}.pdf"`,
+    },
+  });
 });

@@ -460,6 +460,37 @@ export const getRatingByUser = async (userId: string): Promise<RatingDto> => {
   return res?.data ?? { averageRating: 0, totalReviews: 0 };
 };
 
+// ─── Saved Searches (HU-99 / #325) ──────────────────────────────────────────
+
+export interface SavedSearchDto {
+  id: string;
+  userId: string;
+  name: string;
+  filters: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** POST /api/v1/users/me/saved-searches — guardar un filtro con nombre. */
+export const createSavedSearch = async (input: {
+  name: string;
+  filters: Record<string, unknown>;
+}): Promise<SavedSearchDto | null> => {
+  const res = await request<SavedSearchDto>("POST", "/api/v1/users/me/saved-searches", input);
+  return res?.data ?? null;
+};
+
+/** GET /api/v1/users/me/saved-searches — listar mis búsquedas guardadas. */
+export const listSavedSearches = async (): Promise<SavedSearchDto[]> => {
+  const res = await request<SavedSearchDto[]>("GET", "/api/v1/users/me/saved-searches");
+  return res?.data ?? [];
+};
+
+/** DELETE /api/v1/users/me/saved-searches/:id — eliminar una búsqueda guardada. */
+export const deleteSavedSearch = async (id: string): Promise<boolean> => {
+  const res = await request<unknown>("DELETE", `/api/v1/users/me/saved-searches/${id}`);
+  return res?.ok ?? false;
+};
+
 export const api = {
   listLands,
   getMyLands,
@@ -484,4 +515,7 @@ export const api = {
   createReview,
   getReviewsByUser,
   getRatingByUser,
+  createSavedSearch,
+  listSavedSearches,
+  deleteSavedSearch,
 };
