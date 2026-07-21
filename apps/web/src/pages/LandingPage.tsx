@@ -15,6 +15,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { listLands, photoSrc } from "../services/api";
+import { monthlyPrice } from "../lib/land-price";
 import { isAdminUser } from "../components/authDisplay";
 import ThemeToggle from "../components/ThemeToggle";
 import "./landing.css";
@@ -68,7 +69,8 @@ function toFeatured(land: LandDto): FeaturedCard {
     use: USE_LABELS[land.allowedUses?.[0]] ?? "Terreno",
     area: land.area,
     province: land.location?.province ?? "Panamá",
-    price: land.priceRule?.pricePerMonth ?? null,
+    // Solo la renta: las tarjetas de la landing muestran «$X/mes» (#365).
+    price: monthlyPrice(land),
     to: `/lands/${land.id}`,
     cover: land.photos?.[0] ? photoSrc(land.photos[0]) : undefined,
   };

@@ -12,6 +12,7 @@ import {
 import { getLandById, photoSrc } from "../services/api";
 import { useCompareLands } from "../hooks/useCompareLands";
 import EmptyState from "../components/EmptyState";
+import { formatLandPrice } from "../lib/land-price";
 import "./compare.css";
 
 const USE_LABELS: Record<string, string> = {
@@ -40,16 +41,9 @@ function formatAvailable(iso?: string): string {
   return d.toLocaleDateString("es-PA", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function formatPrice(land: LandDto): string {
-  const monthly = land.priceRule?.pricePerMonth;
-  if (typeof monthly === "number") {
-    return `$${monthly.toLocaleString("es-PA")}/mes`;
-  }
-  if (typeof land.salePrice === "number") {
-    return `$${land.salePrice.toLocaleString("es-PA")}`;
-  }
-  return "A consultar";
-}
+// El formato vive en `lib/land-price` para que todas las pantallas coincidan y
+// ninguna vuelva a tratar el `pricePerMonth: 0` de una venta como renta (#365).
+const formatPrice = formatLandPrice;
 
 function formatLocation(land: LandDto): string {
   const parts = [land.location?.province, land.location?.district].filter(Boolean);

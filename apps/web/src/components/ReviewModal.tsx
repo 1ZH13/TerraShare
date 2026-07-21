@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
+import { FIELD_STYLE, BUTTON_STYLE, PRIMARY_BUTTON_STYLE } from "./modal-styles";
 
 interface ReviewModalProps {
   contractId: string;
@@ -85,11 +86,10 @@ export default function ReviewModal({ contractId, receiverId, onSubmit, onClose 
           maxLength={500}
           rows={3}
           style={{
-            width: "100%", boxSizing: "border-box",
-            padding: "0.75rem", borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.15)",
-            background: "rgba(255,255,255,0.05)",
-            color: "inherit", fontFamily: "inherit", fontSize: "0.9rem",
+            ...FIELD_STYLE,
+            boxSizing: "border-box",
+            marginTop: 0,
+            padding: "0.75rem",
             resize: "vertical",
           }}
         />
@@ -103,11 +103,7 @@ export default function ReviewModal({ contractId, receiverId, onSubmit, onClose 
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", marginTop: "1rem" }}>
           <button
             onClick={onClose}
-            style={{
-              padding: "0.5rem 1rem", borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.15)", background: "transparent",
-              color: "inherit", cursor: "pointer", fontSize: "0.9rem",
-            }}
+            style={BUTTON_STYLE}
           >
             Cancelar
           </button>
@@ -115,11 +111,12 @@ export default function ReviewModal({ contractId, receiverId, onSubmit, onClose 
             onClick={handleSubmit}
             disabled={submitting || rating < 1}
             style={{
-              padding: "0.5rem 1.5rem", borderRadius: "8px",
-              border: "none", background: "var(--leaf-600, #059669)",
-              color: "#fff", cursor: submitting ? "not-allowed" : "pointer",
+              // `--leaf-600` tampoco existía: caía a un verde esmeralda que no
+              // es el de la marca (#365).
+              ...PRIMARY_BUTTON_STYLE,
+              padding: "0.5rem 1.5rem",
+              cursor: submitting ? "not-allowed" : "pointer",
               opacity: submitting || rating < 1 ? 0.6 : 1,
-              fontSize: "0.9rem", fontWeight: 600,
             }}
           >
             {submitting ? "Enviando..." : "Enviar reseña"}

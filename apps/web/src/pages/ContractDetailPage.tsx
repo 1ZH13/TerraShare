@@ -53,14 +53,22 @@ export default function ContractDetailPage() {
   }, [user, contractId]);
 
   useEffect(() => {
-    if (!contract || contract.status !== "completed") return;
-    const receiverId = user?.id === contract.ownerId ? contract.tenantId : contract.ownerId;
-    getReviewsByUser(receiverId, contractId).then((r) => {
-      setReviews(r);
-      const mine = r.find((rev) => rev.senderId === user?.id);
+    if (!contract || contract.status !== "completed" || !user) return;
+    const counterpartId = user.id === contract.ownerId ? contract.tenantId : contract.ownerId;
+
+    // Hacen falta las DOS caras (#365). Antes solo se pedían las reseñas
+    // recibidas por la contraparte —que por definición son las que envié yo—,
+    // así que el bloque «Reseñas recibidas», que filtra por `senderId !== yo`,
+    // se quedaba vacío siempre, hubiera o no una reseña sobre mí.
+    Promise.all([
+      getReviewsByUser(counterpartId, contractId),
+      getReviewsByUser(user.id, contractId),
+    ]).then(([sent, received]) => {
+      setReviews(received);
+      const mine = sent.find((rev) => rev.senderId === user.id);
       if (mine) setMyReview(mine);
     });
-  }, [contract, user]);
+  }, [contract, user, contractId]);
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
     if (!user || !contract) return;
@@ -72,8 +80,8 @@ export default function ContractDetailPage() {
       comment: comment || undefined,
     });
     if (review) {
+      // `reviews` guarda solo las recibidas; la recién enviada es `myReview`.
       setMyReview(review);
-      setReviews((prev) => [...prev, review]);
     }
   };
 

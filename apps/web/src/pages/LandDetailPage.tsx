@@ -25,6 +25,7 @@ import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc,
 import VisitModal from "../components/VisitModal";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
+import { monthlyPrice } from "../lib/land-price";
 import "./detail.css";
 
 const REPORT_REASONS: { value: ReportReason; label: string }[] = [
@@ -226,7 +227,7 @@ export default function LandDetailPage() {
 
   const operation = getOperation(land);
   const isSale = operation === "venta" || operation === "ambas";
-  const monthly = land.priceRule?.pricePerMonth;
+  const monthly = monthlyPrice(land);
   const loc = land.location;
 
   // Especificaciones a partir de datos reales (agua/acceso/suelo llegan con #138).
@@ -482,7 +483,7 @@ export default function LandDetailPage() {
                   ) : (
                     "A consultar"
                   )
-                ) : typeof monthly === "number" ? (
+                ) : monthly !== null ? (
                   <>
                     ${monthly.toLocaleString("es-PA")}
                     <span>/mes</span>

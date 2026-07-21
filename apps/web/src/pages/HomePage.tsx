@@ -22,6 +22,7 @@ import { getChats, getMyFavorites, getMyLands, listRentalRequests, photoSrc } fr
 import { getDisplayName } from "../components/authDisplay";
 import { useAppMode } from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
+import { formatLandPrice, formatLandPriceShort, monthlyPrice } from "../lib/land-price";
 import "./home.css";
 
 type LoadState = "loading" | "ready" | "error";
@@ -233,11 +234,13 @@ function BuscoHome({ name }: { name: string }) {
                       {land.location?.province ?? "—"} · {land.area} ha
                     </span>
                   </span>
-                  {typeof land.priceRule?.pricePerMonth === "number" && (
+                  {monthlyPrice(land) !== null ? (
                     <span className="hm-favcard__price">
-                      ${land.priceRule.pricePerMonth.toLocaleString("es-PA")}
+                      ${monthlyPrice(land)!.toLocaleString("es-PA")}
                       <span>/mes</span>
                     </span>
+                  ) : (
+                    <span className="hm-favcard__price">{formatLandPriceShort(land)}</span>
                   )}
                 </Link>
               ))}
@@ -408,8 +411,7 @@ function OfrezcoHome() {
                   <div className="hm-pub__body">
                     <div className="hm-pub__title">{land.title}</div>
                     <div className="hm-pub__meta">
-                      {useLabel(land.allowedUses?.[0])} · $
-                      {land.priceRule?.pricePerMonth?.toLocaleString("es-PA")}/mes
+                      {useLabel(land.allowedUses?.[0])} · {formatLandPrice(land)}
                     </div>
                     <div className="hm-pub__stats">
                       <span className="hm-pub__stat">
