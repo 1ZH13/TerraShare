@@ -1,10 +1,13 @@
 // Test preload: spins up an in-memory MongoDB, connects both data layers
 // (native driver + mongoose), and seeds it from the in-memory store fixtures
 // before every test. Wired via bunfig.toml `[test].preload`.
+// Primero de todo: fija las variables de entorno que `config/env` valida al
+// evaluarse. Cualquier import que arrastre `env` debe venir después.
+import "./setup-test-env";
+
 import { afterAll, beforeEach } from "bun:test";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
-import "./setup-test-env";
 import mongoose from "mongoose";
 import { connectMongoose, disconnectMongoose } from "./db/mongoose";
 import { __resetRateLimit } from "./middleware/rate-limit";
