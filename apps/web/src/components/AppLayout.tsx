@@ -1,10 +1,11 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Navbar } from "./ui";
 import type { BuscoOfrezcoMode } from "./ui";
 import ThemeToggle from "./ThemeToggle";
+import BackLink from "./BackLink";
 import { getDisplayName, isAdminUser } from "./authDisplay";
 import type { UserMenuItem } from "./ui";
 import "../pages/app-shell.css";
@@ -59,17 +60,31 @@ function ChatIcon() {
   );
 }
 
-export default function AppLayout({ children }: { children?: ReactNode }) {
+export default function AppLayout({
+  children,
+  backTo,
+}: {
+  children?: ReactNode;
+  /** Si se indica, se pinta un control de «volver» sobre el contenido (#377).
+   *  El inicio lo omite: no hay pantalla anterior a la raíz de la cuenta. */
+  backTo?: string;
+}) {
   const navigate = useNavigate();
   const { user } = useUser();
   const { signOut } = useClerk();
   const [mode, setModeState] = useState<BuscoOfrezcoMode>(readStoredMode);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const setMode = (next: BuscoOfrezcoMode) => {
     setModeState(next);
     // TODO(#137): persistir el modo (Busco/Ofrezco) en el perfil del usuario.
     // Por ahora se guarda localmente para que sobreviva a recargas.
     window.localStorage.setItem(MODE_STORAGE_KEY, next);
+    // Solo el inicio pinta algo distinto según el modo. Desde el catálogo el
+    // conmutador parecía roto: cambiaba de pestaña activa y nada más (#377).
+    // Estando ya en el inicio no se navega, o cada clic apilaría una entrada
+    // en el historial y el «volver» del navegador se llenaría de basura.
+    if (pathname !== "/dashboard") navigate({ to: "/dashboard" });
   };
 
   const context: AppLayoutContext = { mode, setMode };
@@ -109,6 +124,7 @@ export default function AppLayout({ children }: { children?: ReactNode }) {
         onSignOut={() => signOut({ redirectUrl: "/" })}
       />
       <main id="contenido" className="app-main">
+        {backTo && <BackLink fallbackTo={backTo} />}
         <AppModeContext.Provider value={context}>{children}</AppModeContext.Provider>
       </main>
     </div>
