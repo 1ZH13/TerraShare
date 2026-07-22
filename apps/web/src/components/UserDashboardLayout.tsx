@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Bell, MessageCircle, Sprout } from "lucide-react";
 import { Navbar } from "./ui";
+import BackLink from "./BackLink";
 import type { UserMenuItem } from "./ui";
 import { getDisplayName, isAdminUser } from "./authDisplay";
 import "../pages/app-shell.css";
@@ -10,6 +11,12 @@ import "../pages/app-shell.css";
 interface UserDashboardLayoutProps {
   children?: ReactNode;
   onSignOut?: () => void;
+  /**
+   * Destino del control de «volver» cuando se llegó por enlace directo y no hay
+   * pantalla anterior (#377). El inicio de la cuenta sirve para casi todas; las
+   * pantallas de detalle pasan el listado del que cuelgan.
+   */
+  backTo?: string;
 }
 
 function BrandMark() {
@@ -24,7 +31,11 @@ function BrandMark() {
 /** Layout editorial de las páginas de cuenta (terrenos, chats, notificaciones,
  *  pagos, perfil). Reutiliza la Navbar del sistema para igualar al AppLayout,
  *  sin el switch Busco/Ofrezco. */
-export default function UserDashboardLayout({ children, onSignOut }: UserDashboardLayoutProps) {
+export default function UserDashboardLayout({
+  children,
+  onSignOut,
+  backTo = "/dashboard",
+}: UserDashboardLayoutProps) {
   const navigate = useNavigate();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -66,7 +77,11 @@ export default function UserDashboardLayout({ children, onSignOut }: UserDashboa
         userMenuItems={userMenuItems}
         onSignOut={handleSignOut}
       />
-      <main className="app-main">{children}</main>
+      <main className="app-main">
+        {/* Volver (#377): estas pantallas solo tenían la flecha del navegador. */}
+        <BackLink fallbackTo={backTo} />
+        {children}
+      </main>
     </div>
   );
 }

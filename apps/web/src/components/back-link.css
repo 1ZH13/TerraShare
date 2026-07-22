@@ -1,0 +1,29 @@
+/* Control de «volver» (#377). Discreto: es un apoyo, no una acción principal,
+   así que va como enlace de texto y solo gana fondo al pasar por encima. */
+
+.ts-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--ts-font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ts-sage-2);
+  padding: 7px 12px 7px 8px;
+  margin-left: -8px; /* alinea el texto con el contenido de la página */
+  border-radius: var(--ts-radius);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.ts-back:hover {
+  color: var(--ts-green);
+  background: var(--ts-tint-green);
+}
+
+.ts-back:focus-visible {
+  outline: none;
+  box-shadow: var(--ts-ring);
+}

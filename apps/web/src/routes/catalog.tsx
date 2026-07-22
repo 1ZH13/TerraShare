@@ -5,6 +5,10 @@ import CatalogPage from "../pages/CatalogPage";
 
 export const Route = createFileRoute("/catalog")({
   component: () => (
-    <ProtectedRoute><AppLayout><CatalogPage /></AppLayout></ProtectedRoute>
+    <ProtectedRoute>
+      <AppLayout backTo="/dashboard">
+        <CatalogPage />
+      </AppLayout>
+    </ProtectedRoute>
   ),
 });
