@@ -284,31 +284,35 @@ export default function CatalogPage() {
           ]}
         />
 
-        {/* Guardar la búsqueda actual (HU-99 / #368). Sin criterios no tiene
-            sentido: una alerta «de cualquier terreno» sería solo ruido. */}
-        <button
-          type="button"
-          className="cat-pill cat-pill--action"
-          onClick={() => { setSaveFeedback(""); setSaveOpen(true); }}
-          disabled={!hasAnyFilter(currentFilters)}
-          title={
-            hasAnyFilter(currentFilters)
-              ? "Guardar esta búsqueda y recibir avisos"
-              : "Elige algún filtro para poder guardar la búsqueda"
-          }
-        >
-          <span className="cat-pill__icon">
-            <BookmarkPlus size={15} />
-          </span>
-          Guardar búsqueda
-        </button>
+        {/* Las dos acciones van juntas y alineadas a la derecha: al envolverse
+            bajan como bloque, en vez de dejar una suelta debajo (#379). */}
+        <div className="cat-filters__actions">
+          {/* Guardar la búsqueda actual (HU-99 / #368). Sin criterios no tiene
+              sentido: una alerta «de cualquier terreno» sería solo ruido. */}
+          <button
+            type="button"
+            className="cat-pill cat-pill--action"
+            onClick={() => { setSaveFeedback(""); setSaveOpen(true); }}
+            disabled={!hasAnyFilter(currentFilters)}
+            title={
+              hasAnyFilter(currentFilters)
+                ? "Guardar esta búsqueda y recibir avisos"
+                : "Elige algún filtro para poder guardar la búsqueda"
+            }
+          >
+            <span className="cat-pill__icon">
+              <BookmarkPlus size={15} />
+            </span>
+            Guardar búsqueda
+          </button>
 
-        <Link to="/dashboard/searches" className="cat-pill cat-pill--action">
-          <span className="cat-pill__icon">
-            <Bookmark size={15} />
-          </span>
-          Mis búsquedas
-        </Link>
+          <Link to="/dashboard/searches" className="cat-pill cat-pill--action">
+            <span className="cat-pill__icon">
+              <Bookmark size={15} />
+            </span>
+            Mis búsquedas
+          </Link>
+        </div>
       </div>
 
       {saveFeedback && (

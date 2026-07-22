@@ -9,3 +9,10 @@
 .app-main {
   margin-top: 1.25rem;
 }
+
+/* El «volver» iba pegado al primer bloque de la pantalla y se leía como parte
+   de él. La separación la pone el layout, no el componente: `BackLink` también
+   se usa dentro de cabeceras donde ese aire sobra (#379). */
+.app-main > .ts-back {
+  margin-bottom: 14px;
+}
