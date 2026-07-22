@@ -76,11 +76,16 @@ function toFeatured(land: LandDto): FeaturedCard {
   };
 }
 
-function PhotoPlaceholder({ label, className }: { label: string; className: string }) {
+/**
+ * Hueco de foto para las tarjetas destacadas que aún no tienen portada propia
+ * (#381). Ya no rotula «Foto terreno»: eso era una nota para el equipo puesta
+ * en producción. Ahora es un bloque mudo con el icono, que se lee como «esta
+ * publicación no subió foto» en vez de como un fallo de la página.
+ */
+function PhotoPlaceholder({ className }: { className: string }) {
   return (
     <div className={className} aria-hidden="true">
       <ImageIcon size={26} strokeWidth={1.5} />
-      <span>{label}</span>
     </div>
   );
 }
@@ -93,7 +98,7 @@ function LandCard({ card }: { card: FeaturedCard }) {
           <img src={card.cover} alt={card.title} loading="lazy" />
         </div>
       ) : (
-        <PhotoPlaceholder label="Foto terreno" className="lp-photo lp-card__photo" />
+        <PhotoPlaceholder className="lp-photo lp-card__photo" />
       )}
       <div className="lp-card__body">
         <div className="lp-card__top">
@@ -225,9 +230,11 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="lp-heroart">
-          <PhotoPlaceholder
-            label="Foto — potrero / cultivo al amanecer"
-            className="lp-photo lp-photo--hero lp-heroart__photo"
+          <img
+            src="/img/landing-hero.jpg"
+            alt=""
+            className="lp-heroart__photo"
+            fetchPriority="high"
           />
           <div className="lp-chip lp-chip--water">
             <span className="lp-chip--water__icon">

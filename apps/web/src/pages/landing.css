@@ -193,8 +193,12 @@
 /* columna derecha del hero: foto + chips flotantes */
 .lp-heroart { position: relative; animation: lpFade 1.1s ease both 0.2s; }
 .lp-heroart__photo {
+  display: block;
   width: 100%;
   height: 540px;
+  /* La foto es más ancha que alta y el hueco es alto: sin `cover` saldría
+     deformada (#381). */
+  object-fit: cover;
   border-radius: 20px;
   box-shadow: 0 40px 70px -34px rgba(36, 49, 42, 0.5);
 }
@@ -477,20 +481,16 @@
 .lp-foot__links a:hover { color: var(--ts-text); }
 .lp-foot__copy { font-size: 13px; color: var(--ts-text-muted); }
 
-/* ── placeholder de foto (el modelo aún no tiene imágenes reales) ─────────── */
+/* ── hueco para las publicaciones que no subieron portada ─────────────────
+   El hero ya no pasa por aquí: tiene foto propia (#381). Esto solo cubre las
+   tarjetas destacadas de un terreno sin fotos. */
 .lp-photo {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   background: linear-gradient(135deg, #e9e3d3, #dfe4d6);
   color: var(--ts-sage);
-  font-family: var(--ts-font-sans);
-  font-size: 13px;
-  text-align: center;
 }
-.lp-photo--hero { border-radius: 20px; }
 .lp-photo svg { opacity: 0.5; }
 /* Foto de portada real en las cards destacadas (#148). */
 .lp-photo--img { overflow: hidden; padding: 0; }

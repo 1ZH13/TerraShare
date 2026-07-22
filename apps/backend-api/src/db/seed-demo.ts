@@ -24,7 +24,7 @@ import {
   AuditEvent, Chat, ChatMessage, Contract, Favorite, Land, Lead, Notification,
   Payment, RentalRequest, Report, Review, SavedSearch, User, Visit,
 } from "./schemas";
-import { makeLandPhoto } from "./seed-photo";
+import { landPhoto } from "./seed-photo";
 import { photoUrl, storeLandPhoto } from "../lib/land-photos";
 
 // ─── Utilidades deterministas ────────────────────────────────────────────────
@@ -505,7 +505,7 @@ interface Built {
   auditEvents: Record<string, unknown>[];
   leads: Record<string, unknown>[];
   /** Terrenos que necesitan foto, para subirlas a GridFS después de insertar. */
-  photoPlan: { landId: string; count: number; seed: number }[];
+  photoPlan: { landId: string; count: number; seed: number; use: string }[];
 }
 
 const PLATFORM_FEE_RATE = 0.05;
@@ -533,7 +533,8 @@ export function buildDemoData(): Built {
 
   const photoPlan: Built["photoPlan"] = [];
   const lands = landSpecs.map((spec, i) => {
-    photoPlan.push({ landId: spec.id, count: spec.photoCount, seed: i + 1 });
+    // El uso viaja con el plan para que cada terreno reciba fotos de lo suyo (#381).
+    photoPlan.push({ landId: spec.id, count: spec.photoCount, seed: i + 1, use: spec.allowedUses[0] });
     return {
       id: spec.id,
       ownerId: spec.ownerId,
@@ -996,17 +997,18 @@ async function dropGhostCollections(): Promise<string[]> {
   return dropped;
 }
 
-/** Sube las fotos sintéticas a GridFS y enlaza sus URLs en cada terreno. */
+/** Sube las fotos a GridFS y enlaza sus URLs en cada terreno. */
 async function seedPhotos(plan: Built["photoPlan"]): Promise<number> {
   let total = 0;
   for (const item of plan) {
     const urls: string[] = [];
     for (let i = 0; i < item.count; i++) {
+      const photo = landPhoto(item.use, item.seed, i);
       const fileId = await storeLandPhoto({
         landId: item.landId,
-        buffer: makeLandPhoto(item.seed * 10 + i),
-        contentType: "image/png",
-        filename: `${item.landId}-${i + 1}.png`,
+        buffer: photo.buffer,
+        contentType: photo.contentType,
+        filename: `${item.landId}-${i + 1}.jpg`,
       });
       urls.push(photoUrl(item.landId, fileId));
       total++;
