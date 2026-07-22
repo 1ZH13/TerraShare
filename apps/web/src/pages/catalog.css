@@ -36,6 +36,23 @@
 }
 .cat-search input { font-size: 14px; }
 
+/* El foco se pinta en la CAJA, no en el `input` (#379).
+   `styles.css` (hoja heredada) tiene un `input:focus` global con un anillo de
+   4px, y `base.css` un `:focus-visible` con contorno. Como este `input` no
+   tiene borde y solo ocupa el hueco interior, ambos dibujaban un recuadro
+   suelto por dentro del buscador, más pequeño que el campo y descentrado por
+   el icono de la lupa. Se anulan en el hijo y el realce pasa al contenedor,
+   que es lo que la persona percibe como «el buscador». */
+.cat-search:focus-within {
+  border-color: var(--ts-green);
+  box-shadow: var(--ts-ring);
+}
+.cat-search input:focus,
+.cat-search input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 /* Los cuatro filtros se reparten el espacio que suelta el buscador, así que la
    fila queda a ras y todos con el mismo peso visual. `__value` crece para que
    la flecha se quede pegada al borde derecho en vez de al texto. */
