@@ -21,3 +21,6 @@ export type { SidebarProps, SidebarItem } from "./Sidebar";
 
 export { default as Stepper } from "./Stepper";
 export type { StepperProps } from "./Stepper";
+
+export { default as Dropdown } from "./Dropdown";
+export type { DropdownProps, DropdownOption } from "./Dropdown";

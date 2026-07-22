@@ -541,3 +541,100 @@
   background: var(--ts-green);
   color: var(--ts-on-green);
 }
+
+/* ── Desplegable propio (#379) ─────────────────────────────────────────────
+   Reemplaza al `<select>` nativo, cuya lista de opciones el navegador pinta
+   con el aspecto del sistema —rectángulo blanco, tipografía de sistema— y no
+   sigue al tema. Aquí el disparador y la lista comparten superficie, borde,
+   radio y tipografía, así que la lista se lee como una extensión del botón. */
+
+.ds-dd {
+  position: relative;
+  display: inline-flex;
+}
+
+.ds-dd__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  font-family: var(--ts-font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ts-text-secondary);
+  background: var(--ts-bg);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+  padding: 11px 14px 11px 16px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.ds-dd__btn:hover,
+.ds-dd__btn.is-open {
+  border-color: var(--ts-green);
+}
+
+.ds-dd__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ts-ring);
+}
+
+.ds-dd__icon {
+  display: inline-flex;
+  color: var(--ts-text-secondary);
+  flex: 0 0 auto;
+}
+
+.ds-dd__value {
+  white-space: nowrap;
+}
+
+.ds-dd__chev {
+  color: var(--ts-sage);
+  flex: 0 0 auto;
+  transition: transform 0.2s ease;
+}
+
+.ds-dd__btn.is-open .ds-dd__chev {
+  transform: rotate(180deg);
+}
+
+.ds-dd__list {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  max-height: 17rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+  box-shadow: var(--ts-shadow);
+  outline: none;
+}
+
+.ds-dd__opt {
+  padding: 9px 12px;
+  border-radius: var(--ts-radius-sm);
+  font-family: var(--ts-font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ts-text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* La opción bajo el cursor o bajo las flechas del teclado: el mismo tinte. */
+.ds-dd__opt.is-active {
+  background: var(--ts-tint-green);
+}
+
+.ds-dd__opt.is-selected {
+  color: var(--ts-green);
+  font-weight: 700;
+}

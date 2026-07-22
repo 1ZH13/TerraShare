@@ -1,8 +1,10 @@
 import { useId, useState } from "react";
+import { MapPin } from "lucide-react";
 import {
   Badge,
   Button,
   Card,
+  Dropdown,
   Field,
   Input,
   Navbar,
@@ -28,6 +30,7 @@ const rowStyle: React.CSSProperties = {
 export default function StyleguidePage() {
   const [mode, setMode] = useState<BuscoOfrezcoMode>("busco");
   const [step, setStep] = useState(1);
+  const [province, setProvince] = useState("todas");
   const emailId = useId();
   const nameId = useId();
   const errId = useId();
@@ -162,6 +165,34 @@ export default function StyleguidePage() {
             <Input id={errId} invalid defaultValue="-10" />
           </Field>
         </div>
+      </section>
+
+      {/* Dropdown */}
+      <section style={sectionStyle}>
+        <h2 className="ts-title">Dropdown</h2>
+        <p style={{ color: "var(--ts-text-secondary)", maxWidth: "60ch" }}>
+          Sustituye al <code>&lt;select&gt;</code> nativo, cuya lista de opciones el navegador pinta
+          con el aspecto del sistema y no sigue al tema. El botón entero abre la lista, no solo el
+          texto.
+        </p>
+        <div style={rowStyle}>
+          <Dropdown
+            label="Filtrar por provincia"
+            icon={<MapPin size={15} />}
+            value={province}
+            onChange={setProvince}
+            options={[
+              { value: "todas", label: "Provincia" },
+              { value: "Chiriquí", label: "Chiriquí" },
+              { value: "Coclé", label: "Coclé" },
+              { value: "Herrera", label: "Herrera" },
+              { value: "Los Santos", label: "Los Santos" },
+            ]}
+          />
+        </div>
+        <p style={{ color: "var(--ts-text-secondary)", fontSize: "0.85rem" }}>
+          Valor: <strong>{province}</strong>
+        </p>
       </section>
 
       {/* Stepper */}
