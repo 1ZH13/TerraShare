@@ -7,7 +7,6 @@ import {
   MapPin,
   DollarSign,
   Tag,
-  ChevronDown,
   ImageIcon,
   SearchX,
   Heart,
@@ -38,6 +37,7 @@ import {
 } from "../lib/catalog-filters";
 import { createSavedSearch } from "../services/api";
 import SaveSearchModal from "../components/SaveSearchModal";
+import { Dropdown } from "../components/ui";
 import PanamaMap from "../components/LazyPanamaMap";
 import EmptyState from "../components/EmptyState";
 import { useFavorites } from "../hooks/useFavorites";
@@ -239,81 +239,50 @@ export default function CatalogPage() {
           />
         </div>
 
-        <label className="cat-pill">
-          <span className="cat-pill__icon">
-            <Sprout size={15} />
-          </span>
-          <select value={use} onChange={(e) => setUse(e.target.value)} aria-label="Filtrar por uso">
-            <option value="todos">Uso</option>
-            {useOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {formatUse(opt)}
-              </option>
-            ))}
-          </select>
-          <span className="cat-pill__chev">
-            <ChevronDown size={14} />
-          </span>
-        </label>
+        <Dropdown
+          label="Filtrar por uso"
+          icon={<Sprout size={15} />}
+          value={use}
+          onChange={setUse}
+          options={[
+            { value: ANY_USE, label: "Uso" },
+            ...useOptions.map((opt) => ({ value: opt, label: formatUse(opt) })),
+          ]}
+        />
 
-        <label className="cat-pill">
-          <span className="cat-pill__icon">
-            <MapPin size={15} />
-          </span>
-          <select
-            value={province}
-            onChange={(e) => setProvince(e.target.value)}
-            aria-label="Filtrar por provincia"
-          >
-            <option value="todas">Provincia</option>
-            {provinceOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <span className="cat-pill__chev">
-            <ChevronDown size={14} />
-          </span>
-        </label>
+        <Dropdown
+          label="Filtrar por provincia"
+          icon={<MapPin size={15} />}
+          value={province}
+          onChange={setProvince}
+          options={[
+            { value: ANY_PROVINCE, label: "Provincia" },
+            ...provinceOptions.map((opt) => ({ value: opt, label: opt })),
+          ]}
+        />
 
-        <label className="cat-pill">
-          <span className="cat-pill__icon">
-            <DollarSign size={15} />
-          </span>
-          <select
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(Number(e.target.value))}
-            aria-label="Filtrar por precio"
-          >
-            {priceOptionsWith(maxPrice).map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <span className="cat-pill__chev">
-            <ChevronDown size={14} />
-          </span>
-        </label>
+        <Dropdown
+          label="Filtrar por precio"
+          icon={<DollarSign size={15} />}
+          value={String(maxPrice)}
+          onChange={(v) => setMaxPrice(Number(v))}
+          options={priceOptionsWith(maxPrice).map((opt) => ({
+            value: String(opt.value),
+            label: opt.label,
+          }))}
+        />
 
-        <label className="cat-pill">
-          <span className="cat-pill__icon">
-            <Tag size={15} />
-          </span>
-          <select
-            value={operation}
-            onChange={(e) => setOperation(e.target.value)}
-            aria-label="Filtrar por tipo de operación"
-          >
-            <option value="todas">Alquiler / Venta</option>
-            <option value="alquiler">En alquiler</option>
-            <option value="venta">En venta</option>
-          </select>
-          <span className="cat-pill__chev">
-            <ChevronDown size={14} />
-          </span>
-        </label>
+        <Dropdown
+          label="Filtrar por tipo de operación"
+          icon={<Tag size={15} />}
+          value={operation}
+          onChange={setOperation}
+          options={[
+            { value: ANY_OPERATION, label: "Alquiler / Venta" },
+            { value: "alquiler", label: "En alquiler" },
+            { value: "venta", label: "En venta" },
+          ]}
+        />
 
         {/* Guardar la búsqueda actual (HU-99 / #368). Sin criterios no tiene
             sentido: una alerta «de cualquier terreno» sería solo ruido. */}
@@ -377,11 +346,14 @@ export default function CatalogPage() {
               description="No encontramos terrenos con esos filtros. Prueba ampliar la búsqueda."
               action={{
                 label: "Limpiar filtros",
+                // El tipo de operación se quedaba fuera: se limpiaba todo lo
+                // demás y la lista seguía vacía sin explicación (#379).
                 onClick: () => {
                   setQuery("");
-                  setUse("todos");
-                  setProvince("todas");
-                  setMaxPrice(1_000_000);
+                  setUse(ANY_USE);
+                  setProvince(ANY_PROVINCE);
+                  setOperation(ANY_OPERATION);
+                  setMaxPrice(NO_PRICE_LIMIT);
                 },
               }}
             />

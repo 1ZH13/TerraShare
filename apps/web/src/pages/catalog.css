@@ -36,12 +36,14 @@
 }
 .cat-search input::placeholder { color: var(--ts-sage-3); }
 
+/* El verde-gris iba fijo (#3d4d3d): en tema oscuro quedaba texto casi negro
+   sobre fondo casi negro, ilegible. Ahora sigue al tema (#379). */
 .cat-pill {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   font-size: 14px;
-  color: #3d4d3d;
+  color: var(--ts-text-secondary);
   font-weight: 600;
   background: var(--ts-bg);
   border: 1px solid var(--ts-border);
@@ -52,33 +54,12 @@
   position: relative;
 }
 .cat-pill:hover { border-color: var(--ts-green); }
-.cat-pill__icon { color: #3d4d3d; display: inline-flex; }
-.cat-pill select {
-  appearance: none;
-  -webkit-appearance: none;
-  border: 0;
-  background: transparent;
-  font-family: var(--ts-font-sans);
-  font-size: 14px;
-  font-weight: 600;
-  color: #3d4d3d;
-  cursor: pointer;
-  outline: none;
-  padding-right: 2px;
-}
-.cat-pill__chev { color: var(--ts-sage); display: inline-flex; pointer-events: none; }
-.cat-pill--soon { cursor: default; color: var(--ts-sage); }
-.cat-pill--soon:hover { border-color: var(--ts-border); }
-.cat-soon__tag {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ts-clay);
-  background: var(--ts-clay-tint);
-  border-radius: 999px;
-  padding: 2px 7px;
-}
+.cat-pill__icon { color: var(--ts-text-secondary); display: inline-flex; }
+/* `.cat-pill` ya solo viste los dos botones de acción (guardar búsqueda, mis
+   búsquedas). Los cuatro filtros pasaron a `<Dropdown>`, así que se van con
+   ellos `.cat-pill select`, `.cat-pill__chev` y el par `--soon`, que además
+   ya no tenía marca a la que aplicarse desde que el filtro de operación dejó
+   de estar «Pronto» (#365). */
 
 /* ── layout lista + mapa ─────────────────────────────────────────────────── */
 .cat-body { display: grid; grid-template-columns: 1.25fr 0.75fr; }
@@ -237,7 +218,7 @@
 .cat-mapcard__cmp.is-active {
   color: var(--ts-clay);
   border-color: var(--ts-clay);
-  background: var(--ts-clay-tint, #f3e4dc);
+  background: var(--ts-clay-tint);
 }
 .cat-mapcard__go {
   font-size: 13px;
