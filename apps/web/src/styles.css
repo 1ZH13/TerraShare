@@ -22,8 +22,8 @@
    degradado blanco — es decir, título verde oscuro sobre fondo oscuro y texto
    crema sobre panel casi blanco.
    Se redefinen aquí las mismas variables para que la hoja siga al tema, en vez
-   de retocar cada regla que las consume. El selector replica la cascada de
-   `styles/tokens.css`: elección explícita primero, preferencia del SO después. */
+   de retocar cada regla que las consume. Se aplican solo con la elección
+   explícita del usuario: el SO no decide el tema (#373). */
 :root[data-theme="dark"] {
   --leaf-700: #4f8a61;
   --leaf-900: #7fae8a;         /* títulos: sube a un verde claro legible sobre oscuro */
@@ -35,21 +35,6 @@
   --glass-bg: rgba(38, 48, 40, 0.72);
   --glass-border: rgba(236, 228, 211, 0.12);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --leaf-700: #4f8a61;
-    --leaf-900: #7fae8a;
-    --ink-900: #ece4d3;
-    --paper: #1b241d;
-    --danger: #e08074;
-    --success: #6fbf94;
-    --ring: rgba(127, 174, 138, 0.35);
-    --glass-bg: rgba(38, 48, 40, 0.72);
-    --glass-border: rgba(236, 228, 211, 0.12);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  }
 }
 
 * {
