@@ -1,10 +1,18 @@
 /* Control del tema claro/oscuro (#278).
    El atributo `data-theme` en <html> decide el tema (ver src/styles/tokens.css).
-   La preferencia explícita se guarda en localStorage; si no hay ninguna se
-   respeta la del sistema operativo. El script anti-flash en __root.tsx aplica
-   esta misma lógica antes del primer pintado. */
+   La preferencia explícita se guarda en localStorage; si no hay ninguna se usa
+   el tema CLARO, que es el predeterminado de la marca. El script anti-flash en
+   __root.tsx aplica esta misma lógica antes del primer pintado.
+
+   Deliberadamente NO se consulta `prefers-color-scheme` (#373): hacerlo abría
+   la web en oscuro a cualquiera con el SO en oscuro, que no es el aspecto por
+   defecto de TerraShare. Quien prefiera el oscuro lo elige en el conmutador y
+   la elección se recuerda. */
 
 export type ThemeChoice = "light" | "dark";
+
+/** Tema con el que arranca quien nunca ha tocado el conmutador. */
+export const DEFAULT_THEME: ThemeChoice = "light";
 
 export const THEME_STORAGE_KEY = "ts-theme";
 
@@ -13,21 +21,13 @@ export const THEME_STORAGE_KEY = "ts-theme";
    en vivo al toggle. */
 export const THEME_EVENT = "ts-themechange";
 
-export function systemPrefersDark(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  );
-}
-
-/** Preferencia efectiva: la guardada, o la del sistema si no hay elección. */
+/** Preferencia efectiva: la guardada, o el tema por defecto si no hay elección. */
 export function getInitialTheme(): ThemeChoice {
   if (typeof localStorage !== "undefined") {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === "light" || stored === "dark") return stored;
   }
-  return systemPrefersDark() ? "dark" : "light";
+  return DEFAULT_THEME;
 }
 
 export function applyTheme(theme: ThemeChoice): void {

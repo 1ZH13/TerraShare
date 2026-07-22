@@ -2,7 +2,7 @@
    Fuente de verdad: design/DESIGN_SYSTEM.md + design/prototipo-editorial.html.
    Tema claro por defecto + tema oscuro (#278). El tema se controla con el
    atributo `data-theme` en <html> (lo fija `lib/theme.ts` sin flash); si no
-   hay elección explícita se respeta `prefers-color-scheme`. */
+   hay elección se usa el claro (#373). */
 
 :root {
   /* superficies (papel) */
@@ -83,10 +83,9 @@
 /* ─── Tema oscuro (#278) ──────────────────────────────────────────────────────
    Editorial oscuro: papel → tinta cálida verdosa, mucho aire, verde y terracota
    ligeramente más luminosos para leerse sobre superficies oscuras.
-   Los valores se declaran una sola vez en `%dark-vars` (mixin manual) y se
-   aplican en dos contextos:
-     1. Elección explícita del usuario:  :root[data-theme="dark"]
-     2. Preferencia del SO sin elección:  @media (prefers-color-scheme: dark)
+   Se aplica en un único contexto: la elección explícita del usuario
+   (`:root[data-theme="dark"]`). El SO no decide el tema — sin elección
+   guardada se usa el claro, ver #373 y `lib/theme.ts`.
    `--ts-on-green` y `--ts-on-ink` permanecen crema: son texto sobre rellenos
    verdes/oscuros que existen en ambos temas. */
 
@@ -136,44 +135,3 @@
   color-scheme: dark;
 }
 
-/* Preferencia del SO cuando el usuario no ha elegido explícitamente (data-theme
-   ausente o "system"). Se anula en cuanto se fija data-theme="light". */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):not([data-theme="dark"]) {
-    --ts-bg: #161c18;
-    --ts-surface: #1e2621;
-    --ts-surface-alt: #19201b;
-    --ts-paper-tint: #212a24;
-
-    --ts-green: #4f8a61;
-    --ts-green-ink: #0f140f;
-    --ts-green-soft: #8aa891;
-    --ts-sage: #9fb0a0;
-    --ts-sage-2: #97a998;
-    --ts-sage-3: #6c7c6e;
-
-    --ts-tint-green: #223026;
-    --ts-tint-green-2: #26362b;
-    --ts-tint-green-3: #33463a;
-
-    --ts-clay: #d07a54;
-    --ts-clay-tint: #3a241c;
-
-    --ts-border: #33403a;
-    --ts-beige: #2a332c;
-    --ts-beige-2: #313a33;
-    --ts-tint-2: #2f3a33;
-    --ts-ink-3: #97a998;
-
-    --ts-text: #ece4d3;
-    --ts-text-secondary: #b7c1b3;
-    --ts-text-muted: #9aa694;
-
-    --ts-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --ts-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
-
-    --ts-ring: 0 0 0 3px rgba(122, 170, 138, 0.42);
-
-    color-scheme: dark;
-  }
-}

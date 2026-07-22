@@ -63,11 +63,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="es" data-theme="light" suppressHydrationWarning>
       <head>
         {/* Anti-flash de tema (#278): fija data-theme antes del primer pintado,
-            replicando la lógica de lib/theme.ts (preferencia guardada o del SO). */}
+            replicando la lógica de lib/theme.ts (preferencia guardada, o claro
+            por defecto — el SO no decide, ver #373). */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var k='ts-theme',v=localStorage.getItem(k);var t=(v==='light'||v==='dark')?v:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();",
+              "(function(){try{var k='ts-theme',v=localStorage.getItem(k);document.documentElement.setAttribute('data-theme',v==='dark'?'dark':'light');}catch(e){}})();",
           }}
         />
         <HeadContent />
