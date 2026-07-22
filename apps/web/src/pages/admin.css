@@ -232,6 +232,18 @@
 .adm-badge--teal { color: #2f6b63; background: #e3ecec; }
 .adm-badge--muted { color: var(--ts-ink-3); background: var(--ts-tint-2); }
 
+/* Identificadores técnicos en tablas (bitácora de auditoría #375). Monoespaciada
+   y encogida para que un id largo no desplace al resto de columnas. */
+.adm-code {
+  font-family: var(--ts-font-mono);
+  font-size: 12px;
+  color: var(--ts-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 /* Spinner para acciones en curso (respaldos #174). */
 @keyframes admSpin { to { transform: rotate(360deg); } }
 .adm-spin { animation: admSpin 0.8s linear infinite; }

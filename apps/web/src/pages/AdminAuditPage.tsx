@@ -1,20 +1,8 @@
 import { useEffect, useState } from "react";
-import { useAuth, useUser } from "@clerk/clerk-react";
+import { listAuditEvents, type AuditEventDto } from "../services/adminApi";
+import "./admin.css";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-interface AuditEventItem {
-  id: string;
-  actorId: string;
-  actorRole: string;
-  entity: string;
-  action: string;
-  entityId: string;
-  metadata?: Record<string, any>;
-  createdAt: string;
-}
-
-const entityLabels: Record<string, string> = {
+const ENTITY_LABELS: Record<string, string> = {
   auth: "Autenticación",
   user: "Usuario",
   land: "Terreno",
@@ -24,7 +12,7 @@ const entityLabels: Record<string, string> = {
   chat: "Chat",
 };
 
-const actionLabels: Record<string, string> = {
+const ACTION_LABELS: Record<string, string> = {
   created: "Creado",
   updated: "Actualizado",
   deleted: "Eliminado",
@@ -36,112 +24,115 @@ const actionLabels: Record<string, string> = {
   status_changed: "Estado cambiado",
 };
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
+  user: "Usuario",
+  system: "Sistema",
+};
+
+/** El sistema no es una persona: se distingue en gris para no leerse como cuenta. */
+const ROLE_BADGE: Record<string, string> = {
+  admin: "adm-badge--teal",
+  user: "adm-badge--green",
+  system: "adm-badge--muted",
+};
+
+const PAGE_SIZE = 20;
+const COLUMNS = "1.1fr 0.7fr 0.9fr 1fr 1.1fr";
+
 export default function AdminAuditPage() {
-  const { user } = useUser();
-  const { getToken } = useAuth();
-  const [events, setEvents] = useState<AuditEventItem[]>([]);
+  const [events, setEvents] = useState<AuditEventDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 20;
 
   useEffect(() => {
-    if (!user) return;
     setLoading(true);
-    const fetchData = async () => {
-      try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        const token = await getToken();
-        if (token) headers["Authorization"] = `Bearer ${token}`;
-        else if (import.meta.env.DEV) { headers["x-dev-role"] = "admin"; headers["x-dev-user-id"] = "web_dev_admin"; }
-        const res = await fetch(`${BASE_URL}/api/v1/audit-events`, { headers });
-        const json = await res.json().catch(() => null);
-        // Un 401/403 traía `data` vacío y la pantalla mentía con "no hay eventos";
-        // ahora se distingue el error de permisos de una lista realmente vacía (#262).
-        if (!res.ok || json?.ok === false) {
-          setError(
-            res.status === 401 || res.status === 403
-              ? "No tienes permisos para ver la bitácora de auditoría."
-              : "No pudimos cargar los eventos de auditoría.",
-          );
-          setEvents([]);
-          return;
-        }
-        // El endpoint de main devuelve un array plano en `data`; toleramos también
-        // una eventual forma paginada { items } por si el backend cambia más adelante.
-        const list: AuditEventItem[] = Array.isArray(json?.data)
-          ? json.data
-          : json?.data?.items || [];
+    setError("");
+    listAuditEvents()
+      .then((list) => {
         setEvents(list);
         setPage(1);
-      } catch {
-        setError("No pudimos cargar los eventos de auditoría.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [user]);
+      })
+      // Un 401/403 traía `data` vacío y la pantalla mentía con «no hay eventos»;
+      // el cliente de admin ya distingue el error de permisos (#262).
+      .catch((e) => {
+        setEvents([]);
+        setError(e instanceof Error ? e.message : "No pudimos cargar los eventos de auditoría.");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const totalPages = Math.max(1, Math.ceil(events.length / PAGE_SIZE));
   const pageEvents = events.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div>
-      <div className="section-header">
-        <h1>Bitácora de Auditoría</h1>
-        <p>Registro de acciones realizadas en la plataforma</p>
+    <>
+      <h1 className="adm-title">Bitácora de auditoría</h1>
+      <p className="adm-sub">Registro de las acciones realizadas en la plataforma.</p>
+
+      <div className="adm-table">
+        <div className="adm-trow adm-trow--head" style={{ gridTemplateColumns: COLUMNS }}>
+          <span>Fecha</span>
+          <span>Actor</span>
+          <span>Entidad</span>
+          <span>Acción</span>
+          <span>Identificador</span>
+        </div>
+
+        {loading ? (
+          <div className="adm-empty">Cargando…</div>
+        ) : error ? (
+          <div className="adm-empty adm-empty--error">{error}</div>
+        ) : events.length === 0 ? (
+          <div className="adm-empty">Todavía no hay eventos de auditoría.</div>
+        ) : (
+          pageEvents.map((e) => (
+            <div key={e.id} className="adm-trow" style={{ gridTemplateColumns: COLUMNS }}>
+              <span className="adm-cell--muted">
+                {new Date(e.createdAt).toLocaleString("es-PA", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </span>
+              <span>
+                <span className={`adm-badge ${ROLE_BADGE[e.actorRole] ?? "adm-badge--green"}`}>
+                  {ROLE_LABELS[e.actorRole] ?? e.actorRole}
+                </span>
+              </span>
+              <span>{ENTITY_LABELS[e.entity] ?? e.entity}</span>
+              <span className="adm-cell--strong">{ACTION_LABELS[e.action] ?? e.action}</span>
+              {/* Sin recortar: un id a medias no sirve para buscar el registro. */}
+              <span className="adm-code" title={e.entityId}>
+                {e.entityId}
+              </span>
+            </div>
+          ))
+        )}
       </div>
 
-      {loading && <div style={{ marginTop: "1.5rem", textAlign: "center", opacity: 0.6 }}>Cargando...</div>}
-      {error && <div style={{ marginTop: "1.5rem", color: "var(--danger)" }}>{error}</div>}
-
-      {!loading && !error && (
-        <div className="glass-panel" style={{ marginTop: "1.5rem" }}>
-          {events.length === 0 ? (
-            <p style={{ textAlign: "center", opacity: 0.6, padding: "2rem" }}>No hay eventos de auditoría</p>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Actor</th>
-                    <th>Entidad</th>
-                    <th>Acción</th>
-                    <th>ID</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageEvents.map((e) => (
-                    <tr key={e.id}>
-                      <td style={{ fontSize: "0.8rem" }}>{new Date(e.createdAt).toLocaleString("es-PA", { dateStyle: "medium", timeStyle: "short" })}</td>
-                      <td><span className={`role-badge role-${e.actorRole}`}>{e.actorRole}</span></td>
-                      <td>{entityLabels[e.entity] || e.entity}</td>
-                      <td>{actionLabels[e.action] || e.action}</td>
-                      <td style={{ fontSize: "0.75rem", opacity: 0.6 }}>{e.entityId.slice(0, 12)}...</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
+      {!loading && !error && events.length > 0 && (
+        <div className="adm-foot">
+          <span>
+            {events.length} evento{events.length !== 1 ? "s" : ""}
+            {totalPages > 1 ? ` · página ${page} de ${totalPages}` : ""}
+          </span>
           {totalPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginTop: "1rem" }}>
-              <button className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            <div className="adm-pager">
+              <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                 Anterior
               </button>
-              <span style={{ padding: "0.5rem 1rem", opacity: 0.6 }}>
-                {page} / {totalPages}
-              </span>
-              <button className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
                 Siguiente
               </button>
             </div>
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }

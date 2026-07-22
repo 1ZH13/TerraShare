@@ -249,6 +249,36 @@ export interface AdminSecuritySettingsDto {
 }
 
 /** GET /api/v1/admin/security-settings */
+// ─── Auditoría ───────────────────────────────────────────────────────────────
+
+export interface AuditEventDto {
+  id: string;
+  actorId: string;
+  actorRole: "user" | "admin" | "system";
+  entity: string;
+  action: string;
+  entityId: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+/**
+ * GET /api/v1/audit-events — bitácora completa.
+ *
+ * El endpoint devuelve un array plano en `data`; se tolera también una forma
+ * paginada `{ items }` por si el backend crece hacia ahí, para que la pantalla
+ * no se quede en blanco el día del cambio.
+ */
+export const listAuditEvents = async (): Promise<AuditEventDto[]> => {
+  const res = await request<AuditEventDto[] | { items?: AuditEventDto[] }>(
+    "GET",
+    "/api/v1/audit-events",
+  );
+  const data = res?.data;
+  if (Array.isArray(data)) return data;
+  return data?.items ?? [];
+};
+
 export const getSecuritySettings = () =>
   request<AdminSecuritySettingsDto>("GET", "/api/v1/admin/security-settings");
 
