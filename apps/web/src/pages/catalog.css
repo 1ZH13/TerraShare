@@ -5,6 +5,11 @@
 
 /* ── barra de filtros ────────────────────────────────────────────────────── */
 .cat-filters {
+  /* Altura común de todos los controles de la barra. El buscador medía 50px y
+     los filtros 46px —lo alto lo fijaba el `line-height` del `input`, no el
+     diseño—, así que la fila se veía descuadrada. Con una altura declarada
+     dejan de depender de su contenido y quedan a ras (#379). */
+  --cat-ctl-h: 48px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -15,19 +20,28 @@
   flex-wrap: wrap;
 }
 /* El buscador llevaba `flex: 1`, así que se comía todo el espacio sobrante y
-   quedaba desproporcionado al lado de los filtros. Ahora crece hasta un tope y
-   los filtros se llevan el resto (#379). */
+   quedaba enorme al lado de los filtros. Ahora NO crece: se queda en su ancho
+   y el sobrante se lo reparten los filtros, que es donde hacía falta (#379). */
 .cat-search {
-  flex: 1 1 240px;
-  max-width: 340px;
+  flex: 0 1 260px;
+  min-width: 180px;
+  height: var(--cat-ctl-h);
   display: flex;
   align-items: center;
   gap: 9px;
   background: var(--ts-bg);
   border: 1px solid var(--ts-border);
   border-radius: var(--ts-radius);
-  padding: 12px 14px;
+  padding: 0 14px;
 }
+.cat-search input { font-size: 14px; }
+
+/* Los cuatro filtros se reparten el espacio que suelta el buscador, así que la
+   fila queda a ras y todos con el mismo peso visual. `__value` crece para que
+   la flecha se quede pegada al borde derecho en vez de al texto. */
+.cat-filters .ds-dd { flex: 1 1 auto; }
+.cat-filters .ds-dd__btn { height: var(--cat-ctl-h); padding: 0 16px; }
+.cat-filters .ds-dd__value { flex: 1; text-align: left; }
 /* Los dos botones de acción se agrupan a la derecha: al envolverse bajan
    juntos y alineados, en vez de dejar uno suelto en la línea de abajo. */
 .cat-filters__actions {
@@ -60,7 +74,8 @@
   background: var(--ts-bg);
   border: 1px solid var(--ts-border);
   border-radius: var(--ts-radius);
-  padding: 12px 16px;
+  height: var(--cat-ctl-h);
+  padding: 0 16px;
   cursor: pointer;
   transition: border-color 0.2s ease;
   position: relative;
