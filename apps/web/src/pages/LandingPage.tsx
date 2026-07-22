@@ -12,8 +12,8 @@ import {
   BadgeCheck,
   MapPin,
   Quote,
-  ImageIcon,
 } from "lucide-react";
+import { FarmlandCard, FarmlandHero } from "../components/illustrations/FarmlandScene";
 import { listLands, photoSrc } from "../services/api";
 import { monthlyPrice } from "../lib/land-price";
 import { isAdminUser } from "../components/authDisplay";
@@ -76,24 +76,15 @@ function toFeatured(land: LandDto): FeaturedCard {
   };
 }
 
-function PhotoPlaceholder({ label, className }: { label: string; className: string }) {
-  return (
-    <div className={className} aria-hidden="true">
-      <ImageIcon size={26} strokeWidth={1.5} />
-      <span>{label}</span>
-    </div>
-  );
-}
-
 function LandCard({ card }: { card: FeaturedCard }) {
   return (
     <Link to={card.to} className="lp-card">
       {card.cover ? (
-        <div className="lp-photo lp-card__photo lp-photo--img">
+        <div className="lp-card__photo lp-photo--img">
           <img src={card.cover} alt={card.title} loading="lazy" />
         </div>
       ) : (
-        <PhotoPlaceholder label="Foto terreno" className="lp-photo lp-card__photo" />
+        <FarmlandCard className="lp-art lp-card__photo" />
       )}
       <div className="lp-card__body">
         <div className="lp-card__top">
@@ -225,10 +216,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="lp-heroart">
-          <PhotoPlaceholder
-            label="Foto — potrero / cultivo al amanecer"
-            className="lp-photo lp-photo--hero lp-heroart__photo"
-          />
+          <FarmlandHero className="lp-art lp-heroart__photo" />
           <div className="lp-chip lp-chip--water">
             <span className="lp-chip--water__icon">
               <Droplets size={21} />

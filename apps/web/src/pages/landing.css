@@ -477,21 +477,18 @@
 .lp-foot__links a:hover { color: var(--ts-text); }
 .lp-foot__copy { font-size: 13px; color: var(--ts-text-muted); }
 
-/* ── placeholder de foto (el modelo aún no tiene imágenes reales) ─────────── */
-.lp-photo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #e9e3d3, #dfe4d6);
-  color: var(--ts-sage);
-  font-family: var(--ts-font-sans);
-  font-size: 13px;
-  text-align: center;
+/* ── ilustraciones de paisaje (#381) ──────────────────────────────────────
+   Sustituyen a los recuadros grises que rotulaban «Foto — potrero / cultivo al
+   amanecer». Son SVG, así que llenan su hueco sin pixelarse a ningún tamaño;
+   el recorte lo hace `preserveAspectRatio="slice"` dentro del propio SVG. */
+.lp-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  overflow: hidden; /* el radio de .lp-heroart__photo debe recortar el dibujo */
 }
-.lp-photo--hero { border-radius: 20px; }
-.lp-photo svg { opacity: 0.5; }
+
 /* Foto de portada real en las cards destacadas (#148). */
 .lp-photo--img { overflow: hidden; padding: 0; }
 .lp-photo--img img { width: 100%; height: 100%; object-fit: cover; display: block; }
