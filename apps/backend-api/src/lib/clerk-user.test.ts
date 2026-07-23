@@ -102,6 +102,87 @@ describe("resolveClerkAuthUser", () => {
     expect(counter.calls).toBe(0);
   });
 
+  it("still asks Clerk about 2FA when an admin token carries email, name and role (#406)", async () => {
+    // El atajo de arriba se saltaba la consulta y `mfaVerified` quedaba en
+    // `false` aunque la cuenta tuviera 2FA: la exigencia se volvía imposible de
+    // cumplir y encerraba a todos los admins.
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: "admin@example.com" },
+          fullName: "Admin",
+          primaryPhoneNumber: null,
+          publicMetadata: { role: "admin" },
+          twoFactorEnabled: true,
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({
+      sub: "user_full_admin",
+      email: "admin@example.com",
+      full_name: "Admin",
+      role: "admin",
+    });
+
+    expect(user.role).toBe("admin");
+    expect(user.mfaVerified).toBe(true);
+    expect(counter.calls).toBe(1);
+  });
+
+  it("does not ask Clerk when the admin token already states mfa_verified (#406)", async () => {
+    // Si el claim viene en el token no hay nada que preguntar: el atajo debe
+    // seguir ahorrando la consulta.
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: "should-not@use.me" },
+          fullName: "Should Not Use",
+          primaryPhoneNumber: null,
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({
+      sub: "user_claimed_mfa",
+      email: "admin@example.com",
+      full_name: "Admin",
+      role: "admin",
+      mfa_verified: true,
+    });
+
+    expect(user.mfaVerified).toBe(true);
+    expect(counter.calls).toBe(0);
+  });
+
+  it("does not pay for a Clerk call on non-admins, whose 2FA changes nothing (#406)", async () => {
+    const counter = { calls: 0 };
+    __setClerkClientForTests(
+      fakeClerkClient(
+        {
+          primaryEmailAddress: { emailAddress: "should-not@use.me" },
+          fullName: "Should Not Use",
+          primaryPhoneNumber: null,
+        },
+        counter,
+      ),
+    );
+
+    const user = await resolveClerkAuthUser({
+      sub: "user_plain_full",
+      email: "plain@example.com",
+      full_name: "Plain User",
+      role: "user",
+    });
+
+    expect(user.role).toBe("user");
+    expect(counter.calls).toBe(0);
+  });
+
   it("resolves the admin role from Clerk publicMetadata when the token lacks it (#262)", async () => {
     const counter = { calls: 0 };
     __setClerkClientForTests(

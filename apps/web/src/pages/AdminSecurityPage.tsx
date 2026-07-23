@@ -166,7 +166,10 @@ export default function AdminSecurityPage() {
               <ol className="adm-sec__steps">
                 <li>Abre <strong>Mi perfil</strong> y entra a tu cuenta de Clerk.</li>
                 <li>En <strong>Security</strong>, añade un método en dos pasos (app de códigos o SMS).</li>
-                <li>Vuelve a iniciar sesión para que el token refleje el cambio.</li>
+                {/* El dato no viaja en el token: el backend lo pregunta a Clerk y
+                    guarda la respuesta 5 minutos. Reiniciar sesión no vacía esa
+                    caché, así que decirlo era engañoso (#406). */}
+                <li>Espera unos minutos: el servidor recuerda tu perfil de Clerk hasta 5 minutos.</li>
               </ol>
             ) : null}
           </section>
