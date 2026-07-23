@@ -413,6 +413,75 @@
 }
 .adm-sec__warn svg { flex: none; margin-top: 2px; }
 
+/*
+ * Aviso de encierro por 2FA (#394). Sale en todas las pantallas del panel
+ * menos en la de Seguridad, porque con la exigencia activa y sin 2FA en la
+ * cuenta el resto responde 403 y se queda en blanco sin explicar nada.
+ */
+.adm-lockout {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--ts-clay);
+  border-radius: 12px;
+  background: var(--ts-clay-tint);
+}
+
+.adm-lockout__icon { flex: none; margin-top: 1px; color: var(--ts-clay); }
+
+.adm-lockout__body { flex: 1; min-width: 0; }
+
+.adm-lockout__title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--ts-text);
+}
+
+.adm-lockout__text {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ts-text-secondary);
+}
+
+.adm-lockout__cta {
+  flex: none;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  padding: 9px 15px;
+  border-radius: var(--ts-radius);
+  background: var(--ts-green);
+  color: var(--ts-on-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.adm-lockout__cta:focus-visible {
+  outline: 2px solid var(--ts-ring);
+  outline-offset: 2px;
+}
+
+/* Punto en «Seguridad» del menú: con el panel cerrado es la única salida. */
+.adm-side__link.is-wayout { color: var(--ts-on-ink); }
+.adm-side__dot {
+  margin-left: auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ts-clay);
+}
+
+@media (max-width: 720px) {
+  .adm-lockout { flex-wrap: wrap; }
+  .adm-lockout__cta { width: 100%; justify-content: center; }
+}
+
 .adm-sec__steps {
   margin: 16px 0 0;
   padding-left: 20px;
