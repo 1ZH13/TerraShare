@@ -25,7 +25,8 @@ docker network create terrashare-network 2>/dev/null || echo "  (ya existe)"
 echo "[2/4] Copiando archivos del proxy a ${PROXY_DIR} ..."
 mkdir -p "${PROXY_DIR}/nginx"
 cp "${REPO_DIR}/docker-compose.proxy.yml" "${PROXY_DIR}/docker-compose.yml"
-cp "${REPO_DIR}/nginx/proxy.conf" "${PROXY_DIR}/nginx/proxy.conf"
+mkdir -p "${PROXY_DIR}/nginx/conf.d"
+cp "${REPO_DIR}/nginx/conf.d/default.conf" "${PROXY_DIR}/nginx/conf.d/default.conf"
 
 # 3. Levantar proxy en modo HTTP (sin SSL aun)
 echo "[3/4] Levantando proxy (HTTP) ..."

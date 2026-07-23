@@ -21,7 +21,11 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      # La CARPETA, no el fichero suelto. Docker, al montar un fichero
+      # individual, ata su inodo; el despliegue hace `git reset --hard`, que lo
+      # reemplaza (inodo nuevo), y el contenedor seguía viendo el contenido
+      # antiguo para siempre — ni recargar nginx servía de nada (#404).
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - certbot-etc:/etc/letsencrypt:ro
       - certbot-var:/var/lib/letsencrypt
       - certbot-www:/var/www/certbot

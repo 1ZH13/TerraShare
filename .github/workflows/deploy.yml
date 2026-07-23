@@ -101,19 +101,22 @@ jobs:
             docker network create terrashare-network 2>/dev/null || true
 
             # Asegura el proxy (solo prod define el servicio; se levanta desde el dir de prod).
-            if ! docker ps --format '{{.Names}}' | grep -q terrashare-proxy; then
-              ( cd /opt/terrashare-prod && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d proxy certbot 2>/dev/null || true )
-            fi
+            #
+            # `up -d` siempre, sin el guarda de «solo si no está corriendo» que
+            # había antes: es idempotente —si nada cambió deja el contenedor
+            # intacto— y, si cambió su definición (imagen, puertos, montajes),
+            # lo recrea. Con el guarda, un cambio de montaje no se aplicaba
+            # nunca porque el proxy siempre estaba en pie (#404).
+            ( cd /opt/terrashare-prod && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d proxy certbot 2>/dev/null || true )
 
             # Recarga la configuración del proxy.
             #
-            # El bloque de arriba solo levanta el proxy si NO estaba corriendo, y
-            # nginx lee su configuración al arrancar. Como el contenedor lleva
-            # meses en pie, `nginx/proxy.conf` se actualizaba en disco (va montado
-            # como volumen) pero nginx no lo miraba jamás: ningún cambio del proxy
-            # ha llegado nunca a producción por despliegue (#402). Así el arreglo
-            # del límite de subida de fotos (#389) se quedó sin efecto pese a
-            # desplegarse en verde.
+            # nginx lee su configuración al arrancar, así que un cambio que solo
+            # toca el CONTENIDO de nginx/conf.d/ no se aplica si el contenedor ya
+            # estaba en pie: `up -d` no lo recrea porque su definición no cambió.
+            # Sin esta recarga, ningún cambio del proxy llegaba a producción
+            # (#402), y el límite de subida de fotos (#389) se quedó sin efecto
+            # pese a desplegarse en verde.
             #
             # Solo en main: el fichero montado sale de /opt/terrashare-prod.
             if [ "$BRANCH" = "main" ] && docker ps --format '{{.Names}}' | grep -q terrashare-proxy; then
