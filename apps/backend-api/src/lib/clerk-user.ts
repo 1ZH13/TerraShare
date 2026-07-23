@@ -130,8 +130,22 @@ export async function resolveClerkAuthUser(
   // defecto de Clerk no incluye `public_metadata` (#262).
   const hasRoleClaim =
     readClaim(claims, "role") !== undefined || readPublicMetadata(claims, "role") !== undefined;
+  // El 2FA también obliga a preguntar. Sin este término, un token que trajera
+  // email, nombre y rol salía por el atajo de abajo sin consultar a Clerk, y
+  // `mfaVerified` se quedaba en `false` para siempre —el claim `mfa_verified`
+  // no lo emite el token de sesión—: la exigencia de 2FA pasaba a ser
+  // imposible de cumplir y encerraba a TODOS los admins, incluidos los que la
+  // tienen bien configurada, sin ninguna pista de la causa (#406).
+  //
+  // Hoy no se dispara porque el token por defecto no lleva esos claims, pero
+  // enriquecer la plantilla JWT es una optimización natural —evita justo esta
+  // consulta— y rompería el 2FA en silencio.
+  //
+  // Solo para admins: al resto el 2FA no le condiciona nada y no merece pagar
+  // una consulta extra.
+  const needsMfa = base.role === "admin" && readClaim(claims, "mfa_verified") === undefined;
 
-  if (!needsEmail && !needsName && hasRoleClaim) {
+  if (!needsEmail && !needsName && hasRoleClaim && !needsMfa) {
     return base;
   }
 
