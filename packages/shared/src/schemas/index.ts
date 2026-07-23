@@ -17,6 +17,7 @@ export type { CreateLeadInput, CreateLeadOutput } from "./leads";
 
 // Land schemas
 export {
+  LAND_TITLE_MIN_LENGTH,
   LandUseSchema,
   LandStatusSchema,
   LandOperationSchema,

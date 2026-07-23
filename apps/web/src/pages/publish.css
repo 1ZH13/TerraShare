@@ -238,6 +238,63 @@ textarea.pub-input { min-height: 92px; resize: vertical; }
 .pub-next--publish:hover:not(:disabled) { background: #a5573a; }
 .pub-error { color: #a5573a; font-size: 14px; margin-top: 14px; }
 
+/* Pista de regla bajo un campo (p. ej. el mínimo del título, #390). */
+.pub-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ts-text-secondary);
+}
+
+/*
+ * Rescate cuando alguna foto no sube (#389). Antes el aviso se perdía porque
+ * navegábamos a otra página en la misma tanda; ahora nos quedamos aquí y
+ * ofrecemos las dos únicas salidas sensatas: reintentar o publicar sin ellas.
+ */
+.pub-retry {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--ts-clay);
+  border-radius: var(--ts-radius);
+  background: var(--ts-clay-tint);
+}
+
+.pub-retry__list {
+  font-size: 13px;
+  color: var(--ts-text-secondary);
+  word-break: break-word;
+}
+
+.pub-retry__actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pub-retry__btn {
+  font-family: var(--ts-font-sans);
+  font-size: 14px;
+  padding: 9px 16px;
+  border-radius: var(--ts-radius);
+  border: 1px solid var(--ts-border);
+  background: var(--ts-surface);
+  color: var(--ts-text);
+  cursor: pointer;
+}
+
+.pub-retry__btn--primary {
+  background: var(--ts-green);
+  border-color: var(--ts-green);
+  color: var(--ts-on-ink);
+}
+
+.pub-retry__btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.pub-retry__btn:focus-visible {
+  outline: 2px solid var(--ts-ring);
+  outline-offset: 2px;
+}
+
 @media (max-width: 640px) {
   .pub-nav, .pub-wrap { padding-left: 20px; padding-right: 20px; }
   .pub-title { font-size: 28px; }

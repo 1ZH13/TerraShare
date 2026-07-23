@@ -42,8 +42,20 @@ export const LandPriceRuleSchema = z.object({
   pricePerMonth: z.number().positive("Precio debe ser mayor a 0"),
 });
 
+/**
+ * Mínimo de caracteres del título.
+ *
+ * Se exporta para que el formulario de publicación avise en el propio campo en
+ * vez de dejar que la regla salte al enviar: el asistente validaba solo «no
+ * vacío», así que un título de una letra pasaba el paso 1 y el rechazo llegaba
+ * cuatro pasos después, en el de fotos, pareciendo un fallo de las fotos (#390).
+ */
+export const LAND_TITLE_MIN_LENGTH = 3;
+
 export const CreateLandSchema = z.object({
-  title: z.string().min(3, "Título debe tener al menos 3 caracteres"),
+  title: z
+    .string()
+    .min(LAND_TITLE_MIN_LENGTH, `Título debe tener al menos ${LAND_TITLE_MIN_LENGTH} caracteres`),
   description: z.string().optional(),
   area: z.number().positive("Área debe ser mayor a 0"),
   allowedUses: z.array(LandUseSchema).min(1, "Al menos un uso requerido"),
@@ -63,7 +75,7 @@ export type CreateLandInput = z.input<typeof CreateLandSchema>;
 export type CreateLandOutput = z.output<typeof CreateLandSchema>;
 
 export const UpdateLandSchema = z.object({
-  title: z.string().min(3).optional(),
+  title: z.string().min(LAND_TITLE_MIN_LENGTH).optional(),
   description: z.string().optional(),
   area: z.number().positive().optional(),
   allowedUses: z.array(LandUseSchema).min(1).optional(),
