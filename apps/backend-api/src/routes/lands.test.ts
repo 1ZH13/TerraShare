@@ -53,7 +53,10 @@ describe("lands routes", () => {
 
   // #135: los filtros se resuelven en la BD (Mongoose), no en JS sobre todo el set.
   it("resolves catalog filters in the database and strips Mongo _id/__v", async () => {
-    const province = "ProvVerif135";
+    // Una comarca real que no usa ni el seed ni ningún otro caso: aísla la
+    // comprobación igual que el nombre inventado de antes, pero ahora la
+    // provincia se valida contra la lista oficial (#391).
+    const province = "Guna Yala";
     const create = await requestJson("/api/v1/lands", {
       method: "POST",
       headers: { "x-dev-user-id": "user_filter_owner" },

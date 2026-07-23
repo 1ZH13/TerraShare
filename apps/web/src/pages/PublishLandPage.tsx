@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LAND_TITLE_MIN_LENGTH, type CreateLandDto, type LandUse } from "@terrashare/shared";
+import {
+  LAND_TITLE_MIN_LENGTH,
+  PANAMA_COMARCAS,
+  PANAMA_PROVINCES,
+  type CreateLandDto,
+  type LandUse,
+} from "@terrashare/shared";
 import { X, Sprout, ArrowLeft, ArrowRight, Check, MapPin, Info, CloudUpload, Star, Trash2 } from "lucide-react";
 import { createLand, setLandStatus, uploadLandPhoto } from "../services/api";
 import "./publish.css";
@@ -370,7 +376,24 @@ export default function PublishLandPage() {
               <div className="pub-grid2" style={{ marginTop: 0 }}>
                 <div>
                   <label className="pub-label">Provincia</label>
-                  <input className="pub-input" value={form.province} onChange={(e) => set("province", e.target.value)} placeholder="Los Santos" />
+                  {/* Desplegable, no texto libre: por ahí entraron provincias
+                      como «f» y «fffff», que acabaron publicadas como opciones
+                      del filtro del catálogo (#391). */}
+                  <select
+                    className="pub-input"
+                    value={form.province}
+                    onChange={(e) => set("province", e.target.value)}
+                  >
+                    <option value="">Elige una provincia…</option>
+                    {PANAMA_PROVINCES.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                    <optgroup label="Comarcas">
+                      {PANAMA_COMARCAS.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </optgroup>
+                  </select>
                 </div>
                 <div>
                   <label className="pub-label">Distrito</label>

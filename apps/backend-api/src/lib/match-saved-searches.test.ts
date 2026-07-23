@@ -35,6 +35,15 @@ describe("matchesFilters — ubicación y uso", () => {
     expect(matchesFilters(land(), { province: "Coclé" })).toBe(false);
   });
 
+  it("una búsqueda guardada sin tildes sigue casando (#391)", () => {
+    // Los terrenos ahora se guardan con la forma canónica («Chiriquí»), pero
+    // las búsquedas guardadas hace meses conservan lo que se escribió entonces.
+    // Sin esto, su dueño dejaría de recibir avisos sin enterarse.
+    expect(matchesFilters(land(), { province: "Chiriqui" })).toBe(true);
+    expect(matchesFilters(land(), { province: "CHIRIQUI" })).toBe(true);
+    expect(matchesFilters(land(), { district: "boquete" })).toBe(true);
+  });
+
   it("descarta otro distrito", () => {
     expect(matchesFilters(land(), { district: "David" })).toBe(false);
   });

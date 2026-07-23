@@ -92,6 +92,9 @@ export type {
   BackupVerifyStatus,
 } from "./dto/backups";
 
+// Datos territoriales de Panamá (única fuente para desplegables y validación)
+export * from "./data/panama";
+
 // Schemas (Zod)
 export * from "./schemas";
 export type { z } from "zod";

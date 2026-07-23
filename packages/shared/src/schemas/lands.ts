@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { canonicalTerritory, type PanamaTerritory } from "../data/panama";
 import type { LandOperation, LandSortField, LandStatus, LandUse } from "../dto/lands";
 
 export const LandUseSchema = z.enum([
@@ -23,8 +24,27 @@ export const LandOperationSchema = z.enum([
   "ambas",
 ] as const satisfies readonly LandOperation[]);
 
+/**
+ * Provincia o comarca, comprobada contra la lista oficial y **normalizada**.
+ *
+ * Antes bastaba con que no estuviera vacía, así que en producción entraron
+ * provincias como «f» y «fffff» — y como el desplegable del catálogo se
+ * construye con las provincias que existen en los datos, esa basura acabó
+ * publicada como opción de filtro para cualquier visitante (#391).
+ *
+ * Se transforma además de validar: quien escriba «chiriqui» sin tilde publica
+ * igual, pero se guarda «Chiriquí», de modo que los datos quedan uniformes sin
+ * castigar a quien teclea desde un móvil.
+ */
+const ProvinceSchema = z
+  .string()
+  .transform((value) => canonicalTerritory(value))
+  .refine((value): value is PanamaTerritory => value !== undefined, {
+    message: "Provincia no reconocida",
+  });
+
 export const LandLocationSchema = z.object({
-  province: z.string().min(1, "Provincia requerida"),
+  province: ProvinceSchema,
   district: z.string().min(1, "Distrito requerido"),
   corregimiento: z.string().optional(),
   addressLine: z.string().optional(),
@@ -80,7 +100,9 @@ export const UpdateLandSchema = z.object({
   area: z.number().positive().optional(),
   allowedUses: z.array(LandUseSchema).min(1).optional(),
   location: z.object({
-    province: z.string().min(1).optional(),
+    // Misma comprobación al editar: si no, la basura entraría por la puerta de
+    // atrás en cuanto exista una pantalla de edición (#391).
+    province: ProvinceSchema.optional(),
     district: z.string().min(1).optional(),
     corregimiento: z.string().optional(),
     addressLine: z.string().optional(),
