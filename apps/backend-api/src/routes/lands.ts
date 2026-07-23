@@ -10,6 +10,7 @@ import { rateLimitByUser } from "../middleware/rate-limit";
 import { createAuditEvent as createAudit } from "../store/audit";
 import { Land, type ILand } from "../db/schemas";
 import { matchSavedSearches } from "../lib/match-saved-searches";
+import { accentInsensitiveRegex } from "../lib/text-search";
 import {
   ALLOWED_CONTENT_TYPES,
   MAX_PHOTO_BYTES,
@@ -29,10 +30,6 @@ function clean<T>(doc: Record<string, unknown> | null | undefined): T | undefine
   if (!doc) return undefined;
   const { _id, __v, ...rest } = doc;
   return rest as T;
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -67,11 +64,14 @@ function buildLandQuery(params: {
     operations = operations.filter((op) => op === params.operation || op === "ambas");
   }
 
+  // Sin tildes también encuentra: filtrar por «Chiriqui» devolvía 0 y por
+  // «Chiriquí» devolvía 3, así que quien escribe desde un móvil veía la
+  // plataforma vacía (#392).
   if (params.province) {
-    query["location.province"] = new RegExp(`^${escapeRegex(params.province)}$`, "i");
+    query["location.province"] = accentInsensitiveRegex(params.province, { exact: true });
   }
   if (params.district) {
-    query["location.district"] = new RegExp(`^${escapeRegex(params.district)}$`, "i");
+    query["location.district"] = accentInsensitiveRegex(params.district, { exact: true });
   }
 
   if (params.priceMin !== undefined || params.priceMax !== undefined) {
@@ -115,12 +115,13 @@ function buildLandQuery(params: {
   // provincia y distrito: al mover el filtro al servidor, `$text` habría hecho
   // que escribir «Coclé» o «boque» no devolviera nada.
   //
-  // El regex reproduce el comportamiento anterior (insensible a mayúsculas,
-  // sensible a acentos, igual que el `includes` que sustituye). No usa índice,
-  // así que a escala grande habrá que pasar a un buscador de verdad — pero eso
-  // es un cambio de producto, no una regresión silenciosa.
+  // El regex es insensible a mayúsculas Y a tildes: buscar «Cocle» devolvía 0
+  // resultados mientras «Coclé» devolvía 3, y desde un teclado de móvil la
+  // plataforma parecía vacía (#392). No usa índice, así que a escala grande
+  // habrá que pasar a un buscador de verdad — pero eso es un cambio de
+  // producto, no una regresión silenciosa.
   if (params.q) {
-    const rx = new RegExp(escapeRegex(params.q.trim()), "i");
+    const rx = accentInsensitiveRegex(params.q);
     and.push({
       $or: [
         { title: rx },
