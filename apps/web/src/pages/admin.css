@@ -304,6 +304,19 @@
   font-family: var(--ts-font-sans);
 }
 .adm-act:hover { background: var(--ts-paper-tint); }
+
+/* Pagos: saldo que queda por devolver y nota del reembolso (#398). */
+.adm-pay__left {
+  display: block;
+  font-size: 12px;
+  color: var(--ts-sage-2);
+}
+.adm-pay__note {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ts-text-secondary);
+}
 /* Hueco del mismo tamaño que un botón, para las filas que no tienen acción.
    Sin borde visible ni puntero: parece vacío pero ocupa igual (#395). */
 .adm-act--none {

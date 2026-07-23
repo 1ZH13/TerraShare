@@ -20,6 +20,11 @@ function money(amount: number, currency: string): string {
   return new Intl.NumberFormat("es-PA", { style: "currency", currency }).format(amount);
 }
 
+/** Saldo que aún se puede devolver: lo cobrado menos lo ya reembolsado. */
+function remainingRefund(p: PaymentDto): number {
+  return Math.round((p.amount - (p.refundedAmount ?? 0)) * 100) / 100;
+}
+
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<PaymentDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +107,13 @@ export default function AdminPaymentsPage() {
                 <span>{money(p.amount, p.currency)}</span>
                 <span className="adm-cell--muted">
                   {p.refundedAmount ? money(p.refundedAmount, p.currency) : "—"}
+                  {/* Que el botón siga tras un reembolso NO es un fallo: es que
+                      fue parcial y queda saldo. Mostrarlo lo deja claro (#398). */}
+                  {p.status === "partially_refunded" && (
+                    <span className="adm-pay__left">
+                      quedan {money(remainingRefund(p), p.currency)}
+                    </span>
+                  )}
                 </span>
                 <span>
                   <span className="adm-badge adm-badge--teal">{STATUS_LABELS[p.status] ?? p.status}</span>
@@ -113,7 +125,10 @@ export default function AdminPaymentsPage() {
                       className="adm-pill"
                       onClick={() => (activeRefund === p.id ? setActiveRefund(null) : openRefund(p.id))}
                     >
-                      <RotateCcw size={14} /> Reembolsar
+                      <RotateCcw size={14} />{" "}
+                      {p.status === "partially_refunded"
+                        ? `Reembolsar el resto (${money(remainingRefund(p), p.currency)})`
+                        : "Reembolsar"}
                     </button>
                   )}
                 </span>
@@ -147,6 +162,13 @@ export default function AdminPaymentsPage() {
                       {submitting ? "Procesando…" : "Confirmar reembolso"}
                     </button>
                   </div>
+                  {/* Responde «¿y después qué?»: el dinero no vuelve al instante
+                      ni la acción se puede deshacer (#398). */}
+                  <p className="adm-pay__note">
+                    El importe vuelve al mismo método de pago con que se cobró, a través de
+                    Stripe, y tarda entre 5 y 10 días hábiles en reflejarse. Un reembolso no se
+                    puede deshacer.
+                  </p>
                   {formError && <span className="adm-empty--error" style={{ fontSize: 13 }}>{formError}</span>}
                 </div>
               )}
