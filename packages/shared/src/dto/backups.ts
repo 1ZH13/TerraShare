@@ -42,4 +42,12 @@ export interface BackupListDto {
   total: number;
   lastBackupAt: string | null;
   lastVerifiedAt: string | null;
+  /**
+   * Si el servidor tiene `BACKUP_ENCRYPTION_KEY`. Sin ella no se puede cifrar
+   * nada y crear un respaldo falla siempre.
+   *
+   * Se expone para que la pantalla lo diga por adelantado en vez de ofrecer un
+   * botón que revienta al pulsarlo (#397).
+   */
+  configured: boolean;
 }
