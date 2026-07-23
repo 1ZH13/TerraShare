@@ -2,6 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // Pide el testing token de Clerk para que las pruebas puedan entrar con
+  // sesión sin pasar por el formulario. Si faltan las claves avisa y sigue: las
+  // pruebas con sesión se saltan solas y el resto de la suite corre igual.
+  globalSetup: "./tests/e2e/global-setup.js",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
