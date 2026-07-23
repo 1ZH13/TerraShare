@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "Plantilla del servidor MCP de TerraShare. Cópiala a `.mcp.json` (ignorado por git)",
+    "y ajusta los dos valores marcados. Documentación: apps/mcp-server/README.md",
+    "",
+    "1. args[1]: RUTA ABSOLUTA a apps/mcp-server/src/index.ts en tu máquina.",
+    "   El cliente MCP lanza el proceso desde su propio directorio, no desde el repo,",
+    "   así que una ruta relativa no funciona. En Windows usa barras normales (/).",
+    "",
+    "2. MCP_ACTING_USER_ID: clerkUserId en cuyo nombre actúa el servidor. El MCP no",
+    "   tiene sesión de Clerk: sin este valor solo funcionan las tools públicas",
+    "   (search_lands, get_land). Con un id de rol `user` se habilitan publicar,",
+    "   solicitar, contratos y pagos; con uno de rol `admin`, además moderación,",
+    "   auditoría y leads. El rol se resuelve desde Mongo, no se declara aquí.",
+    "",
+    "Requisito: Mongo levantado. El MCP va directo a la base de datos, no pasa por",
+    "el backend, así que sus reglas de negocio son las de los helpers `can*`.",
+    "",
+    "AVISO: las tools escriben sobre la base que apuntes. Varias son destructivas",
+    "(delete_land, manage_user_status). No apuntes MONGODB_URI a producción."
+  ],
+  "mcpServers": {
+    "terrashare": {
+      "command": "bun",
+      "args": ["run", "/RUTA/ABSOLUTA/AL/REPO/apps/mcp-server/src/index.ts"],
+      "env": {
+        "MONGODB_URI": "mongodb://127.0.0.1:27017/terrashare",
+        "MCP_ACTING_USER_ID": "user_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}

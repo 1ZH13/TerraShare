@@ -49,6 +49,9 @@ pr_body*.md
 
 # Local tooling config (MCP / OpenCode)
 opencode.json
+# Config del cliente MCP: lleva rutas absolutas de cada máquina y el id de Clerk
+# en cuyo nombre actúa el servidor. Ver .mcp.json.example para la plantilla.
+.mcp.json
 
 # TanStack Start generated route tree
 apps/web/src/routeTree.gen.ts

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import type { LandDto } from "@terrashare/shared";
-import { Plus, Eye, Inbox, MapPin, Map } from "lucide-react";
-import { getMyLands, photoSrc } from "../services/api";
+import { Plus, Eye, Inbox, MapPin, Map, Upload } from "lucide-react";
+import { getMyLands, photoSrc, setLandStatus } from "../services/api";
 import EmptyState from "../components/EmptyState";
 import "./mylands.css";
 
@@ -47,6 +47,9 @@ export default function MyLandsPage() {
   const { user } = useUser();
   const [lands, setLands] = useState<LandDto[]>([]);
   const [status, setStatus] = useState<LoadState>("loading");
+  // Terreno cuya publicación está en curso, para no repetir la llamada.
+  const [publishing, setPublishing] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -66,6 +69,28 @@ export default function MyLandsPage() {
     };
   }, [user]);
 
+  /**
+   * Publica un borrador (#387).
+   *
+   * Los terrenos creados antes del arreglo del asistente se quedaron en `draft`
+   * y son invisibles en el catálogo, sin ninguna forma de rescatarlos desde la
+   * web. Este botón es esa salida.
+   */
+  const publishDraft = async (landId: string) => {
+    setPublishing(landId);
+    setPublishError("");
+    try {
+      const updated = await setLandStatus(landId, "active");
+      setLands((prev) => prev.map((l) => (l.id === landId ? { ...l, status: updated.status } : l)));
+    } catch (err) {
+      setPublishError(
+        err instanceof Error ? err.message : "No se pudo publicar el terreno. Inténtalo de nuevo.",
+      );
+    } finally {
+      setPublishing(null);
+    }
+  };
+
   return (
     <div className="ml">
       <div className="ml-head">
@@ -78,6 +103,12 @@ export default function MyLandsPage() {
           <Plus size={17} /> Publicar terreno
         </Link>
       </div>
+
+      {publishError && (
+        <p className="ml-publisherror" role="alert">
+          {publishError}
+        </p>
+      )}
 
       {status === "loading" ? (
         <div className="ml-grid">
@@ -132,6 +163,25 @@ export default function MyLandsPage() {
                       <Inbox size={15} /> —
                     </span>
                   </div>
+                  {/* Rescate de borradores (#387): invisibles en el catálogo y,
+                      hasta ahora, sin ninguna forma de publicarlos. El botón
+                      vive dentro de la tarjeta-enlace, así que corta la
+                      navegación para no acabar en la ficha del terreno. */}
+                  {land.status === "draft" && (
+                    <button
+                      type="button"
+                      className="ml-card__publish"
+                      disabled={publishing === land.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        publishDraft(land.id);
+                      }}
+                    >
+                      <Upload size={15} />
+                      {publishing === land.id ? "Publicando…" : "Publicar"}
+                    </button>
+                  )}
                 </div>
               </Link>
             );

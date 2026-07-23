@@ -215,6 +215,26 @@ export const createLand = async (dto: CreateLandDto): Promise<LandDto> => {
   return res.data;
 };
 
+/**
+ * PATCH /api/v1/lands/:landId/status — cambia el estado de un terreno propio.
+ *
+ * `POST /lands` crea siempre en `draft`, y el catálogo público solo lista los
+ * `active`: sin esta llamada un terreno recién creado no aparece en ninguna
+ * parte (#387). El backend expone el endpoint desde hace tiempo, pero la web
+ * nunca lo llamaba.
+ *
+ * Pasar a `active` es además lo que dispara las alertas de búsquedas guardadas
+ * (HU-99) y deja rastro en la bitácora, así que la publicación tiene que ir por
+ * aquí y no por un estado inicial distinto en la creación.
+ */
+export const setLandStatus = async (
+  landId: string,
+  status: "draft" | "active" | "inactive",
+): Promise<LandDto> => {
+  const res = await request<LandDto>("PATCH", `/api/v1/lands/${landId}/status`, { status });
+  return res.data;
+};
+
 // ─── Fotos de terrenos (#148) ─────────────────────────────────────────────────
 
 /** Convierte una URL relativa de foto (`/api/v1/lands/…`) en absoluta al backend. */
