@@ -4,6 +4,7 @@ import {
   LAND_TITLE_MIN_LENGTH,
   PANAMA_COMARCAS,
   PANAMA_PROVINCES,
+  districtsOf,
   type CreateLandDto,
   type LandUse,
 } from "@terrashare/shared";
@@ -120,6 +121,29 @@ export default function PublishLandPage() {
   const set = <K extends keyof Form>(key: K, value: Form[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setError("");
+  };
+
+  // Distrito: «Otro» permite escribir uno que no esté en la lista, para no dejar
+  // sin publicar a quien viva en un distrito que se nos escape (#391).
+  const [districtOther, setDistrictOther] = useState(false);
+
+  const changeProvince = (province: string) => {
+    // Al cambiar de provincia, el distrito anterior deja de ser válido: se
+    // limpia para no arrastrar, p.ej., «Boquete» a una publicación de Coclé.
+    setForm((prev) => ({ ...prev, province, district: "" }));
+    setDistrictOther(false);
+    setError("");
+  };
+
+  const DISTRICT_OTHER = "__otro__";
+  const changeDistrict = (value: string) => {
+    if (value === DISTRICT_OTHER) {
+      setDistrictOther(true);
+      set("district", "");
+    } else {
+      setDistrictOther(false);
+      set("district", value);
+    }
   };
   const toggleUse = (u: LandUse) =>
     setForm((prev) => ({
@@ -382,7 +406,7 @@ export default function PublishLandPage() {
                   <select
                     className="pub-input"
                     value={form.province}
-                    onChange={(e) => set("province", e.target.value)}
+                    onChange={(e) => changeProvince(e.target.value)}
                   >
                     <option value="">Elige una provincia…</option>
                     {PANAMA_PROVINCES.map((p) => (
@@ -397,7 +421,34 @@ export default function PublishLandPage() {
                 </div>
                 <div>
                   <label className="pub-label">Distrito</label>
-                  <input className="pub-input" value={form.district} onChange={(e) => set("district", e.target.value)} placeholder="Guararé" />
+                  {/* Depende de la provincia y con salida «Otro». Deshabilitado
+                      hasta elegir provincia, porque los distritos son suyos. Con
+                      «Otro» aparece un campo libre para no bloquear a nadie cuyo
+                      distrito no esté en la lista (#391). */}
+                  {districtOther ? (
+                    <input
+                      className="pub-input"
+                      value={form.district}
+                      onChange={(e) => set("district", e.target.value)}
+                      placeholder="Escribe el distrito"
+                      autoFocus
+                    />
+                  ) : (
+                    <select
+                      className="pub-input"
+                      value={form.district}
+                      onChange={(e) => changeDistrict(e.target.value)}
+                      disabled={!form.province}
+                    >
+                      <option value="">
+                        {form.province ? "Elige un distrito…" : "Elige antes la provincia"}
+                      </option>
+                      {districtsOf(form.province).map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                      <option value={DISTRICT_OTHER}>Otro (no aparece)…</option>
+                    </select>
+                  )}
                 </div>
               </div>
               <label className="pub-label pub-label--mt">
