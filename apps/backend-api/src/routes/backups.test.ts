@@ -18,6 +18,17 @@ describe("Backups admin API (HU-56 #174)", () => {
     expect(create.response.status).toBe(403);
   });
 
+  it("dice si el servidor tiene clave de cifrado (#397)", async () => {
+    // La pantalla lo usa para deshabilitar «Crear respaldo» de antemano, en vez
+    // de dejar pulsar un botón que termina en un 503 en inglés.
+    const list = await requestJson("/api/v1/admin/backups", { headers: ADMIN });
+
+    expect(list.response.status).toBe(200);
+    expect(typeof list.payload.data.configured).toBe("boolean");
+    // Las pruebas corren con la clave puesta, así que aquí debe ser `true`.
+    expect(list.payload.data.configured).toBe(true);
+  });
+
   it("crea, lista, verifica y consulta el detalle de un respaldo", async () => {
     const created = await requestJson("/api/v1/admin/backups", {
       method: "POST",

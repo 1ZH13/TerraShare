@@ -6,6 +6,7 @@ import { createAuditEvent } from "../store/audit";
 import { BackupRecord } from "../db/schemas";
 import mongoose from "../db/mongoose";
 import { BackupNotConfiguredError, createBackup, verifyRestore } from "../lib/backup";
+import { env } from "../config/env";
 import type { AppEnv } from "../types";
 
 /**
@@ -100,6 +101,10 @@ backupRoutes.get("/admin/backups", requireAuth, requireAdmin, async (c) => {
     total: items.length,
     lastBackupAt: items[0]?.createdAt ?? null,
     lastVerifiedAt: lastVerified,
+    // Sin la clave de cifrado no se puede respaldar nada. Se informa aquí para
+    // que la pantalla lo advierta antes, en vez de dejar pulsar un botón que
+    // termina en un 503 en inglés (#397).
+    configured: env.backupConfigured,
   });
 });
 

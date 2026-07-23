@@ -166,6 +166,12 @@
   cursor: pointer;
   position: relative;
 }
+/* Un botón deshabilitado que parece pulsable invita a pulsarlo: el de «Crear
+   respaldo» seguía verde y entero sin la clave de cifrado (#397). */
+.adm-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .adm-pill select {
   appearance: none;
   -webkit-appearance: none;

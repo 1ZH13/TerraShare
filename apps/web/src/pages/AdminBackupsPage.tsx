@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DatabaseBackup, ShieldCheck, ShieldAlert, RefreshCw, Loader2 } from "lucide-react";
+import { DatabaseBackup, ShieldCheck, ShieldAlert, RefreshCw, Loader2, TriangleAlert } from "lucide-react";
 import type { BackupRecordDto } from "@terrashare/shared";
 import { createBackup, listBackups, verifyBackup } from "../services/adminApi";
 import "./admin.css";
@@ -40,6 +40,8 @@ export default function AdminBackupsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string>(""); // "create" | `verify:<id>`
   const [error, setError] = useState("");
+  /** El servidor tiene la clave de cifrado. Sin ella no se puede respaldar. */
+  const [configured, setConfigured] = useState(true);
 
   const load = () => {
     setLoading(true);
@@ -49,6 +51,7 @@ export default function AdminBackupsPage() {
         setItems(res.data.items);
         setLastBackupAt(res.data.lastBackupAt);
         setLastVerifiedAt(res.data.lastVerifiedAt);
+        setConfigured(res.data.configured);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
@@ -82,19 +85,41 @@ export default function AdminBackupsPage() {
         <div>
           <h1 className="adm-title">Respaldos y restauración</h1>
           <p className="adm-sub">
-            Respaldos cifrados (AES-256-GCM) de la base de datos y restauración probada por ciclo.
+            {configured
+              ? "Respaldos cifrados (AES-256-GCM) de la base de datos y restauración probada por ciclo."
+              : "Sin configurar en este servidor. La base de datos no se está respaldando."}
           </p>
         </div>
         <button
           type="button"
           className="adm-pill adm-pill--cta"
           onClick={handleCreate}
-          disabled={busy === "create"}
+          // Sin la clave, pulsar solo lleva a un 503: mejor no ofrecerlo (#397).
+          disabled={busy === "create" || !configured}
+          title={configured ? undefined : "Falta la clave de cifrado en el servidor"}
         >
           {busy === "create" ? <Loader2 size={15} className="adm-spin" /> : <DatabaseBackup size={15} />}
           {busy === "create" ? "Creando…" : "Crear respaldo"}
         </button>
       </div>
+
+      {/* La pantalla prometía «respaldos cifrados y restauración probada por
+          ciclo» mientras en realidad no había ninguno. Decirlo claro vale más
+          que un error en inglés al pulsar un botón (#397). */}
+      {!configured ? (
+        <div className="adm-lockout" role="status">
+          <TriangleAlert size={20} className="adm-lockout__icon" />
+          <div className="adm-lockout__body">
+            <p className="adm-lockout__title">Los respaldos no están activos en este servidor.</p>
+            <p className="adm-lockout__text">
+              Falta la clave de cifrado (<code>BACKUP_ENCRYPTION_KEY</code>), así que no se
+              está guardando ninguna copia de la base de datos. Activarlo requiere generar la
+              clave, cargarla como secreto del despliegue y darle a los respaldos un
+              almacenamiento que sobreviva a cada despliegue.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {error ? <div className="adm-empty adm-empty--error">{error}</div> : null}
 
@@ -134,7 +159,16 @@ export default function AdminBackupsPage() {
           <div className="adm-empty">Cargando…</div>
         ) : items.length === 0 ? (
           <div className="adm-empty">
-            Aún no hay respaldos. Crea el primero o programa el cron (<code>bun scripts/backup.ts create</code>).
+            {/* Invitar a crear uno cuando no se puede es contradecir el aviso
+                de arriba (#397). */}
+            {configured ? (
+              <>
+                Aún no hay respaldos. Crea el primero o programa el cron (
+                <code>bun scripts/backup.ts create</code>).
+              </>
+            ) : (
+              "No hay respaldos, y no se pueden crear mientras falte la clave de cifrado."
+            )}
           </div>
         ) : (
           items.map((b) => {
