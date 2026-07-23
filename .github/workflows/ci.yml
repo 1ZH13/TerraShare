@@ -112,6 +112,12 @@ jobs:
         env:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          # Habilita las pruebas con sesión: con esta clave se pide el testing
+          # token de Clerk y `clerk.signIn` entra sin pasar por el formulario.
+          # Mientras el secreto no exista llega vacía y esas pruebas se saltan
+          # solas, así que el pipeline sigue verde igual.
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          E2E_CLERK_TEST_EMAIL: ${{ secrets.E2E_CLERK_TEST_EMAIL }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
