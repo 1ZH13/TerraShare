@@ -79,7 +79,7 @@ export default function AdminLandsPage() {
     }
   };
 
-  const cols = "1.6fr 1fr 0.8fr 0.8fr auto";
+  const cols = "1.6fr 1fr 0.8fr 0.8fr var(--adm-action-col)";
 
   return (
     <>

@@ -6,7 +6,7 @@ import type { AdminReportSummary } from "../services/adminApi";
 import { REASON_LABELS, STATUS_BADGE, STATUS_LABELS, TARGET_LABELS } from "./reportLabels";
 import "./admin.css";
 
-const COLS = "1.6fr 1fr 1.4fr 0.9fr auto";
+const COLS = "1.6fr 1fr 1.4fr 0.9fr var(--adm-action-col)";
 
 export default function AdminReportsPage() {
   const navigate = useNavigate();
