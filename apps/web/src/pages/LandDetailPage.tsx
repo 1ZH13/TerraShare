@@ -141,11 +141,18 @@ export default function LandDetailPage() {
     };
   }, [id]);
 
+  // Ocultar los botones no impide la llamada, así que los manejadores también
+  // se plantan. El backend es quien manda —ya rechaza ambas cosas—, pero así
+  // nadie acaba en una pantalla de reserva o de chats que no lleva a nada (#393).
+  const ownsThisLand = (userId: string | undefined) =>
+    Boolean(land && userId && land.ownerId === userId);
+
   const handleRent = () => {
     if (!isSignedIn) {
       openSignIn({ redirectUrl: `/reserve/${id}` });
       return;
     }
+    if (ownsThisLand(user?.id)) return;
     navigate({ to: "/reserve/$landId", params: { landId: id! } });
   };
 
@@ -154,6 +161,7 @@ export default function LandDetailPage() {
       openSignIn({ redirectUrl: `/lands/${id}` });
       return;
     }
+    if (ownsThisLand(user.id)) return;
     try {
       await createChat({ landId: id, participants: [{ userId: user.id, role: "tenant" }] });
     } catch (err) {
@@ -228,6 +236,8 @@ export default function LandDetailPage() {
   const operation = getOperation(land);
   const isSale = operation === "venta" || operation === "ambas";
   const monthly = monthlyPrice(land);
+  /** La publicación es mía: no tiene sentido alquilármela ni escribirme (#393). */
+  const isOwner = Boolean(isSignedIn && user?.id === land.ownerId);
   const loc = land.location;
 
   // Especificaciones a partir de datos reales (agua/acceso/suelo llegan con #138).
@@ -287,15 +297,18 @@ export default function LandDetailPage() {
               <CalendarClock size={17} /> Visitar
             </button>
           )}
-          <button
-            type="button"
-            className="det-nav__action"
-            title="Reportar terreno"
-            aria-label="Reportar terreno"
-            onClick={openReport}
-          >
-            <Flag size={17} /> Reportar
-          </button>
+          {/* Reportarse a uno mismo solo genera ruido para moderación (#393). */}
+          {user?.id !== land.ownerId && (
+            <button
+              type="button"
+              className="det-nav__action"
+              title="Reportar terreno"
+              aria-label="Reportar terreno"
+              onClick={openReport}
+            >
+              <Flag size={17} /> Reportar
+            </button>
+          )}
         </div>
       </nav>
 
@@ -493,12 +506,26 @@ export default function LandDetailPage() {
                 )}
               </div>
 
-              <button type="button" className="det-btn det-btn--primary" onClick={handleRent}>
-                {isSale ? "Hacer oferta" : "Solicitar alquiler"} <ArrowRight size={18} />
-              </button>
-              <button type="button" className="det-btn det-btn--ghost" onClick={handleContact}>
-                <MessageCircle size={17} /> Preguntar al dueño
-              </button>
+              {isOwner ? (
+                // El dueño veía —y podía pulsar— «Solicitar alquiler» y
+                // «Preguntar al dueño» en su propia ficha, lo segundo abriendo
+                // un chat consigo mismo (#393). Se le ofrece lo que sí le sirve.
+                <>
+                  <p className="det-own-note">Esta publicación es tuya.</p>
+                  <Link to="/dashboard/lands" className="det-btn det-btn--primary">
+                    Gestionar mis terrenos <ArrowRight size={18} />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="det-btn det-btn--primary" onClick={handleRent}>
+                    {isSale ? "Hacer oferta" : "Solicitar alquiler"} <ArrowRight size={18} />
+                  </button>
+                  <button type="button" className="det-btn det-btn--ghost" onClick={handleContact}>
+                    <MessageCircle size={17} /> Preguntar al dueño
+                  </button>
+                </>
+              )}
 
               <div className="det-divider" />
 

@@ -87,6 +87,29 @@ chatRoutes.post("/chats", requireAuth, async (c) => {
     return failure(c, 403, "FORBIDDEN", "Current user must be part of chat participants");
   }
 
+  // Un dueño no puede abrir un chat como interesado sobre su propio terreno:
+  // acababa hablando consigo mismo (#393). La regla mira el rol a propósito,
+  // para no estorbar al dueño que escribe como `owner` a un interesado.
+  //
+  // Las solicitudes de alquiler y las visitas ya lo impedían; el chat era el
+  // único de los tres caminos que quedaba abierto.
+  if (body.landId) {
+    const opensAsTenant = body.participants.some(
+      (participant) => participant.userId === authUser.id && participant.role === "tenant",
+    );
+    if (opensAsTenant) {
+      const land = await Land.findOne({ id: body.landId }).lean();
+      if (land && land.ownerId === authUser.id) {
+        return failure(
+          c,
+          422,
+          "BUSINESS_RULE_VIOLATION",
+          "Owner cannot open a chat as tenant on own land",
+        );
+      }
+    }
+  }
+
   const chat = await Chat.create({
     id: `chat_${crypto.randomUUID()}`,
     landId: body.landId,
