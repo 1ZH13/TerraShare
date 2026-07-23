@@ -13,8 +13,18 @@ import { sendEmail } from "./email";
  * Exportada para poder probarla sin tocar la base ni el correo.
  */
 export function matchesFilters(land: ILand, filters: Record<string, unknown>): boolean {
-  if (filters.province && land.location?.province !== filters.province) return false;
-  if (filters.district && land.location?.district !== filters.district) return false;
+  // Provincia y distrito se comparan sin distinguir tildes ni mayúsculas, igual
+  // que el texto libre de más abajo.
+  //
+  // Importa desde que los terrenos guardan la provincia en su forma canónica
+  // (#391): una búsqueda guardada hace meses como «Chiriqui» dejaría de casar
+  // con terrenos nuevos guardados como «Chiriquí», y su dueño simplemente
+  // dejaría de recibir avisos sin enterarse.
+  const sameName = (a: unknown, b: unknown) =>
+    normalize(String(a ?? "")) === normalize(String(b ?? ""));
+
+  if (filters.province && !sameName(land.location?.province, filters.province)) return false;
+  if (filters.district && !sameName(land.location?.district, filters.district)) return false;
   if (filters.use && land.allowedUses && !land.allowedUses.includes(filters.use as LandUse)) return false;
 
   // Tipo de operación: «ambas» satisface tanto a quien busca alquiler como a

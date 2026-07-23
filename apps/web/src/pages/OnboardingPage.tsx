@@ -2,7 +2,7 @@ import { useId, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button, Card, Field, Input } from "../components/ui";
-import { PANAMA_PROVINCES } from "../data/panama-provinces";
+import { PANAMA_PROVINCES } from "@terrashare/shared";
 import { updateMyProfile } from "../services/api";
 import "./auth.css";
 

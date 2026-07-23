@@ -71,4 +71,25 @@ test.describe("Publicar terreno (con sesión)", () => {
 
     await expect(page.getByText("2 · Ubicación")).toBeVisible();
   });
+
+  test("la provincia es un desplegable con las 10 provincias y las comarcas (#391)", async ({
+    page,
+  }) => {
+    await page.goto("/dashboard/lands/new");
+    await page.getByPlaceholder("Ej. Finca El Tamarindo").fill("Finca de prueba E2E");
+    await page.getByPlaceholder("0.0").fill("2");
+    await page.getByRole("button", { name: /^Ganadería$/ }).click();
+    await page.getByRole("button", { name: /Continuar/i }).click();
+
+    // Era un <input> de texto libre: por ahí entraron provincias como «fffff».
+    const province = page.locator("select").first();
+    await expect(province).toBeVisible();
+
+    const options = await province.locator("option").allTextContents();
+    expect(options).toContain("Panamá Oeste"); // faltaba en la lista vieja
+    expect(options).toContain("Guna Yala"); // las comarcas tampoco estaban
+    expect(options).toContain("Chiriquí");
+    // 10 provincias + 4 comarcas + el marcador de posición.
+    expect(options).toHaveLength(15);
+  });
 });
