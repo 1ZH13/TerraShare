@@ -99,7 +99,12 @@ export default function AdminUsersPage() {
                   </div>
                 </div>
                 <span>
-                  {isAdmin ? <span className="adm-badge adm-badge--teal">Admin</span> : "Usuario"}
+                  {/* Ambos roles como insignia. Al admin se le pintaba una y al
+                      usuario texto pelado: dos cajas de altura distinta en la
+                      misma columna descuadraban las filas entre sí (#395). */}
+                  <span className={`adm-badge ${isAdmin ? "adm-badge--teal" : "adm-badge--muted"}`}>
+                    {isAdmin ? "Admin" : "Usuario"}
+                  </span>
                 </span>
                 <span>
                   <span className={`adm-badge ${active ? "adm-badge--green" : "adm-badge--red"}`}>
@@ -108,7 +113,11 @@ export default function AdminUsersPage() {
                 </span>
                 <span className="adm-cell--right">
                   {isAdmin ? (
-                    <span style={{ color: "var(--ts-sage-3)" }}>—</span>
+                    // El guion reserva la misma caja que el botón: si no, las
+                    // filas sin acción quedan más bajas que las demás (#395).
+                    <span className="adm-act adm-act--none" aria-label="Sin acciones">
+                      —
+                    </span>
                   ) : (
                     <button
                       type="button"
