@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CreateLandDto, LandUse } from "@terrashare/shared";
 import { X, Sprout, ArrowLeft, ArrowRight, Check, MapPin, Info, CloudUpload, Star, Trash2 } from "lucide-react";
-import { createLand, uploadLandPhoto } from "../services/api";
+import { createLand, setLandStatus, uploadLandPhoto } from "../services/api";
 import "./publish.css";
 
 const MAX_PHOTOS = 10;
@@ -177,6 +177,14 @@ export default function PublishLandPage() {
           setError("El terreno se publicó, pero alguna foto no se pudo subir. Podrás reintentarlo al editarlo.");
         }
       }
+      // `POST /lands` crea en `draft` y el catálogo solo lista los `active`: sin
+      // esto el terreno no aparecía en ninguna parte y publicar no servía de
+      // nada (#387).
+      //
+      // Va DESPUÉS de las fotos a propósito: pasar a `active` dispara las
+      // alertas de búsquedas guardadas (HU-99), y quien reciba el aviso debe
+      // encontrar la ficha ya con su portada, no un hueco gris.
+      await setLandStatus(land.id, "active");
       navigate({ to: "/dashboard/lands", replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo publicar el terreno.");
