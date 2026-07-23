@@ -180,6 +180,17 @@
   width: 100%;
   font-family: var(--ts-font-sans);
 }
+/* El bloque del dueño en su propia ficha (#393). El botón es un enlace, así
+   que hay que quitarle el subrayado que `.det-btn` no contempla. */
+.det-own-note {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--ts-text-secondary);
+  text-align: center;
+}
+
+a.det-btn { text-decoration: none; }
+
 .det-btn--primary {
   background: var(--ts-green);
   color: var(--ts-on-ink);
