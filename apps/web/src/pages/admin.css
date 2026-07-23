@@ -193,6 +193,30 @@
   overflow: hidden;
   animation: admUp 0.6s ease both 0.12s;
 }
+/*
+ * Ancho fijo de la columna de acciones de las tablas del panel.
+ *
+ * Iba en `auto`, y como CADA FILA es su propia rejilla, ese ancho se resolvía
+ * según lo que llevara dentro: «Bloquear», «Desbloquear», «Ver», «—» o el hueco
+ * vacío de la cabecera daban anchos distintos, así que las columnas caían en
+ * cuatro sitios diferentes dentro de la misma tabla (#395).
+ *
+ * Medido antes del arreglo, en Usuarios: la columna de rol empezaba en 801 px
+ * (cabecera), 759 (filas con «Bloquear»), 779 (con «—») y 748 (con
+ * «Desbloquear»).
+ *
+ * Con un ancho fijo todas las filas resuelven idéntico. Debe caber la etiqueta
+ * más larga, hoy «Desbloquear».
+ *
+ * La alternativa —una sola rejilla para toda la tabla con `display: contents`
+ * en las filas— alinearía sin número mágico, pero las filas dejarían de generar
+ * caja y habría que rehacer su padding, su borde y su hover en cada celda de
+ * todas las tablas del panel.
+ */
+:root {
+  --adm-action-col: 120px;
+}
+
 .adm-trow {
   display: grid;
   align-items: center;
@@ -201,6 +225,19 @@
   font-size: 14px;
   gap: 12px;
 }
+/*
+ * Segunda causa del descuadre, además del `auto` de la columna de acciones.
+ *
+ * Los ítems de una rejilla tienen `min-width: auto`, así que una celda con
+ * contenido largo —un correo como `terra.bob+clerk_test@example.com`— ensancha
+ * su propia columna y le roba espacio a las `fr` vecinas. Como cada fila es su
+ * propia rejilla, dos filas de la misma tabla acababan con columnas de anchos
+ * distintos: en Reportes se medían 3-4 px de diferencia entre filas.
+ *
+ * Con `min-width: 0` las fracciones se reparten igual en todas las filas, y el
+ * texto largo envuelve dentro de su columna en vez de empujarla (#395).
+ */
+.adm-trow > * { min-width: 0; }
 .adm-trow:last-child { border-bottom: 0; }
 .adm-trow--head {
   padding: 14px 20px;

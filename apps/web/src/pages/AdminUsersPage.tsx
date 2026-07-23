@@ -73,7 +73,7 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="adm-table">
-        <div className="adm-trow adm-trow--head" style={{ gridTemplateColumns: "2fr 0.8fr 0.8fr auto" }}>
+        <div className="adm-trow adm-trow--head" style={{ gridTemplateColumns: "2fr 0.8fr 0.8fr var(--adm-action-col)" }}>
           <span>Usuario</span>
           <span>Rol</span>
           <span>Estado</span>
@@ -90,7 +90,7 @@ export default function AdminUsersPage() {
             const active = u.status === "active";
             const isAdmin = u.role === "admin";
             return (
-              <div key={u.id} className="adm-trow" style={{ gridTemplateColumns: "2fr 0.8fr 0.8fr auto" }}>
+              <div key={u.id} className="adm-trow" style={{ gridTemplateColumns: "2fr 0.8fr 0.8fr var(--adm-action-col)" }}>
                 <div className="adm-user">
                   <span className="adm-user__avatar">{initials(u.profile.fullName || u.email)}</span>
                   <div style={{ minWidth: 0 }}>
