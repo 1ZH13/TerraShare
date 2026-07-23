@@ -32,7 +32,7 @@ import {
 } from "../lib/payments-idempotency";
 import { buildReceipt } from "../lib/payments-receipt";
 import { mapStripeError } from "../lib/stripe-errors";
-import type { AppEnv } from "../types";
+import type { AppEnv, AuthContextUser } from "../types";
 
 let stripeClient: Stripe | null = null;
 
@@ -674,9 +674,64 @@ paymentRoutes.post("/payments/confirm", requireAuth, async (c) => {
 });
 
 /**
+ * Deshace el trato tras un reembolso TOTAL (#398): cancela el contrato y la
+ * solicitud de alquiler asociados para que ningún registro diga que el acuerdo
+ * sigue en pie cuando el dinero ya se devolvió entero.
+ *
+ * Reglas:
+ *  - Contrato en `draft` o `active` → `cancelled`. Uno ya `completed` NO se
+ *    toca: el alquiler ya ocurrió, y el reembolso es una corrección financiera
+ *    posterior, no una marcha atrás del servicio prestado.
+ *  - Solicitud de alquiler en cualquier estado no terminal → `cancelled`.
+ *
+ * Idempotente: si ya están cancelados no hace nada. Cada cambio deja rastro en
+ * la bitácora, atribuido a quien hizo el reembolso.
+ */
+async function voidAgreementAfterFullRefund(
+  payment: { id: string; contractId?: string; rentalRequestId: string },
+  actor: AuthContextUser,
+): Promise<void> {
+  // El contrato se vincula por `rentalRequestId` (así lo crea el flujo de pago);
+  // `payment.contractId` hoy no se rellena, pero se respeta si algún día lo hace.
+  const contract = payment.contractId
+    ? await Contract.findOne({ id: payment.contractId }).lean()
+    : await Contract.findOne({ rentalRequestId: payment.rentalRequestId }).lean();
+
+  if (contract && (contract.status === "draft" || contract.status === "active")) {
+    await Contract.updateOne(
+      { id: contract.id },
+      { status: "cancelled", updatedAt: new Date() },
+    );
+    await createAuditEvent({
+      actor,
+      entity: "contract",
+      action: "cancelled",
+      entityId: contract.id,
+      metadata: { from: contract.status, to: "cancelled", reason: "full_refund", paymentId: payment.id },
+    });
+  }
+
+  const request = await RentalRequest.findOne({ id: payment.rentalRequestId }).lean();
+  if (request && request.status !== "cancelled" && request.status !== "rejected") {
+    await RentalRequest.updateOne(
+      { id: request.id },
+      { status: "cancelled", updatedAt: new Date() },
+    );
+    await createAuditEvent({
+      actor,
+      entity: "rental_request",
+      action: "cancelled",
+      entityId: request.id,
+      metadata: { from: request.status, to: "cancelled", reason: "full_refund", paymentId: payment.id },
+    });
+  }
+}
+
+/**
  * Reembolso total o parcial de un pago (HU-43 #161). Solo admin. Valida el
  * importe reembolsable, ejecuta el reembolso en Stripe (si está configurado),
- * actualiza el estado/acumulado del pago y registra auditoría.
+ * actualiza el estado/acumulado del pago y registra auditoría. Un reembolso
+ * total, además, deshace el contrato y el alquiler (#398).
  */
 paymentRoutes.post("/payments/:paymentId/refund", requireAuth, requireAdmin, async (c) => {
   const authUser = c.get("authUser");
@@ -768,6 +823,22 @@ paymentRoutes.post("/payments/:paymentId/refund", requireAuth, requireAdmin, asy
       stripeRefundId,
     },
   });
+
+  // Reembolso TOTAL: se deshace el trato. El contrato (draft/active) y la
+  // solicitud de alquiler pasan a `cancelled`, para que los tres registros no se
+  // contradigan —pago devuelto pero contrato «activo»— (#398). Un reembolso
+  // parcial es un ajuste de precio, no una cancelación, así que no toca nada.
+  //
+  // Best-effort a propósito: el dinero YA se movió en Stripe, así que un fallo
+  // aquí no puede revertir el reembolso ni hacer fallar la respuesta. Se registra
+  // y se sigue; la incoherencia, si la hubiera, es recuperable a mano.
+  if (newStatus === "refunded") {
+    try {
+      await voidAgreementAfterFullRefund(payment, authUser);
+    } catch (err) {
+      console.error("Refund cascade (contract/rental) failed:", err);
+    }
+  }
 
   const updated = await Payment.findOne({ id: payment.id }).lean();
   return success(c, updated);

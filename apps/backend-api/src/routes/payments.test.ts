@@ -387,6 +387,76 @@ describe("payments routes", () => {
     expect(found).toBe(true);
   });
 
+  it("un reembolso TOTAL cancela el contrato y la solicitud de alquiler (#398)", async () => {
+    const paymentId = await createPaidPayment();
+
+    // Pagar dejó la solicitud en `paid` y creó un contrato en `draft`.
+    const contractsBefore = await requestJson("/api/v1/contracts", {
+      headers: { "x-dev-user-id": "user_tenant_01" },
+    });
+    const contract = (contractsBefore.payload.data as Array<{ id: string; rentalRequestId: string; status: string }>)
+      .find((ct) => ct.rentalRequestId === "rr_seed_01");
+    expect(contract).toBeDefined();
+    expect(contract!.status).toBe("draft");
+
+    // Reembolso total.
+    const full = await requestJson(`/api/v1/payments/${paymentId}/refund`, {
+      method: "POST",
+      headers: { "x-dev-user-id": "web_dev_admin", "x-dev-role": "admin" },
+      body: {},
+    });
+    expect(full.payload.data.status).toBe("refunded");
+
+    // El contrato queda cancelado…
+    const contractAfter = await requestJson(`/api/v1/contracts/${contract!.id}`, {
+      headers: { "x-dev-user-id": "web_dev_admin", "x-dev-role": "admin" },
+    });
+    expect(contractAfter.payload.data.status).toBe("cancelled");
+
+    // …y la solicitud de alquiler también.
+    const rr = await requestJson("/api/v1/rental-requests/rr_seed_01", {
+      headers: { "x-dev-user-id": "user_owner_01" },
+    });
+    expect(rr.payload.data.status).toBe("cancelled");
+
+    // Con rastro en la bitácora, atribuido al admin.
+    const audit = await requestJson("/api/v1/audit-events?entity=contract&action=cancelled", {
+      headers: { "x-dev-user-id": "web_dev_admin", "x-dev-role": "admin" },
+    });
+    const logged = (audit.payload.data as Array<{ entityId: string; metadata?: { reason?: string } }>).some(
+      (e) => e.entityId === contract!.id && e.metadata?.reason === "full_refund",
+    );
+    expect(logged).toBe(true);
+  });
+
+  it("un reembolso PARCIAL no toca el contrato ni la solicitud (#398)", async () => {
+    const paymentId = await createPaidPayment();
+    const contractsBefore = await requestJson("/api/v1/contracts", {
+      headers: { "x-dev-user-id": "user_tenant_01" },
+    });
+    const contract = (contractsBefore.payload.data as Array<{ id: string; rentalRequestId: string }>)
+      .find((ct) => ct.rentalRequestId === "rr_seed_01");
+    expect(contract).toBeDefined();
+
+    const partial = await requestJson(`/api/v1/payments/${paymentId}/refund`, {
+      method: "POST",
+      headers: { "x-dev-user-id": "web_dev_admin", "x-dev-role": "admin" },
+      body: { amount: 1, reason: "ajuste parcial" },
+    });
+    expect(partial.payload.data.status).toBe("partially_refunded");
+
+    // El trato sigue en pie: contrato en `draft`, solicitud en `paid`.
+    const contractAfter = await requestJson(`/api/v1/contracts/${contract!.id}`, {
+      headers: { "x-dev-user-id": "web_dev_admin", "x-dev-role": "admin" },
+    });
+    expect(contractAfter.payload.data.status).toBe("draft");
+
+    const rr = await requestJson("/api/v1/rental-requests/rr_seed_01", {
+      headers: { "x-dev-user-id": "user_owner_01" },
+    });
+    expect(rr.payload.data.status).toBe("paid");
+  });
+
   it("rejects refunds for non-admins and for non-paid payments", async () => {
     const paymentId = await createPaidPayment();
 

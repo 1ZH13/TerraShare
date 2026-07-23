@@ -25,6 +25,16 @@ function remainingRefund(p: PaymentDto): number {
   return Math.round((p.amount - (p.refundedAmount ?? 0)) * 100) / 100;
 }
 
+/**
+ * Si el importe escrito deja el pago totalmente reembolsado. Un campo vacío
+ * significa «todo el saldo» (así lo interpreta el backend), y por tanto total.
+ */
+function isFullRefund(p: PaymentDto, amountInput: string): boolean {
+  const remaining = remainingRefund(p);
+  const value = amountInput.trim() ? Number(amountInput) : remaining;
+  return Number.isFinite(value) && value > 0 && value >= remaining;
+}
+
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<PaymentDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,6 +179,14 @@ export default function AdminPaymentsPage() {
                     Stripe, y tarda entre 5 y 10 días hábiles en reflejarse. Un reembolso no se
                     puede deshacer.
                   </p>
+                  {/* Un reembolso total deshace el trato: avisa antes de confirmar,
+                      solo cuando el importe llega al saldo completo (#398). */}
+                  {isFullRefund(p, amount) && (
+                    <p className="adm-pay__warn">
+                      Al devolver el importe completo se dará por anulado el trato: el contrato y
+                      la solicitud de alquiler pasarán a «cancelado».
+                    </p>
+                  )}
                   {formError && <span className="adm-empty--error" style={{ fontSize: 13 }}>{formError}</span>}
                 </div>
               )}

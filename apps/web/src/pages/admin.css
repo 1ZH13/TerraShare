@@ -317,6 +317,13 @@
   line-height: 1.5;
   color: var(--ts-text-secondary);
 }
+.adm-pay__warn {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--ts-clay);
+}
 /* Hueco del mismo tamaño que un botón, para las filas que no tienen acción.
    Sin borde visible ni puntero: parece vacío pero ocupa igual (#395). */
 .adm-act--none {
