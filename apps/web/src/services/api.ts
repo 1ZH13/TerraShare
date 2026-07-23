@@ -4,6 +4,7 @@
  * que el backend identifique al usuario. Solo cae al bypass de dev
  * (`x-dev-*`) si no hay sesión activa (p. ej. flujos públicos en local).
  */
+import { apiErrorMessage } from "../lib/api-error";
 import type {
   ApiSuccess,
   ChatDto,
@@ -66,10 +67,9 @@ const buildHeaders = async (): Promise<Record<string, string>> => {
 
 const handleResponse = async (res: Response): Promise<unknown> => {
   if (!res.ok) {
-    let body: any;
+    let body: unknown;
     try { body = await res.json(); } catch { body = {}; }
-    const msg = body?.error?.message || body?.message || `HTTP ${res.status}: ${res.statusText}`;
-    throw new Error(msg);
+    throw new Error(apiErrorMessage(body, res.status, res.statusText));
   }
   return res.json();
 };

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import type { CreateLandDto, LandUse } from "@terrashare/shared";
+import { LAND_TITLE_MIN_LENGTH, type CreateLandDto, type LandUse } from "@terrashare/shared";
 import { X, Sprout, ArrowLeft, ArrowRight, Check, MapPin, Info, CloudUpload, Star, Trash2 } from "lucide-react";
 import { createLand, setLandStatus, uploadLandPhoto } from "../services/api";
 import "./publish.css";
@@ -64,6 +64,15 @@ export default function PublishLandPage() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  /**
+   * Id del terreno ya creado. Si la subida de fotos falla nos quedamos en el
+   * asistente, y al reintentar hay que reutilizarlo en vez de crear otro (#389).
+   */
+  const [draftId, setDraftId] = useState<string | null>(null);
+  /** Fotos ya guardadas en el servidor: no se reintentan. */
+  const [uploaded, setUploaded] = useState<File[]>([]);
+  /** Fotos del último intento que no subieron, para ofrecer el reintento. */
+  const [failedPhotos, setFailedPhotos] = useState<File[]>([]);
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
@@ -118,6 +127,10 @@ export default function PublishLandPage() {
   const validate = (): string => {
     if (step === 1) {
       if (!form.title.trim()) return "Escribe un título para la publicación.";
+      // Comprobamos aquí el mínimo del esquema: antes solo mirábamos que no
+      // estuviera vacío y el rechazo del servidor aparecía en el paso 4 (#390).
+      if (form.title.trim().length < LAND_TITLE_MIN_LENGTH)
+        return `El título debe tener al menos ${LAND_TITLE_MIN_LENGTH} caracteres.`;
       if (!(Number(form.area) > 0)) return "Indica el área en hectáreas.";
       if (form.uses.length === 0) return "Selecciona al menos un uso permitido.";
     }
@@ -141,56 +154,115 @@ export default function PublishLandPage() {
     setStep((s) => Math.max(1, s - 1));
   };
 
+  /** Sube las fotos indicadas y reparte el resultado en subidas y fallidas. */
+  const uploadPhotos = async (
+    landId: string,
+    files: File[],
+  ): Promise<{ ok: File[]; failed: File[] }> => {
+    const ok: File[] = [];
+    const failed: File[] = [];
+    for (const file of files) {
+      try {
+        await uploadLandPhoto(landId, file);
+        ok.push(file);
+      } catch {
+        failed.push(file);
+      }
+    }
+    return { ok, failed };
+  };
+
+  /** Activa el terreno ya creado y sale del asistente. */
+  const activateAndLeave = async (landId: string) => {
+    // `POST /lands` crea en `draft` y el catálogo solo lista los `active`: sin
+    // esto el terreno no aparecía en ninguna parte (#387).
+    await setLandStatus(landId, "active");
+    navigate({ to: "/dashboard/lands", replace: true });
+  };
+
   const publish = async () => {
     setSubmitting(true);
     setError("");
     try {
-      // Nota: operación/precio de venta (#140) aún no se persisten vía
-      // CreateLandDto; las fotos (#148) sí, subiéndolas tras crear el terreno.
-      const dto: CreateLandDto = {
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        area: Number(form.area),
-        allowedUses: form.uses,
-        location: {
-          province: form.province.trim(),
-          district: form.district.trim(),
-          corregimiento: form.corregimiento.trim() || undefined,
-          addressLine: form.addressLine.trim() || undefined,
-        },
-        availability: {
-          availableFrom: form.availableFrom || undefined,
-          availableTo: form.availableTo || undefined,
-        },
-        priceRule: {
-          currency: form.currency,
-          pricePerMonth: Number(form.pricePerMonth) || 0,
-        },
-      };
-      const land = await createLand(dto);
-      // Subimos las fotos en orden (la primera es la portada). Un fallo de foto
-      // no descarta la publicación ya creada: avisamos pero seguimos.
-      for (const file of photos) {
-        try {
-          await uploadLandPhoto(land.id, file);
-        } catch {
-          setError("El terreno se publicó, pero alguna foto no se pudo subir. Podrás reintentarlo al editarlo.");
-        }
+      // Si venimos de un reintento el terreno ya existe: volver a crearlo
+      // dejaría una publicación duplicada por cada intento fallido.
+      let landId = draftId;
+      if (!landId) {
+        landId = await createDraft();
+        setDraftId(landId);
       }
-      // `POST /lands` crea en `draft` y el catálogo solo lista los `active`: sin
-      // esto el terreno no aparecía en ninguna parte y publicar no servía de
-      // nada (#387).
-      //
-      // Va DESPUÉS de las fotos a propósito: pasar a `active` dispara las
-      // alertas de búsquedas guardadas (HU-99), y quien reciba el aviso debe
-      // encontrar la ficha ya con su portada, no un hueco gris.
-      await setLandStatus(land.id, "active");
-      navigate({ to: "/dashboard/lands", replace: true });
+
+      // Subimos solo lo que aún no está en el servidor. Seguir la pista de las
+      // ya subidas —en vez de la de las pendientes— hace que reintentar no
+      // duplique la galería y que añadir o quitar fotos entre intentos siga
+      // funcionando sin listas que se quedan desfasadas.
+      const toUpload = photos.filter((f) => !uploaded.includes(f));
+      const { ok, failed } = await uploadPhotos(landId, toUpload);
+      if (ok.length > 0) setUploaded((prev) => [...prev, ...ok]);
+      setFailedPhotos(failed);
+
+      if (failed.length > 0) {
+        // Ni activamos ni navegamos. Publicar sin las fotos que el usuario
+        // eligió es justo el resultado que no quiere, y antes el aviso se
+        // perdía porque navegábamos en la misma tanda que lo mostraba (#389).
+        setError(
+          `No se pudieron subir ${failed.length} de ${toUpload.length} fotos. ` +
+            "El terreno quedó guardado como borrador y aún no es visible.",
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      await activateAndLeave(landId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo publicar el terreno.");
       setSubmitting(false);
     }
   };
+
+  /** Publica dejando fuera las fotos que no subieron. */
+  const publishWithoutFailed = async () => {
+    if (!draftId) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await activateAndLeave(draftId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo publicar el terreno.");
+      setSubmitting(false);
+    }
+  };
+
+  /** Crea el terreno en `draft` y devuelve su id. */
+  const createDraft = async (): Promise<string> => {
+    // Nota: operación/precio de venta (#140) aún no se persisten vía
+    // CreateLandDto; las fotos (#148) sí, subiéndolas tras crear el terreno.
+    const dto: CreateLandDto = {
+      title: form.title.trim(),
+      description: form.description.trim() || undefined,
+      area: Number(form.area),
+      allowedUses: form.uses,
+      location: {
+        province: form.province.trim(),
+        district: form.district.trim(),
+        corregimiento: form.corregimiento.trim() || undefined,
+        addressLine: form.addressLine.trim() || undefined,
+      },
+      availability: {
+        availableFrom: form.availableFrom || undefined,
+        availableTo: form.availableTo || undefined,
+      },
+      priceRule: {
+        currency: form.currency,
+        pricePerMonth: Number(form.pricePerMonth) || 0,
+      },
+    };
+    const land = await createLand(dto);
+    return land.id;
+  };
+
+  // Si el usuario quita una foto que había fallado, el aviso deja de aplicarle.
+  const stillFailing = failedPhotos.filter((f) => photos.includes(f));
 
   const pct = `${(step / 4) * 100}%`;
 
@@ -232,7 +304,12 @@ export default function PublishLandPage() {
                 value={form.title}
                 onChange={(e) => set("title", e.target.value)}
                 placeholder="Ej. Finca El Tamarindo"
+                minLength={LAND_TITLE_MIN_LENGTH}
+                aria-describedby="pub-title-hint"
               />
+              <p id="pub-title-hint" className="pub-hint">
+                Mínimo {LAND_TITLE_MIN_LENGTH} caracteres.
+              </p>
               <label className="pub-label pub-label--mt">Descripción</label>
               <textarea
                 className="pub-input"
@@ -447,6 +524,32 @@ export default function PublishLandPage() {
           )}
 
           {error && <p className="pub-error">{error}</p>}
+
+          {stillFailing.length > 0 && (
+            <div className="pub-retry">
+              <div className="pub-retry__list">
+                Sin subir: {stillFailing.map((f) => f.name).join(" · ")}
+              </div>
+              <div className="pub-retry__actions">
+                <button
+                  type="button"
+                  className="pub-retry__btn pub-retry__btn--primary"
+                  onClick={publish}
+                  disabled={submitting}
+                >
+                  {submitting ? "Reintentando…" : "Reintentar fotos"}
+                </button>
+                <button
+                  type="button"
+                  className="pub-retry__btn"
+                  onClick={publishWithoutFailed}
+                  disabled={submitting}
+                >
+                  Publicar sin ellas
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="pub-foot">
