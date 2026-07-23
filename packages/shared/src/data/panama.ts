@@ -66,3 +66,49 @@ export const canonicalTerritory = (value: string | null | undefined): PanamaTerr
   const target = fold(value);
   return PANAMA_TERRITORIES.find((territory) => fold(territory) === target);
 };
+
+/**
+ * Distritos de cada territorio, para el desplegable dependiente al publicar.
+ *
+ * Fuente: división político-administrativa del IGN «Tommy Guardia» (2024),
+ * contrastada con Wikipedia. El país tiene ~82 distritos; la lista de las
+ * comarcas es la parte que más cambia y donde el conteo oficial baila ±1, por
+ * eso el formulario ofrece SIEMPRE una opción «Otro»: un desplegable puro con
+ * un hueco dejaría sin publicar a quien viva justo ahí. El distrito, además, no
+ * alimenta ningún filtro público (a diferencia de la provincia), así que un
+ * valor fuera de lista no ensucia nada visible.
+ *
+ * El `Record<PanamaTerritory, …>` obliga a que estén los 14 territorios: si se
+ * añade uno a la lista de arriba y se olvida aquí, no compila.
+ */
+export const PANAMA_DISTRICTS: Record<PanamaTerritory, readonly string[]> = {
+  "Bocas del Toro": ["Almirante", "Bocas del Toro", "Changuinola", "Chiriquí Grande"],
+  Chiriquí: [
+    "Alanje", "Barú", "Boquerón", "Boquete", "Bugaba", "David", "Dolega", "Gualaca",
+    "Remedios", "Renacimiento", "San Félix", "San Lorenzo", "Tierras Altas", "Tolé",
+  ],
+  Coclé: ["Aguadulce", "Antón", "La Pintada", "Natá", "Olá", "Penonomé"],
+  Colón: ["Chagres", "Colón", "Donoso", "Omar Torrijos Herrera", "Portobelo", "Santa Isabel"],
+  Darién: ["Chepigana", "Pinogana", "Santa Fe"],
+  Herrera: ["Chitré", "Las Minas", "Los Pozos", "Ocú", "Parita", "Pesé", "Santa María"],
+  "Los Santos": ["Guararé", "Las Tablas", "Los Santos", "Macaracas", "Pedasí", "Pocrí", "Tonosí"],
+  Panamá: ["Balboa", "Chepo", "Chimán", "Panamá", "San Miguelito", "Taboga"],
+  "Panamá Oeste": ["Arraiján", "Capira", "Chame", "La Chorrera", "San Carlos"],
+  Veraguas: [
+    "Atalaya", "Calobre", "Cañazas", "La Mesa", "Las Palmas", "Mariato", "Montijo",
+    "Río de Jesús", "San Francisco", "Santa Fe", "Santiago", "Soná",
+  ],
+  "Emberá-Wounaan": ["Cémaco", "Sambú"],
+  "Guna Yala": ["Guna Yala"],
+  "Ngäbe-Buglé": [
+    "Besikó", "Jirondai", "Kankintú", "Kusapín", "Mironó", "Müna", "Nole Duima",
+    "Ñürüm", "Santa Catalina o Calovébora",
+  ],
+  "Naso Tjër Di": ["Naso Tjër Di"],
+};
+
+/** Distritos del territorio indicado, o lista vacía si no se reconoce. */
+export const districtsOf = (province: string | null | undefined): readonly string[] => {
+  const territory = canonicalTerritory(province);
+  return territory ? PANAMA_DISTRICTS[territory] : [];
+};

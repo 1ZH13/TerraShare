@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { PANAMA_TERRITORIES, canonicalTerritory } from "./panama";
+import {
+  PANAMA_DISTRICTS,
+  PANAMA_TERRITORIES,
+  canonicalTerritory,
+  districtsOf,
+} from "./panama";
 import { CreateLandSchema } from "../schemas/lands";
 
 describe("canonicalTerritory", () => {
@@ -61,5 +66,42 @@ describe("CreateLandSchema · provincia", () => {
     if (res.success) {
       expect(res.data.location.province).toBe("Los Santos");
     }
+  });
+});
+
+describe("PANAMA_DISTRICTS", () => {
+  it("cubre los 14 territorios, cada uno con al menos un distrito", () => {
+    for (const t of PANAMA_TERRITORIES) {
+      expect(PANAMA_DISTRICTS[t]?.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+
+  it("suma un número de distritos cercano al oficial (~82)", () => {
+    // Salvaguarda contra un borrado accidental de media lista: el país tiene
+    // ~82 distritos (IGN 2024). No se fija el número exacto porque las comarcas
+    // se cuentan de forma irregular y por eso el formulario ofrece «Otro».
+    const total = Object.values(PANAMA_DISTRICTS).reduce((n, ds) => n + ds.length, 0);
+    expect(total).toBeGreaterThanOrEqual(80);
+    expect(total).toBeLessThanOrEqual(90);
+  });
+
+  it("no repite distritos dentro de una misma provincia", () => {
+    for (const ds of Object.values(PANAMA_DISTRICTS)) {
+      expect(new Set(ds).size).toBe(ds.length);
+    }
+  });
+});
+
+describe("districtsOf", () => {
+  it("devuelve los distritos del territorio, tolerando tildes y mayúsculas", () => {
+    expect(districtsOf("Los Santos")).toContain("Guararé");
+    expect(districtsOf("los santos")).toContain("Guararé"); // sin mayúscula inicial
+    expect(districtsOf("chiriqui")).toContain("Boquete"); // sin tilde
+  });
+
+  it("devuelve lista vacía para lo desconocido o vacío", () => {
+    expect(districtsOf("fffff")).toEqual([]);
+    expect(districtsOf("")).toEqual([]);
+    expect(districtsOf(null)).toEqual([]);
   });
 });
