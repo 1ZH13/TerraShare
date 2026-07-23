@@ -105,6 +105,29 @@ jobs:
               ( cd /opt/terrashare-prod && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d proxy certbot 2>/dev/null || true )
             fi
 
+            # Recarga la configuración del proxy.
+            #
+            # El bloque de arriba solo levanta el proxy si NO estaba corriendo, y
+            # nginx lee su configuración al arrancar. Como el contenedor lleva
+            # meses en pie, `nginx/proxy.conf` se actualizaba en disco (va montado
+            # como volumen) pero nginx no lo miraba jamás: ningún cambio del proxy
+            # ha llegado nunca a producción por despliegue (#402). Así el arreglo
+            # del límite de subida de fotos (#389) se quedó sin efecto pese a
+            # desplegarse en verde.
+            #
+            # Solo en main: el fichero montado sale de /opt/terrashare-prod.
+            if [ "$BRANCH" = "main" ] && docker ps --format '{{.Names}}' | grep -q terrashare-proxy; then
+              # `nginx -t` primero: si la configuración es inválida no se recarga
+              # y sigue sirviendo la anterior. Recargar a ciegas tumbaría el sitio.
+              if docker exec terrashare-proxy nginx -t; then
+                docker exec terrashare-proxy nginx -s reload
+                echo "Proxy: configuración validada y recargada."
+              else
+                echo "::error::La configuración de nginx no es válida. No se recarga (sigue la anterior) y se aborta el despliegue."
+                exit 1
+              fi
+            fi
+
             # App: prod usa prod.yml (con proxy/certbot); staging usa staging.yml (sin proxy
             # propio, va tras el proxy compartido). El resultado define si el deploy fue OK.
             if [ "$BRANCH" = "main" ]; then
