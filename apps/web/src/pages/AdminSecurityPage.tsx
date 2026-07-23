@@ -42,6 +42,20 @@ export default function AdminSecurityPage() {
 
   const toggle = async () => {
     if (!settings || saving) return;
+
+    // Activarla sin 2FA en la propia cuenta cierra el resto del panel al
+    // instante. El aviso de abajo solo salía DESPUÉS de encerrarse; aquí se
+    // avisa antes, que es cuando sirve de algo (#394).
+    if (!settings.requireAdminMfa && !settings.callerMfaEnabled) {
+      const go = window.confirm(
+        "Tu cuenta no tiene 2FA configurada.\n\n" +
+          "Si activas la exigencia ahora, el resto del panel dejará de responderte " +
+          "hasta que la configures. Podrás volver aquí para desactivarla.\n\n" +
+          "¿Activarla de todos modos?",
+      );
+      if (!go) return;
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -109,6 +123,17 @@ export default function AdminSecurityPage() {
                 {required ? "Desactivar" : "Activar"}
               </button>
             </div>
+
+            {!required && settings.callerMfaEnabled === false ? (
+              <p className="adm-sec__warn">
+                <TriangleAlert size={16} />
+                <span>
+                  Tu cuenta no tiene 2FA configurada. Si activas la exigencia ahora, el resto
+                  del panel dejará de responderte hasta que la configures. Podrás volver aquí
+                  para desactivarla.
+                </span>
+              </p>
+            ) : null}
 
             {wouldLockOut ? (
               <p className="adm-sec__warn">
