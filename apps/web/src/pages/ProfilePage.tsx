@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useClerk, useUser } from "@clerk/clerk-react";
-import { KeyRound, LogOut, Camera } from "lucide-react";
+import { KeyRound, LogOut, Settings } from "lucide-react";
 import { getMe, updateMyProfile } from "../services/api";
 import "./profile.css";
 
@@ -98,8 +98,17 @@ export default function ProfilePage() {
             {userEmail} · Miembro desde {memberSince}
           </div>
         </div>
-        <button type="button" className="pf-obtn" onClick={() => openUserProfile()}>
-          <Camera size={16} /> Cambiar foto
+        {/* Era «Cambiar foto», que ocupaba el sitio más visible de la tarjeta
+            para la acción menos importante — y encima el botón ya abría los
+            ajustes completos de la cuenta, no solo la foto (#396). */}
+        <button
+          type="button"
+          className="pf-obtn pf-obtn--icon"
+          onClick={() => openUserProfile()}
+          aria-label="Ajustes de la cuenta"
+          title="Ajustes de la cuenta"
+        >
+          <Settings size={18} />
         </button>
       </div>
 

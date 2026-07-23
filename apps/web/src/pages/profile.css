@@ -83,6 +83,18 @@
 }
 .pf-obtn:hover { background: var(--ts-paper-tint); }
 
+/* Variante de solo icono: cuadrada, para que la tuerca no quede descentrada
+   dentro de una caja pensada para icono + texto (#396). */
+.pf-obtn--icon {
+  padding: 10px;
+  gap: 0;
+  line-height: 0;
+}
+.pf-obtn--icon:focus-visible {
+  outline: 2px solid var(--ts-ring);
+  outline-offset: 2px;
+}
+
 /* datos personales */
 .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .pf-field { display: block; }

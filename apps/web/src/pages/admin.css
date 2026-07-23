@@ -267,6 +267,15 @@
   font-family: var(--ts-font-sans);
 }
 .adm-act:hover { background: var(--ts-paper-tint); }
+/* Hueco del mismo tamaño que un botón, para las filas que no tienen acción.
+   Sin borde visible ni puntero: parece vacío pero ocupa igual (#395). */
+.adm-act--none {
+  display: inline-block;
+  border-color: transparent;
+  color: var(--ts-sage-3);
+  cursor: default;
+}
+.adm-act--none:hover { background: transparent; }
 .adm-act--danger { color: #9a3b2c; border-color: #d99a8c; }
 .adm-act--danger:hover { background: #f7e7e4; }
 
@@ -280,7 +289,9 @@
   color: var(--ts-sage);
   animation: admUp 0.6s ease both 0.16s;
 }
-.adm-pager { display: flex; gap: 8px; }
+/* `align-items: center` porque el «Página X de Y» va suelto entre dos botones:
+   sin esto el texto se apoyaba arriba y quedaba más alto que ellos (#395). */
+.adm-pager { display: flex; gap: 8px; align-items: center; }
 .adm-pager button {
   border: 1px solid #d8cfb8;
   border-radius: 8px;
