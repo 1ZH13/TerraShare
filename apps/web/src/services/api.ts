@@ -183,10 +183,35 @@ export const createRentalRequest = async (
   return res?.data ?? null;
 };
 
-/** GET /api/v1/rental-requests */
-export const listRentalRequests = async (): Promise<RentalRequestDto[]> => {
-  const res = await request<RentalRequestDto[]>("GET", "/api/v1/rental-requests");
+/**
+ * GET /api/v1/rental-requests
+ *
+ * Con `role: "owner"` devuelve las solicitudes RECIBIDAS en los terrenos de
+ * quien consulta, en vez de las que ha enviado. Sin ese parámetro el dueño no
+ * veía nunca sus solicitudes entrantes (#418).
+ */
+export const listRentalRequests = async (
+  role?: "owner",
+): Promise<RentalRequestDto[]> => {
+  const path = role === "owner" ? "/api/v1/rental-requests?role=owner" : "/api/v1/rental-requests";
+  const res = await request<RentalRequestDto[]>("GET", path);
   return res?.data ?? [];
+};
+
+/**
+ * PATCH /api/v1/rental-requests/:requestId/status — aprobar o rechazar.
+ * El backend comprueba que quien responde sea el dueño del terreno.
+ */
+export const updateRentalRequestStatus = async (
+  requestId: string,
+  status: "approved" | "rejected" | "cancelled",
+): Promise<RentalRequestDto | null> => {
+  const res = await request<RentalRequestDto>(
+    "PATCH",
+    `/api/v1/rental-requests/${requestId}/status`,
+    { status },
+  );
+  return res?.data ?? null;
 };
 
 /** GET /api/v1/rental-requests/:requestId */
@@ -640,6 +665,7 @@ export const api = {
   getLandById,
   createRentalRequest,
   listRentalRequests,
+  updateRentalRequestStatus,
   getRentalRequestById,
   createCheckoutSession,
   getPaymentsByRequest,

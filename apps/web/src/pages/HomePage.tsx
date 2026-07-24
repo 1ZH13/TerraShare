@@ -18,7 +18,14 @@ import {
   Heart,
   MessageCircle,
 } from "lucide-react";
-import { getChats, getMyFavorites, getMyLands, listRentalRequests, photoSrc } from "../services/api";
+import {
+  getChats,
+  getMyFavorites,
+  getMyLands,
+  listRentalRequests,
+  updateRentalRequestStatus,
+  photoSrc,
+} from "../services/api";
 import { getDisplayName } from "../components/authDisplay";
 import { useAppMode } from "../components/AppLayout";
 import EmptyState from "../components/EmptyState";
@@ -298,6 +305,9 @@ function OfrezcoHome() {
   const navigate = useNavigate();
   const [lands, setLands] = useState<LandDto[]>([]);
   const [landsState, setLandsState] = useState<LoadState>("loading");
+  const [received, setReceived] = useState<RentalRequestDto[]>([]);
+  const [receivedState, setReceivedState] = useState<LoadState>("loading");
+  const [answering, setAnswering] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -310,12 +320,39 @@ function OfrezcoHome() {
         setLandsState("ready");
       })
       .catch(() => active && setLandsState("error"));
+    // Solicitudes RECIBIDAS en mis terrenos. Necesita `role=owner`: sin él el
+    // endpoint devuelve las enviadas, y el dueño no veía nunca las suyas (#418).
+    listRentalRequests("owner")
+      .then((data) => {
+        if (!active) return;
+        setReceived(data);
+        setReceivedState("ready");
+      })
+      .catch(() => active && setReceivedState("error"));
     return () => {
       active = false;
     };
   }, []);
 
   const activeCount = landsState === "ready" ? String(lands.length) : "—";
+  /** «Nuevas» son las que esperan respuesta del dueño. */
+  const pending = received.filter((r) => r.status === "pending_owner");
+  const pendingCount = receivedState === "ready" ? String(pending.length) : "—";
+  const titleOf = (landId: string) => lands.find((l) => l.id === landId)?.title ?? "Tu terreno";
+
+  /** Aprueba o rechaza y refresca la lista con lo que devuelve el servidor. */
+  const answer = async (id: string, status: "approved" | "rejected") => {
+    setAnswering(id);
+    try {
+      const updated = await updateRentalRequestStatus(id, status);
+      if (updated) setReceived((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    } catch {
+      // Si falla, se recarga para no dejar la tarjeta mintiendo sobre su estado.
+      listRentalRequests("owner").then(setReceived).catch(() => {});
+    } finally {
+      setAnswering(null);
+    }
+  };
 
   return (
     <div className="hm">
@@ -342,8 +379,7 @@ function OfrezcoHome() {
           <div className="hm-stat__icon hm-stat__icon--clay">
             <Inbox size={19} />
           </div>
-          {/* TODO(#136): sin endpoint de solicitudes-por-dueño todavía. */}
-          <div className="hm-stat__value">—</div>
+          <div className="hm-stat__value">{pendingCount}</div>
           <div className="hm-stat__label">Solicitudes nuevas</div>
         </div>
         <div className="hm-stat hm-stat--dark">
@@ -361,13 +397,67 @@ function OfrezcoHome() {
         <h2 className="hm-sec__title" style={{ marginBottom: "16px" }}>
           Solicitudes recibidas
         </h2>
-        {/* TODO(#136): no existe endpoint de solicitudes recibidas por el dueño. */}
         <div style={{ marginBottom: "44px" }}>
-          <EmptyState
-            icon={Inbox}
-            title="Sin solicitudes por ahora"
-            description="Cuando alguien solicite uno de tus terrenos, aparecerá aquí."
-          />
+          {receivedState === "loading" ? (
+            <div className="hm-grid3">
+              <div className="hm-skeleton" />
+              <div className="hm-skeleton" />
+              <div className="hm-skeleton" />
+            </div>
+          ) : receivedState === "error" ? (
+            <div className="hm-empty hm-empty--error">
+              No pudimos cargar las solicitudes recibidas. Inténtalo de nuevo en un momento.
+            </div>
+          ) : received.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title="Sin solicitudes por ahora"
+              description="Cuando alguien solicite uno de tus terrenos, aparecerá aquí."
+            />
+          ) : (
+            <div className="hm-grid3">
+              {received.slice(0, 6).map((req) => {
+                const status = REQUEST_STATUS[req.status];
+                const esperando = req.status === "pending_owner";
+                return (
+                  <div key={req.id} className="hm-req">
+                    <div className="hm-req__top">
+                      <span className="hm-req__title">{titleOf(req.landId)}</span>
+                      <span className={`hm-badge ${status.badge}`}>{status.label}</span>
+                    </div>
+                    <div className="hm-req__meta">
+                      <Calendar size={14} />{" "}
+                      {req.operation === "venta"
+                        ? "Oferta de compra"
+                        : formatPeriod(req.period?.startDate, req.period?.endDate)}
+                    </div>
+                    {/* Solo las pendientes se pueden responder; el backend
+                        rechaza cualquier otra transición. */}
+                    {esperando ? (
+                      <div className="hm-req__actions">
+                        <button
+                          type="button"
+                          className="hm-req__accept"
+                          disabled={answering === req.id}
+                          onClick={() => answer(req.id, "approved")}
+                        >
+                          <Check size={15} /> Aprobar
+                        </button>
+                        <button
+                          type="button"
+                          className="hm-req__reject"
+                          disabled={answering === req.id}
+                          onClick={() => answer(req.id, "rejected")}
+                        >
+                          Rechazar
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 

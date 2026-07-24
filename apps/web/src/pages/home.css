@@ -151,6 +151,32 @@
 }
 .hm-req__pay:hover { transform: translateY(-1px); }
 
+/* Responder una solicitud recibida desde la propia tarjeta (#418): antes la
+   sección era un texto fijo y el dueño no tenía dónde aprobar ni rechazar. */
+.hm-req__actions { display: flex; gap: 8px; }
+.hm-req__accept,
+.hm-req__reject {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.hm-req__accept { background: var(--ts-green); color: var(--ts-on-ink); }
+.hm-req__reject { background: transparent; color: var(--ts-text-secondary); border-color: var(--ts-beige); }
+.hm-req__reject:hover { background: var(--ts-paper-tint); }
+.hm-req__accept:disabled,
+.hm-req__reject:disabled { opacity: 0.55; cursor: default; }
+.hm-req__accept:focus-visible,
+.hm-req__reject:focus-visible { outline: 2px solid var(--ts-ring); outline-offset: 2px; }
+
 /* badges de estado */
 .hm-badge {
   font-size: 11px;
