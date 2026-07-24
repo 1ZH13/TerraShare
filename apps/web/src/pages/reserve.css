@@ -124,6 +124,15 @@
 textarea.rsv-input { min-height: 88px; resize: vertical; }
 .rsv-input::placeholder { color: var(--ts-sage-3); }
 
+/* Uso del terreno cuando solo hay uno permitido: se muestra, no se elige (#419).
+   Mismo aspecto que un input pero inerte y algo apagado, para que se lea como
+   dato y no como campo editable. */
+.rsv-input--static {
+  color: var(--ts-text-secondary);
+  display: flex;
+  align-items: center;
+}
+
 .rsv-actions { display: flex; gap: 12px; margin-top: 22px; }
 .rsv-submit {
   flex: 1;

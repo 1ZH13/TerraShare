@@ -22,6 +22,8 @@ interface ReserveLand {
   id?: string;
   type?: string;
   title?: string;
+  /** Usos que el dueño permite. El backend rechaza cualquier otro (#419). */
+  allowedUses?: string[];
   province?: string;
   district?: string;
   areaHectares?: number;
@@ -63,6 +65,7 @@ function normalizeReserveLand(land: LandLike | null | undefined): ReserveLand | 
   return {
     id: land.id,
     type: land.type ?? labelForUse(land.allowedUses?.[0]),
+    allowedUses: land.allowedUses,
     title: land.title,
     province: land.province ?? land.location?.province ?? "",
     district: land.district ?? land.location?.district ?? "",
@@ -142,6 +145,20 @@ export default function ReservePage() {
     setForm((prev) => ({ ...prev, [field]: value }));
     setError("");
   };
+
+  // Usos que el terreno admite. El desplegable se limita a estos: ofrecer todos
+  // engañaba, porque el backend rechaza con 422 cualquiera fuera de la lista
+  // que fijó el dueño (#419).
+  const allowedUses = land?.allowedUses ?? [];
+
+  // Si el terreno permite un solo uso, no hay nada que elegir: se fija solo y el
+  // campo pasa a ser informativo. Evita el paso vacío de un desplegable de una
+  // sola opción que además es obligatorio.
+  useEffect(() => {
+    if (allowedUses.length === 1 && form.intendedUse !== allowedUses[0]) {
+      setForm((prev) => ({ ...prev, intendedUse: allowedUses[0] }));
+    }
+  }, [allowedUses, form.intendedUse]);
 
   const isSale = (land?.operation ?? "alquiler") !== "alquiler";
 
@@ -383,20 +400,31 @@ export default function ReservePage() {
                       <label className="rsv-label" htmlFor="intendedUse">
                         Uso del terreno
                       </label>
-                      <select
-                        id="intendedUse"
-                        className="rsv-input"
-                        value={form.intendedUse}
-                        onChange={(e) => handleChange("intendedUse", e.target.value)}
-                        required
-                        disabled={submitting}
-                      >
-                        {USO_OPCIONES.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
+                      {allowedUses.length <= 1 ? (
+                        // Un solo uso permitido: no se elige, se muestra. El
+                        // valor ya lo fijó el efecto de arriba.
+                        <div className="rsv-input rsv-input--static" id="intendedUse">
+                          {allowedUses.length === 1
+                            ? labelForUse(allowedUses[0])
+                            : "El dueño no especificó un uso"}
+                        </div>
+                      ) : (
+                        <select
+                          id="intendedUse"
+                          className="rsv-input"
+                          value={form.intendedUse}
+                          onChange={(e) => handleChange("intendedUse", e.target.value)}
+                          required
+                          disabled={submitting}
+                        >
+                          <option value="">¿Qué uso le darás?</option>
+                          {allowedUses.map((u) => (
+                            <option key={u} value={u}>
+                              {labelForUse(u)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   </>
                 )}
