@@ -73,6 +73,38 @@
 .det-photo--img { padding: 0; overflow: hidden; }
 .det-photo--img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/* Galería con todas las fotos (#427): portada grande + tira de miniaturas.
+   Antes solo se pintaban 3 huecos fijos y de la 4.ª foto en adelante se perdían. */
+.det-gallery2 { margin-bottom: 32px; }
+.det-hero {
+  height: 440px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #e9e3d3, #dfe4d6);
+}
+.det-thumbs {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.det-thumb {
+  flex: 0 0 auto;
+  width: 96px;
+  height: 72px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background: linear-gradient(135deg, #e9e3d3, #dfe4d6);
+  transition: border-color 0.15s ease, opacity 0.15s ease;
+  opacity: 0.75;
+}
+.det-thumb:hover { opacity: 1; }
+.det-thumb.is-active { border-color: var(--ts-green); opacity: 1; }
+.det-thumb:focus-visible { outline: 2px solid var(--ts-green); outline-offset: 2px; }
+
 .det-body { display: grid; grid-template-columns: 1.5fr 0.9fr; gap: 44px; align-items: start; }
 
 .det-badges { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -268,6 +300,7 @@ a.det-btn { text-decoration: none; }
   .det-gallery { grid-template-columns: 1fr; grid-template-rows: 220px 130px; height: auto; }
   .det-photo--main { grid-row: auto; }
   .det-gallery__hide-sm { display: none; }
+  .det-hero { height: 260px; }
 }
 /* modal de reporte (moderación por reportes, #250) */
 .det-report {

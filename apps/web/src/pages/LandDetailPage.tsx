@@ -114,9 +114,14 @@ export default function LandDetailPage() {
   const [reportReason, setReportReason] = useState<ReportReason>("fraude");
   const [reportDesc, setReportDesc] = useState("");
   const [reportState, setReportState] = useState<"idle" | "sending" | "done" | "error">("idle");
+  // Índice de la foto que se ve en grande; las miniaturas lo cambian (#427).
+  const [activePhoto, setActivePhoto] = useState(0);
 
   useEffect(() => {
     let active = true;
+    // Al cambiar de terreno se vuelve a la portada; si no, se abriría en la
+    // 4.ª foto del anterior o en un índice que ya no existe.
+    setActivePhoto(0);
     getLandById(id!)
       .then((data) => {
         if (!active) return;
@@ -236,6 +241,9 @@ export default function LandDetailPage() {
   const operation = getOperation(land);
   const isSale = operation === "venta" || operation === "ambas";
   const monthly = monthlyPrice(land);
+  // Todas las fotos del terreno; la galería las recorre en vez de cortar en 3 (#427).
+  const photos = land.photos ?? [];
+  const activeIdx = photos.length > 0 ? Math.min(activePhoto, photos.length - 1) : 0;
   /** La publicación es mía: no tiene sentido alquilármela ni escribirme (#393). */
   const isOwner = Boolean(isSignedIn && user?.id === land.ownerId);
   const loc = land.location;
@@ -400,26 +408,31 @@ export default function LandDetailPage() {
       )}
 
       <main id="contenido" className="det-wrap">
-        {/* galería */}
-        {land.photos && land.photos.length > 0 ? (
-          <div className="det-gallery">
-            <div className="det-photo det-photo--main det-photo--img">
-              <img src={photoSrc(land.photos[0])} alt={`${land.title} — foto principal`} />
+        {/* galería (#427): portada grande + tira de miniaturas con TODAS las fotos */}
+        {photos.length > 0 ? (
+          <div className="det-gallery2">
+            <div className="det-hero det-photo--img">
+              <img
+                src={photoSrc(photos[activeIdx])}
+                alt={`${land.title} — foto ${activeIdx + 1} de ${photos.length}`}
+              />
             </div>
-            <div className="det-photo det-photo--img">
-              {land.photos[1] ? (
-                <img src={photoSrc(land.photos[1])} alt={`${land.title} — foto 2`} />
-              ) : (
-                <ImageIcon size={24} strokeWidth={1.4} aria-hidden="true" />
-              )}
-            </div>
-            <div className="det-photo det-photo--img det-gallery__hide-sm">
-              {land.photos[2] ? (
-                <img src={photoSrc(land.photos[2])} alt={`${land.title} — foto 3`} />
-              ) : (
-                <ImageIcon size={24} strokeWidth={1.4} aria-hidden="true" />
-              )}
-            </div>
+            {photos.length > 1 && (
+              <div className="det-thumbs" role="list" aria-label="Miniaturas del terreno">
+                {photos.map((photo, i) => (
+                  <button
+                    type="button"
+                    key={photo}
+                    className={`det-thumb det-photo--img ${i === activeIdx ? "is-active" : ""}`}
+                    onClick={() => setActivePhoto(i)}
+                    aria-label={`Ver foto ${i + 1} de ${photos.length}`}
+                    aria-current={i === activeIdx}
+                  >
+                    <img src={photoSrc(photo)} alt="" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="det-gallery" aria-hidden="true">
