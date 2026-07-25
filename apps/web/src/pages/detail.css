@@ -199,6 +199,8 @@
   margin: 2px 0 20px;
 }
 .det-price span { font-size: 17px; color: #8f5f4b; font-family: var(--ts-font-sans); }
+/* Segundo precio cuando el terreno es «ambas» (alquiler y venta) (#428). */
+.det-price__alt { font-size: 16px; color: #8f5f4b; font-family: var(--ts-font-sans); margin-top: 4px; }
 
 .det-btn {
   display: flex;

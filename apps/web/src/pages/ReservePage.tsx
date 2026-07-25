@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
-import { Link, useParams, useNavigate, useLocation } from "@tanstack/react-router";
+import { Link, useParams, useNavigate, useLocation, useSearch } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import { ArrowLeft, Sprout, MapPin, Info, Check } from "lucide-react";
 import { getLandById, createRentalRequest, adaptLand } from "../services/api";
@@ -101,6 +101,8 @@ export default function ReservePage() {
   const { landId } = useParams({ strict: false });
   const navigate = useNavigate();
   const location = useLocation();
+  // Intención explícita para terrenos «ambas»: la fija el detalle (#428).
+  const { modo } = useSearch({ strict: false }) as { modo?: "alquiler" | "venta" };
   const { isSignedIn } = useUser();
 
   const [land, setLand] = useState<ReserveLand | null>(
@@ -160,7 +162,9 @@ export default function ReservePage() {
     }
   }, [allowedUses, form.intendedUse]);
 
-  const isSale = (land?.operation ?? "alquiler") !== "alquiler";
+  // `modo` manda cuando viene (terreno «ambas»); si no, se deduce de la operación
+  // del terreno: venta/ambas → oferta de compra, alquiler → solicitud de alquiler.
+  const isSale = modo ? modo === "venta" : (land?.operation ?? "alquiler") !== "alquiler";
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

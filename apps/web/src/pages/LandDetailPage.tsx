@@ -152,13 +152,16 @@ export default function LandDetailPage() {
   const ownsThisLand = (userId: string | undefined) =>
     Boolean(land && userId && land.ownerId === userId);
 
-  const handleRent = () => {
+  // `modo` decide si la reserva es un alquiler o una oferta de compra. En un
+  // terreno «ambas» cada botón fija el suyo, para que el detalle ofrezca las dos
+  // cosas y ReservePage no tenga que adivinar (#428).
+  const goReserve = (modo: "alquiler" | "venta") => {
     if (!isSignedIn) {
       openSignIn({ redirectUrl: `/reserve/${id}` });
       return;
     }
     if (ownsThisLand(user?.id)) return;
-    navigate({ to: "/reserve/$landId", params: { landId: id! } });
+    navigate({ to: "/reserve/$landId", params: { landId: id! }, search: { modo } });
   };
 
   const handleContact = async () => {
@@ -240,6 +243,10 @@ export default function LandDetailPage() {
 
   const operation = getOperation(land);
   const isSale = operation === "venta" || operation === "ambas";
+  // Un terreno «ambas» ofrece las dos operaciones; antes isSale (true para ambas)
+  // hacía que solo se mostrara «Hacer oferta» y nunca el alquiler (#428).
+  const offersRent = operation === "alquiler" || operation === "ambas";
+  const offersSale = operation === "venta" || operation === "ambas";
   const monthly = monthlyPrice(land);
   // Todas las fotos del terreno; la galería las recorre en vez de cortar en 3 (#427).
   const photos = land.photos ?? [];
@@ -501,9 +508,31 @@ export default function LandDetailPage() {
           {/* tarjeta de acción sticky */}
           <aside className="det-aside">
             <div className="det-card">
-              <div className="det-price__label">{isSale ? "Precio de venta" : "Precio de alquiler"}</div>
+              <div className="det-price__label">
+                {operation === "ambas"
+                  ? "Alquiler o venta"
+                  : isSale
+                    ? "Precio de venta"
+                    : "Precio de alquiler"}
+              </div>
               <div className="det-price">
-                {isSale ? (
+                {operation === "ambas" ? (
+                  <>
+                    {monthly !== null ? (
+                      <>
+                        ${monthly.toLocaleString("es-PA")}
+                        <span>/mes</span>
+                      </>
+                    ) : (
+                      "A consultar"
+                    )}
+                    {typeof land.salePrice === "number" && (
+                      <div className="det-price__alt">
+                        o ${land.salePrice.toLocaleString("es-PA")} en venta
+                      </div>
+                    )}
+                  </>
+                ) : isSale ? (
                   typeof land.salePrice === "number" ? (
                     `$${land.salePrice.toLocaleString("es-PA")}`
                   ) : (
@@ -531,9 +560,24 @@ export default function LandDetailPage() {
                 </>
               ) : (
                 <>
-                  <button type="button" className="det-btn det-btn--primary" onClick={handleRent}>
-                    {isSale ? "Hacer oferta" : "Solicitar alquiler"} <ArrowRight size={18} />
-                  </button>
+                  {offersRent && (
+                    <button
+                      type="button"
+                      className="det-btn det-btn--primary"
+                      onClick={() => goReserve("alquiler")}
+                    >
+                      Solicitar alquiler <ArrowRight size={18} />
+                    </button>
+                  )}
+                  {offersSale && (
+                    <button
+                      type="button"
+                      className={`det-btn ${offersRent ? "det-btn--ghost" : "det-btn--primary"}`}
+                      onClick={() => goReserve("venta")}
+                    >
+                      Hacer oferta <ArrowRight size={18} />
+                    </button>
+                  )}
                   <button type="button" className="det-btn det-btn--ghost" onClick={handleContact}>
                     <MessageCircle size={17} /> Preguntar al dueño
                   </button>
