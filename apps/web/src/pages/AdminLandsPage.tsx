@@ -33,6 +33,9 @@ export default function AdminLandsPage() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  // Los terrenos de las cuentas del seed se ocultan por defecto; el toggle los
+  // vuelve a mostrar, igual que en Usuarios (#421).
+  const [includeDemo, setIncludeDemo] = useState(false);
   // Paginación real (#366). Antes se pedían 100 de golpe como parche a que la
   // pantalla mostrara 20 de 36 sin avisar (#370).
   const [page, setPage] = useState(1);
@@ -43,17 +46,18 @@ export default function AdminLandsPage() {
   // un resultado que ahora tiene una sola deja la tabla vacía.
   useEffect(() => {
     setPage(1);
-  }, [filter, search]);
+  }, [filter, search, includeDemo]);
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    const filters: { status?: string; search?: string; page?: number; pageSize?: number } = {
+    const filters: { status?: string; search?: string; page?: number; pageSize?: number; includeDemo?: boolean } = {
       page,
       pageSize: PAGE_SIZE,
     };
     if (filter !== "all") filters.status = filter;
     if (search.trim()) filters.search = search.trim();
+    if (includeDemo) filters.includeDemo = true;
 
     listAdminLands(filters)
       .then((res) => {
@@ -68,7 +72,7 @@ export default function AdminLandsPage() {
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, [filter, search, page]);
+  }, [filter, search, page, includeDemo]);
 
   const handleUpdateStatus = async (landId: string, nextStatus: string) => {
     try {
@@ -107,6 +111,14 @@ export default function AdminLandsPage() {
             <option value="rejected">Ocultas</option>
           </select>
           <ChevronDown size={14} />
+        </label>
+        <label className="adm-check">
+          <input
+            type="checkbox"
+            checked={includeDemo}
+            onChange={(e) => setIncludeDemo(e.target.checked)}
+          />
+          Mostrar demo
         </label>
       </div>
 

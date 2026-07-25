@@ -19,19 +19,23 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  // Las cuentas del seed (@terrashare.test) se ocultan por defecto para que se
+  // vean los usuarios reales; este toggle las trae de vuelta bajo demanda (#421).
+  const [includeDemo, setIncludeDemo] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    const filters: { status?: string; search?: string } = {};
+    const filters: { status?: string; search?: string; includeDemo?: boolean } = {};
     if (filter === "active" || filter === "blocked") filters.status = filter;
     if (search.trim()) filters.search = search.trim();
+    if (includeDemo) filters.includeDemo = true;
 
     listAdminUsers(filters)
       .then((res) => setUsers((((res.data as unknown) as { items?: UserSummaryDto[] })?.items ?? [])))
       .catch((e) => setError(e instanceof Error ? e.message : "Error"))
       .finally(() => setLoading(false));
-  }, [filter, search]);
+  }, [filter, search, includeDemo]);
 
   const handleToggleStatus = async (userId: string, currentStatus: string) => {
     const nextStatus = currentStatus === "active" ? "blocked" : "active";
@@ -69,6 +73,14 @@ export default function AdminUsersPage() {
             <option value="blocked">Bloqueados</option>
           </select>
           <ChevronDown size={14} />
+        </label>
+        <label className="adm-check">
+          <input
+            type="checkbox"
+            checked={includeDemo}
+            onChange={(e) => setIncludeDemo(e.target.checked)}
+          />
+          Mostrar demo
         </label>
       </div>
 
