@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams, useNavigate, useLocation, useSearch } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
-import { ArrowLeft, Sprout, MapPin, Info, Check } from "lucide-react";
+import { Sprout, MapPin, Info, Check } from "lucide-react";
 import { getLandById, createRentalRequest, adaptLand } from "../services/api";
+import BackLink from "../components/BackLink";
 import "./reserve.css";
 
 const USO_OPCIONES = [
@@ -237,9 +238,10 @@ export default function ReservePage() {
 
   const Nav = (
     <nav className="rsv-nav">
-      <Link to={landId ? "/lands/$id" : "/catalog"} params={{ id: landId }} className="rsv-nav__back">
-        <ArrowLeft size={17} /> Volver al terreno
-      </Link>
+      {/* Vuelve por el historial, igual que el detalle, para no apilar entradas y
+          entrar en bucle con la flecha del detalle (#444). El respaldo lleva al
+          terreno cuando se entra directo (enlace compartido). */}
+      <BackLink fallbackTo={landId ? `/lands/${landId}` : "/catalog"} label="Volver al terreno" />
       <BrandMark />
     </nav>
   );
