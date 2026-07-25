@@ -133,6 +133,26 @@
   align-items: center;
   gap: 6px;
 }
+/* Detalles de la solicitud recibida (#429): quién, uso y mensaje. El margen
+   inferior del bloque lo pone .hm-req__meta; estas líneas van pegadas a él. */
+.hm-req__who {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ts-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.hm-req__who + .hm-req__meta { margin-top: 6px; }
+.hm-req__detail { font-size: 13px; color: var(--ts-sage); margin: 0 0 8px; }
+.hm-req__msg {
+  font-size: 13px;
+  color: var(--ts-sage-2);
+  font-style: italic;
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
 .hm-req__note { font-size: 13px; color: var(--ts-sage-2); margin: 0; }
 .hm-req__ok { font-size: 13px; color: var(--ts-green); display: flex; align-items: center; gap: 6px; }
 .hm-req__pay {
