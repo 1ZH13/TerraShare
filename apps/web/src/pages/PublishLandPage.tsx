@@ -171,6 +171,10 @@ export default function PublishLandPage() {
     if (step === 3 && sellsRent && !(Number(form.pricePerMonth) > 0)) {
       return "Indica el precio de alquiler mensual.";
     }
+    // Una venta sin precio no tiene sentido y el esquema exige salePrice > 0 (#428).
+    if (step === 3 && sellsSale && !(Number(form.salePrice) > 0)) {
+      return "Indica el precio de venta.";
+    }
     return "";
   };
 
@@ -265,8 +269,10 @@ export default function PublishLandPage() {
 
   /** Crea el terreno en `draft` y devuelve su id. */
   const createDraft = async (): Promise<string> => {
-    // Nota: operación/precio de venta (#140) aún no se persisten vía
-    // CreateLandDto; las fotos (#148) sí, subiéndolas tras crear el terreno.
+    // La operación y el precio de venta (#140/#428) SÍ se persisten: antes se
+    // omitían del DTO, así que todo terreno nacía como «alquiler» y el detalle
+    // nunca ofrecía comprar. `salePrice` solo se envía en venta/ambas y con
+    // valor > 0, que es lo que exige el esquema. Las fotos (#148) se suben aparte.
     const dto: CreateLandDto = {
       title: form.title.trim(),
       description: form.description.trim() || undefined,
@@ -286,6 +292,10 @@ export default function PublishLandPage() {
         currency: form.currency,
         pricePerMonth: Number(form.pricePerMonth) || 0,
       },
+      operation: form.operation,
+      ...(sellsSale && Number(form.salePrice) > 0
+        ? { salePrice: Number(form.salePrice) }
+        : {}),
     };
     const land = await createLand(dto);
     return land.id;
