@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import type { LandDto, PublicOwnerProfileDto } from "@terrashare/shared";
 import {
-  ArrowLeft,
   Heart,
   Share2,
   MapPin,
@@ -22,6 +21,7 @@ import {
   CalendarClock,
 } from "lucide-react";
 import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc, getRatingByUser, createVisit } from "../services/api";
+import BackLink from "../components/BackLink";
 import VisitModal from "../components/VisitModal";
 import type { ReportReason } from "../services/api";
 import { useFavorites } from "../hooks/useFavorites";
@@ -209,9 +209,7 @@ export default function LandDetailPage() {
     return (
       <div className="det">
         <nav className="det-nav">
-          <Link to="/catalog" className="det-nav__back">
-            <ArrowLeft size={17} /> Catálogo
-          </Link>
+          <BackLink fallbackTo="/catalog" />
           <BrandMark />
           <span />
         </nav>
@@ -224,9 +222,7 @@ export default function LandDetailPage() {
     return (
       <div className="det">
         <nav className="det-nav">
-          <Link to="/catalog" className="det-nav__back">
-            <ArrowLeft size={17} /> Catálogo
-          </Link>
+          <BackLink fallbackTo="/catalog" />
           <BrandMark />
           <span />
         </nav>
@@ -275,9 +271,7 @@ export default function LandDetailPage() {
     <div className="det">
       {/* nav propio del detalle */}
       <nav className="det-nav">
-        <Link to="/catalog" className="det-nav__back">
-          <ArrowLeft size={17} /> Catálogo
-        </Link>
+        <BackLink fallbackTo="/catalog" />
         <BrandMark />
         <div className="det-nav__actions">
           <button
