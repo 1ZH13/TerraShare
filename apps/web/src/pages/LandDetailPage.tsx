@@ -569,7 +569,7 @@ export default function LandDetailPage() {
                       className={`det-btn ${offersRent ? "det-btn--ghost" : "det-btn--primary"}`}
                       onClick={() => goReserve("venta")}
                     >
-                      Hacer oferta <ArrowRight size={18} />
+                      Solicitar compra <ArrowRight size={18} />
                     </button>
                   )}
                   <button type="button" className="det-btn det-btn--ghost" onClick={handleContact}>

@@ -195,7 +195,7 @@ export default function ReservePage() {
           offerAmount: offer,
           notes: form.notes || undefined,
         });
-        setSuccess(`El propietario revisará tu oferta pronto. ID: ${result?.id ?? "—"}.`);
+        setSuccess(`El propietario revisará tu solicitud pronto. ID: ${result?.id ?? "—"}.`);
         setTimeout(() => navigate({ to: "/dashboard", replace: true }), 3000);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al enviar la oferta.");
@@ -336,7 +336,7 @@ export default function ReservePage() {
 
         {/* formulario */}
         <section>
-          <h1 className="rsv-title">{isSale ? "Hacer oferta" : "Solicitar alquiler"}</h1>
+          <h1 className="rsv-title">{isSale ? "Solicitar compra" : "Solicitar alquiler"}</h1>
           <p className="rsv-sub">
             {isSale
               ? "Propón tu precio de compra y envíalo al propietario."
@@ -349,7 +349,7 @@ export default function ReservePage() {
                 <div className="rsv-success__icon">
                   <Check size={28} />
                 </div>
-                <h2>{isSale ? "¡Oferta enviada!" : "¡Solicitud enviada!"}</h2>
+                <h2>¡Solicitud enviada!</h2>
                 <p>{success}</p>
                 <p>Redirigiendo al panel…</p>
               </div>
@@ -468,7 +468,7 @@ export default function ReservePage() {
 
                 <div className="rsv-actions">
                   <button type="submit" className="rsv-submit" disabled={submitting}>
-                    {submitting ? "Enviando…" : isSale ? "Enviar oferta" : "Enviar solicitud"}
+                    {submitting ? "Enviando…" : "Enviar solicitud"}
                   </button>
                   <Link to={landId ? "/lands/$id" : "/catalog"} params={{ id: landId }} className="rsv-cancel">
                     Cancelar
