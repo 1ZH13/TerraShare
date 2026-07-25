@@ -67,6 +67,8 @@ interface AdminUserFilters {
   role?: string;
   status?: string;
   search?: string;
+  /** Incluye las cuentas de demostración del seed (@terrashare.test), ocultas por defecto (#421). */
+  includeDemo?: boolean;
 }
 
 interface AdminLandFilters {
@@ -74,6 +76,8 @@ interface AdminLandFilters {
   search?: string;
   page?: number;
   pageSize?: number;
+  /** Incluye terrenos de cuentas de demostración, ocultos por defecto (#421). */
+  includeDemo?: boolean;
 }
 
 // ─── Users ───────────────────────────────────────────────────────────────────
@@ -84,6 +88,7 @@ export const listAdminUsers = (filters: AdminUserFilters = {}) => {
   if (filters.role) params.set("role", filters.role);
   if (filters.status) params.set("status", filters.status);
   if (filters.search) params.set("search", filters.search);
+  if (filters.includeDemo) params.set("includeDemo", "true");
   const qs = params.toString();
   return request<UserSummaryDto[]>("GET", `/api/v1/admin/users${qs ? `?${qs}` : ""}`);
 };
@@ -105,6 +110,7 @@ export const listAdminLands = (filters: AdminLandFilters = {}) => {
   if (filters.search) params.set("search", filters.search);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
+  if (filters.includeDemo) params.set("includeDemo", "true");
   return request<LandDto[]>("GET", `/api/v1/admin/lands?${params.toString()}`);
 };
 

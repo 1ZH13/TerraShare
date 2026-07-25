@@ -185,6 +185,24 @@
 .adm-pill--cta { color: var(--ts-on-ink); background: var(--ts-green); border-color: var(--ts-green); }
 .adm-pill--cta:hover { background: var(--ts-green-ink); }
 
+/* Toggle «Mostrar demo»: oculta/muestra las cuentas de seed en el panel (#421). */
+.adm-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d4d3d;
+  cursor: pointer;
+  user-select: none;
+}
+.adm-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--ts-green);
+  cursor: pointer;
+}
+
 /* ── tabla ───────────────────────────────────────────────────────────────── */
 .adm-table {
   background: var(--ts-surface);

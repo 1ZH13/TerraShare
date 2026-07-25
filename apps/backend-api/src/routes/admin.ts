@@ -13,6 +13,26 @@ import type { AppEnv } from "../types";
 export const adminRoutes = new Hono<AppEnv>();
 
 /**
+ * Cuentas de demostración (#421).
+ *
+ * El seed de volumen (`seed.ts`) crea ~40 usuarios con correo `@terrashare.test`
+ * y todo su grafo (terrenos, solicitudes…). En el panel eso entierra a los
+ * usuarios reales y hace que los contadores parezcan «quemados». Por defecto los
+ * ocultamos de las vistas admin; `?includeDemo=true` los vuelve a mostrar.
+ */
+const DEMO_EMAIL_RE = /@terrashare\.test$/i;
+const wantsDemo = (c: { req: { query: (k: string) => string | undefined } }) =>
+  c.req.query("includeDemo") === "true";
+
+/** clerkUserId de las cuentas de demostración, para filtrar entidades por dueño/arrendatario. */
+async function demoClerkIds(): Promise<Set<string>> {
+  const demo = await User.find({ email: { $regex: DEMO_EMAIL_RE } })
+    .select("clerkUserId")
+    .lean();
+  return new Set(demo.map((u) => u.clerkUserId));
+}
+
+/**
  * Estado de las migraciones de BD (#173). Da visibilidad al equipo sobre qué
  * migraciones se han aplicado sin abrir la base de datos.
  */
@@ -37,8 +57,15 @@ adminRoutes.get("/admin/users", requireAuth, requireAdmin, async (c) => {
   const query: Record<string, any> = {};
   if (role) query.role = role;
   if (status) query.status = status;
+  // Oculta las cuentas de demostración salvo que se pidan explícitamente (#421).
+  if (!wantsDemo(c)) query.email = { $not: DEMO_EMAIL_RE };
 
-  let users = await User.find(query).lean();
+  // Orden por fecha de alta descendente: los usuarios reales se crean después
+  // que los ~40 del seed de demostración, así que sin `sort` quedaban al final,
+  // más allá de la primera página, y «no aparecían» (#421). Con esto salen
+  // primero. El filtro de búsqueda y el troceado de paginación de abajo
+  // preservan este orden.
+  let users = await User.find(query).sort({ createdAt: -1 }).lean();
 
   if (search) {
     users = users.filter(
@@ -133,6 +160,11 @@ adminRoutes.get("/admin/lands", requireAuth, requireAdmin, async (c) => {
   if (status && ["draft", "active", "inactive"].includes(status)) {
     query.status = status;
   }
+  // Oculta los terrenos de las cuentas de demostración salvo petición explícita (#421).
+  if (!wantsDemo(c)) {
+    const demoIds = await demoClerkIds();
+    if (demoIds.size > 0) query.ownerId = { $nin: [...demoIds] };
+  }
 
   let lands = await Land.find(query).lean();
 
@@ -202,10 +234,19 @@ adminRoutes.patch("/admin/lands/:landId/status", requireAuth, requireAdmin, asyn
 });
 
 adminRoutes.get("/admin/summary", requireAuth, requireAdmin, async (c) => {
+  // Los contadores tampoco deben inflarse con el seed de demostración (#421).
+  const includeDemo = wantsDemo(c);
+  const demoIds = includeDemo ? new Set<string>() : await demoClerkIds();
+  const userFilter = includeDemo ? {} : { email: { $not: DEMO_EMAIL_RE } };
+  const ownerFilter =
+    includeDemo || demoIds.size === 0 ? {} : { ownerId: { $nin: [...demoIds] } };
+  const tenantFilter =
+    includeDemo || demoIds.size === 0 ? {} : { tenantId: { $nin: [...demoIds] } };
+
   const [users, lands, requests] = await Promise.all([
-    User.find().lean(),
-    Land.find().lean(),
-    RentalRequest.find().lean(),
+    User.find(userFilter).lean(),
+    Land.find(ownerFilter).lean(),
+    RentalRequest.find(tenantFilter).lean(),
   ]);
 
   return success(c, {
@@ -235,6 +276,11 @@ adminRoutes.get("/admin/rental-requests", requireAuth, requireAdmin, async (c) =
   const query: Record<string, any> = {};
   if (status && status !== "all") {
     query.status = status;
+  }
+  // Oculta las solicitudes de arrendatarios de demostración salvo petición explícita (#421).
+  if (!wantsDemo(c)) {
+    const demoIds = await demoClerkIds();
+    if (demoIds.size > 0) query.tenantId = { $nin: [...demoIds] };
   }
 
   let requests = await RentalRequest.find(query).lean();
