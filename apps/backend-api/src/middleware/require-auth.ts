@@ -66,7 +66,7 @@ function getBearerToken(authorizationHeader: string | undefined): string | undef
   return token;
 }
 
-function upsertAuthUser(authUser: AuthContextUser) {
+export function upsertAuthUser(authUser: AuthContextUser) {
   const store = getStore();
   const existing = store.users.get(authUser.id);
 
@@ -75,12 +75,21 @@ function upsertAuthUser(authUser: AuthContextUser) {
     return authUser;
   }
 
+  // Un claim ausente llega como `undefined`; si lo dejáramos entrar en el spread
+  // pisaría lo que el usuario guardó. El token de Clerk no trae teléfono,
+  // provincia ni preferencia Busco/Ofrezco, así que para esos campos la fuente de
+  // verdad es el store/Mongo, no los claims: filtramos las claves `undefined`
+  // antes de fusionar para no borrar el perfil en cada petición (#426).
+  const incomingProfile = Object.fromEntries(
+    Object.entries(authUser.profile).filter(([, value]) => value !== undefined),
+  ) as Partial<AuthContextUser["profile"]>;
+
   const merged: AuthContextUser = {
     ...existing,
     ...authUser,
     profile: {
       ...existing.profile,
-      ...authUser.profile,
+      ...incomingProfile,
     },
     role: authUser.role === "admin" ? "admin" : existing.role,
     status: existing.status,
