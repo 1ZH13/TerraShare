@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { Link, useParams, useNavigate, useLocation, useSearch } from "@tanstack/react-router";
 import { useUser } from "@clerk/clerk-react";
 import { Sprout, MapPin, Info, Check } from "lucide-react";
-import { getLandById, createRentalRequest, adaptLand } from "../services/api";
+import { getLandById, createRentalRequest, adaptLand, photoSrc } from "../services/api";
 import BackLink from "../components/BackLink";
 import "./reserve.css";
 
@@ -33,6 +33,8 @@ interface ReserveLand {
   salePrice?: number;
   availableFrom?: string;
   features?: string[];
+  /** Fotos del terreno; se muestra la portada en el resumen (#446). */
+  photos?: string[];
 }
 
 type LandLike = Record<string, unknown> & {
@@ -52,6 +54,7 @@ type LandLike = Record<string, unknown> & {
   availableFrom?: string;
   availability?: { availableFrom?: string };
   features?: string[];
+  photos?: string[];
 };
 
 function labelForUse(use: string | undefined): string {
@@ -76,6 +79,7 @@ function normalizeReserveLand(land: LandLike | null | undefined): ReserveLand | 
     salePrice: land.salePrice,
     availableFrom: land.availableFrom ?? land.availability?.availableFrom ?? "",
     features: land.features,
+    photos: land.photos,
   };
 }
 
@@ -281,9 +285,15 @@ export default function ReservePage() {
         {/* resumen del terreno */}
         <aside className="rsv-aside">
           <div className="rsv-summary">
-            <div className="rsv-summary__photo" aria-hidden="true">
-              <MapPin size={30} strokeWidth={1.4} />
-            </div>
+            {land.photos && land.photos.length > 0 ? (
+              <div className="rsv-summary__photo rsv-summary__photo--img">
+                <img src={photoSrc(land.photos[0])} alt={land.title ?? "Terreno"} />
+              </div>
+            ) : (
+              <div className="rsv-summary__photo" aria-hidden="true">
+                <MapPin size={30} strokeWidth={1.4} />
+              </div>
+            )}
             <div className="rsv-summary__body">
               {land.type && <span className="rsv-summary__badge">{land.type}</span>}
               <div className="rsv-summary__title">{land.title}</div>
