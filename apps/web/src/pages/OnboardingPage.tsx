@@ -1,9 +1,10 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useUser } from "@clerk/clerk-react";
 import { Button, Card, Field, Input } from "../components/ui";
 import { PANAMA_PROVINCES } from "@terrashare/shared";
-import { updateMyProfile } from "../services/api";
+import { getMe, updateMyProfile } from "../services/api";
 import "./auth.css";
 
 type Preference = "busco" | "ofrezco";
@@ -28,6 +29,7 @@ function MapIcon() {
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const { user, isLoaded } = useUser();
   const phoneId = useId();
   const provinceId = useId();
 
@@ -36,6 +38,33 @@ export default function OnboardingPage() {
   const [preference, setPreference] = useState<Preference>("busco");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Mientras comprobamos si el alta ya está hecha no pintamos el formulario, para
+  // no mostrarlo un instante a quien ya lo completó y va a ser redirigido (#432).
+  const [checking, setChecking] = useState(true);
+
+  // Guarda de onboarding completado (#432): quien ya eligió Busco/Ofrezco no debe
+  // ver este formulario otra vez —p. ej. al pulsar «atrás»—; se le lleva al panel.
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!user) {
+      setChecking(false);
+      return;
+    }
+    let active = true;
+    getMe()
+      .then((me) => {
+        if (!active) return;
+        if (me?.profile?.marketPreference) {
+          navigate({ to: "/dashboard", replace: true });
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => active && setChecking(false));
+    return () => {
+      active = false;
+    };
+  }, [isLoaded, user, navigate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,13 +78,26 @@ export default function OnboardingPage() {
         province: province || undefined,
         marketPreference: preference,
       });
-      navigate({ to: preference === "ofrezco" ? "/dashboard/lands" : "/catalog" });
+      // `replace` para que /onboarding no quede en el historial: sin esto, el
+      // primer «atrás» tras registrarse volvía al onboarding y de ahí rebotaba
+      // por /register (#432).
+      navigate({ to: preference === "ofrezco" ? "/dashboard/lands" : "/catalog", replace: true });
     } catch {
       setError("No se pudo guardar tu información. Intenta de nuevo.");
     } finally {
       setSaving(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div className="au-shell">
+        <Card className="au-onb">
+          <p className="au-onb__sub">Cargando…</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="au-shell">
