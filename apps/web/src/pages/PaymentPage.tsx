@@ -39,7 +39,7 @@ function Stepper({ isSale = false }: { isSale?: boolean }) {
         <span className="dl-step__dot dl-step__dot--done">
           <Check size={17} />
         </span>
-        <div className="dl-step__label dl-step__label--done">{isSale ? "Oferta" : "Solicitud"}</div>
+        <div className="dl-step__label dl-step__label--done">{isSale ? "Compra" : "Solicitud"}</div>
       </div>
       <div className="dl-line dl-line--done" />
       <div className="dl-step">
@@ -217,7 +217,7 @@ export default function PaymentPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="dl-head__title">{isSale ? "Trato de compra" : "Trato de alquiler"}</div>
               <div className="dl-head__meta">
-                {isSale ? "Oferta" : "Solicitud"} #{shortId(requestId)}
+                {isSale ? "Compra" : "Solicitud"} #{shortId(requestId)}
               </div>
             </div>
             <span className="dl-head__status">Aprobada · falta pago</span>
@@ -230,15 +230,15 @@ export default function PaymentPage() {
             <h3 className="dl-section-title">Actividad</h3>
             <div className="dl-timeline">
               <div>
-                <div className="dl-tl__title">{isSale ? "Oferta enviada" : "Solicitud enviada"}</div>
+                <div className="dl-tl__title">{isSale ? "Compra solicitada" : "Solicitud enviada"}</div>
                 <div className="dl-tl__meta">
-                  {isSale ? "Enviaste tu oferta de compra" : "Enviaste tu solicitud de alquiler"}
+                  {isSale ? "Enviaste tu solicitud de compra" : "Enviaste tu solicitud de alquiler"}
                 </div>
               </div>
               <div>
-                <div className="dl-tl__title">{isSale ? "Oferta aceptada" : "Solicitud aprobada"}</div>
+                <div className="dl-tl__title">{isSale ? "Compra aceptada" : "Solicitud aprobada"}</div>
                 <div className="dl-tl__meta">
-                  {isSale ? "El propietario aceptó tu oferta" : "El propietario aceptó tu solicitud"}
+                  {isSale ? "El propietario aceptó tu compra" : "El propietario aceptó tu solicitud"}
                 </div>
               </div>
               <div>
