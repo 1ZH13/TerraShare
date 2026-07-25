@@ -181,6 +181,25 @@
   padding: 7px 14px;
 }
 
+/* Chips de usos adicionales + agua/acceso (#443). El uso principal vive arriba
+   en su tarjeta de spec; estos son los «extra» que antes no se veían. */
+.det-chips { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 28px; }
+.det-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #3d4d3d;
+  background: var(--ts-paper-tint);
+  border: 1px solid var(--ts-border);
+  border-radius: 999px;
+  padding: 7px 13px;
+}
+.det-chip svg { color: var(--ts-clay); flex: 0 0 auto; }
+/* Los usos se distinguen con el verde de la marca. */
+.det-chip--use { color: var(--ts-green); background: var(--ts-tint-green); border-color: #d7e3cd; }
+.det-chip--use svg { color: var(--ts-green); }
+
 /* ── tarjeta de acción sticky ────────────────────────────────────────────── */
 .det-aside { position: sticky; top: 100px; }
 .det-card {

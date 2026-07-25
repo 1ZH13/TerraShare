@@ -9,6 +9,7 @@ import {
   Ruler,
   Sprout,
   Route,
+  Droplets,
   Calendar,
   MessageCircle,
   ArrowRight,
@@ -259,9 +260,12 @@ export default function LandDetailPage() {
     loc?.district ? { icon: Route, label: "Distrito", value: loc.district } : null,
     loc?.corregimiento ? { icon: MapPin, label: "Corregimiento", value: loc.corregimiento } : null,
     { icon: Calendar, label: "Disponible", value: formatAvailable(land.availability?.availableFrom) },
-    land.water ? { icon: MapPin, label: "Agua", value: land.water } : null,
-    land.access ? { icon: Route, label: "Acceso", value: land.access } : null,
   ].filter((s): s is { icon: typeof Ruler; label: string; value: string } => s !== null);
+
+  // Usos adicionales (el principal se queda en su tarjeta) y agua/acceso salen
+  // como chips compactos debajo de las specs (#443): antes los usos extra no se
+  // mostraban en ninguna parte y agua/acceso ocupaban una tarjeta entera.
+  const extraUses = (land.allowedUses ?? []).slice(1);
 
   const locationText = [loc?.province, loc?.district, loc?.corregimiento ?? loc?.addressLine]
     .filter(Boolean)
@@ -482,6 +486,28 @@ export default function LandDetailPage() {
                 );
               })}
             </div>
+
+            {/* Chips: usos adicionales + agua/acceso (#443). El uso principal se
+                mantiene arriba en su tarjeta de spec. */}
+            {(extraUses.length > 0 || land.water || land.access) && (
+              <div className="det-chips">
+                {extraUses.map((use) => (
+                  <span key={`use-${use}`} className="det-chip det-chip--use">
+                    <Sprout size={13} /> {formatUse(use)}
+                  </span>
+                ))}
+                {land.water && (
+                  <span className="det-chip">
+                    <Droplets size={13} /> {land.water}
+                  </span>
+                )}
+                {land.access && (
+                  <span className="det-chip">
+                    <Route size={13} /> {land.access}
+                  </span>
+                )}
+              </div>
+            )}
 
             <h2 className="det-section-title">Sobre el terreno</h2>
             <p className="det-desc">
