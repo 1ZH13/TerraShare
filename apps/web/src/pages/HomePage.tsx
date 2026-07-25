@@ -17,11 +17,13 @@ import {
   ClipboardList,
   Heart,
   MessageCircle,
+  User,
 } from "lucide-react";
 import {
   getChats,
   getMyFavorites,
   getMyLands,
+  getOwnerPublicProfile,
   listRentalRequests,
   updateRentalRequestStatus,
   photoSrc,
@@ -314,6 +316,9 @@ function OfrezcoHome() {
   const [received, setReceived] = useState<RentalRequestDto[]>([]);
   const [receivedState, setReceivedState] = useState<LoadState>("loading");
   const [answering, setAnswering] = useState<string | null>(null);
+  // `tenantId` es un id de Clerk; se resuelve a nombre con el perfil público para
+  // que el dueño vea QUIÉN solicita, no un id opaco (#429).
+  const [tenantNames, setTenantNames] = useState<Record<string, string>>({});
 
   // Igual que en «Busco» y en «Mis terrenos»: no pedimos hasta tener sesión de
   // Clerk. Sin esta guarda la home cargaba vacía mientras «Mis terrenos» (que sí
@@ -343,6 +348,33 @@ function OfrezcoHome() {
       active = false;
     };
   }, [user]);
+
+  // Resuelve los nombres de los solicitantes cuando cambian las solicitudes.
+  // Se piden solo los ids que aún no tenemos, para no repetir llamadas (#429).
+  useEffect(() => {
+    let active = true;
+    const pendingIds = [...new Set(received.map((r) => r.tenantId))].filter(
+      (id) => id && !(id in tenantNames),
+    );
+    if (pendingIds.length === 0) return;
+    Promise.all(
+      pendingIds.map((id) =>
+        getOwnerPublicProfile(id)
+          .then((profile) => [id, profile?.displayName ?? ""] as const)
+          .catch(() => [id, ""] as const),
+      ),
+    ).then((pairs) => {
+      if (!active) return;
+      setTenantNames((prev) => {
+        const next = { ...prev };
+        for (const [id, name] of pairs) next[id] = name;
+        return next;
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, [received, tenantNames]);
 
   const activeCount = landsState === "ready" ? String(lands.length) : "—";
   /** «Nuevas» son las que esperan respuesta del dueño. */
@@ -429,18 +461,36 @@ function OfrezcoHome() {
               {received.slice(0, 6).map((req) => {
                 const status = REQUEST_STATUS[req.status];
                 const esperando = req.status === "pending_owner";
+                const requester = tenantNames[req.tenantId];
+                const isSaleReq = req.operation === "venta";
                 return (
                   <div key={req.id} className="hm-req">
                     <div className="hm-req__top">
                       <span className="hm-req__title">{titleOf(req.landId)}</span>
                       <span className={`hm-badge ${status.badge}`}>{status.label}</span>
                     </div>
+                    {/* Quién la envía (#429): antes solo se veía el terreno. */}
+                    <div className="hm-req__who">
+                      <User size={14} /> {requester || "Solicitante"}
+                    </div>
                     <div className="hm-req__meta">
                       <Calendar size={14} />{" "}
-                      {req.operation === "venta"
-                        ? "Oferta de compra"
+                      {isSaleReq
+                        ? `Oferta de compra${
+                            typeof req.offerAmount === "number"
+                              ? `: $${req.offerAmount.toLocaleString("es-PA")}`
+                              : ""
+                          }`
                         : formatPeriod(req.period?.startDate, req.period?.endDate)}
                     </div>
+                    {/* Uso pretendido (solo aplica al alquiler). */}
+                    {!isSaleReq && req.intendedUse ? (
+                      <div className="hm-req__detail">Uso: {useLabel(req.intendedUse)}</div>
+                    ) : null}
+                    {/* Mensaje del solicitante, si lo dejó. */}
+                    {req.notes ? (
+                      <p className="hm-req__msg">«{req.notes}»</p>
+                    ) : null}
                     {/* Solo las pendientes se pueden responder; el backend
                         rechaza cualquier otra transición. */}
                     {esperando ? (
