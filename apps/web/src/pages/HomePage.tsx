@@ -75,6 +75,7 @@ function useLabel(use?: string): string {
 
 // ─── Modo Busco ───────────────────────────────────────────────────────────────
 function BuscoHome({ name }: { name: string }) {
+  const { user } = useUser();
   const [requests, setRequests] = useState<RentalRequestDto[]>([]);
   const [reqState, setReqState] = useState<LoadState>("loading");
   const [chats, setChats] = useState<ChatDto[]>([]);
@@ -82,7 +83,11 @@ function BuscoHome({ name }: { name: string }) {
   const [favorites, setFavorites] = useState<LandDto[]>([]);
   const [favState, setFavState] = useState<LoadState>("loading");
 
+  // Esperamos a que Clerk tenga sesión antes de pedir: si el efecto corre antes
+  // de que el token esté listo, `buildHeaders()` cae al fallback y las peticiones
+  // resuelven vacías sin reintentar (#420). Al llegar `user` el efecto se repite.
   useEffect(() => {
+    if (!user) return;
     let active = true;
     listRentalRequests()
       .then((data) => {
@@ -108,7 +113,7 @@ function BuscoHome({ name }: { name: string }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [user]);
 
   return (
     <div className="hm">
@@ -303,13 +308,18 @@ function BuscoHome({ name }: { name: string }) {
 // ─── Modo Ofrezco ───────────────────────────────────────────────────────────────
 function OfrezcoHome() {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [lands, setLands] = useState<LandDto[]>([]);
   const [landsState, setLandsState] = useState<LoadState>("loading");
   const [received, setReceived] = useState<RentalRequestDto[]>([]);
   const [receivedState, setReceivedState] = useState<LoadState>("loading");
   const [answering, setAnswering] = useState<string | null>(null);
 
+  // Igual que en «Busco» y en «Mis terrenos»: no pedimos hasta tener sesión de
+  // Clerk. Sin esta guarda la home cargaba vacía mientras «Mis terrenos» (que sí
+  // esperaba a `user`) mostraba los terrenos, para el mismo usuario (#420).
   useEffect(() => {
+    if (!user) return;
     let active = true;
     // Nota(#136): getMyLands() (GET /lands/me) puede fallar en backend; se maneja
     // con estado vacío/error, sin datos falsos.
@@ -332,7 +342,7 @@ function OfrezcoHome() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [user]);
 
   const activeCount = landsState === "ready" ? String(lands.length) : "—";
   /** «Nuevas» son las que esperan respuesta del dueño. */
