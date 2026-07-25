@@ -370,7 +370,16 @@ export default function CatalogPage() {
                     key={land.id}
                     type="button"
                     className={`cat-card ${selectedLand?.id === land.id ? "is-active" : ""}`}
-                    onClick={() => setSelectedId(land.id)}
+                    onClick={() => {
+                      // Primer clic: mostrarla en el mapa. Si ya está seleccionada,
+                      // un clic más abre el detalle sin exigir doble clic (#431).
+                      if (selectedLand?.id === land.id) {
+                        navigate({ to: "/lands/$id", params: { id: land.id } });
+                      } else {
+                        setSelectedId(land.id);
+                      }
+                    }}
+                    // Doble clic: atajo directo para abrir, venga o no seleccionada.
                     onDoubleClick={() => navigate({ to: "/lands/$id", params: { id: land.id } })}
                   >
                     <div className="cat-card__thumb">
