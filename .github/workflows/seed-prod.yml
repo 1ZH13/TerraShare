@@ -1,0 +1,98 @@
+name: Seed Demo (manual)
+
+# Repuebla un entorno con el juego de datos de demostración (seed:demo): terrenos
+# coherentes CON fotos, listos para la presentación. BORRA los datos del entorno
+# antes de sembrar, así que:
+#   - Se dispara SOLO a mano (workflow_dispatch).
+#   - Exige teclear una frase de confirmación exacta.
+#   - Hace un mongodump OBLIGATORIO antes de sembrar (aborta si el respaldo falla).
+# Es la vía segura y auditable para el #453 / limpieza de datos de prueba.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Entorno a sembrar (¡BORRA sus datos!)"
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      confirm:
+        description: 'Escribe EXACTAMENTE: BORRAR-Y-SEMBRAR'
+        required: true
+        type: string
+      main_clerk_id:
+        description: "SEED_MAIN_CLERK_ID: cuenta Clerk que será la dueña principal del demo (opcional; si se deja vacío usa el valor por defecto del script)."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Validar confirmación
+        if: ${{ github.event.inputs.confirm != 'BORRAR-Y-SEMBRAR' }}
+        run: |
+          echo "::error::Confirmación incorrecta. Debes escribir exactamente: BORRAR-Y-SEMBRAR"
+          exit 1
+
+      - name: Seed via SSH
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
+        env:
+          MONGO_ROOT_USERNAME: ${{ secrets.MONGO_ROOT_USERNAME }}
+          MONGO_ROOT_PASSWORD: ${{ secrets.MONGO_ROOT_PASSWORD }}
+          SEED_MAIN_CLERK_ID: ${{ github.event.inputs.main_clerk_id }}
+          TARGET_ENV: ${{ github.event.inputs.environment }}
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          envs: MONGO_ROOT_USERNAME,MONGO_ROOT_PASSWORD,SEED_MAIN_CLERK_ID,TARGET_ENV
+          script: |
+            set -e
+
+            if [ "$TARGET_ENV" = "production" ]; then
+              TARGET_DIR="/opt/terrashare-prod"
+              PROJECT_NAME="terrashare-prod"
+            else
+              TARGET_DIR="/opt/terrashare-staging"
+              PROJECT_NAME="terrashare-staging"
+            fi
+            cd "$TARGET_DIR" || { echo "::error::No existe $TARGET_DIR"; exit 1; }
+
+            # 1) Respaldo OBLIGATORIO antes de sembrar. Si no se puede respaldar, no
+            #    se siembra: nunca borramos datos reales sin una copia primero.
+            DB_BACKUP_DIR="$TARGET_DIR/db-backups"
+            mkdir -p "$DB_BACKUP_DIR"
+            MONGO_CID=$(docker ps --filter "name=${PROJECT_NAME}-mongo" --format '{{.ID}}' | head -1)
+            if [ -z "$MONGO_CID" ]; then
+              echo "::error::No hay contenedor Mongo en marcha. Abortado."
+              exit 1
+            fi
+            BK_FILE="$DB_BACKUP_DIR/pre-seed-$(date +%Y%m%d-%H%M%S).archive.gz"
+            if docker exec "$MONGO_CID" mongodump --username "$MONGO_ROOT_USERNAME" --password "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --db terrashare --archive --gzip > "$BK_FILE" 2>/dev/null && [ -s "$BK_FILE" ]; then
+              echo "Respaldo pre-seed OK: $BK_FILE ($(du -h "$BK_FILE" | cut -f1))"
+              ls -1t "$DB_BACKUP_DIR"/pre-seed-*.archive.gz 2>/dev/null | tail -n +8 | xargs -r rm -f
+            else
+              echo "::error::No se pudo respaldar la BD antes de sembrar. Abortado (no se toca nada)."
+              rm -f "$BK_FILE"
+              exit 1
+            fi
+
+            # 2) Sembrar: BORRA las colecciones de negocio y repuebla con datos demo
+            #    + fotos. El script exige --force porque el contenedor va con
+            #    NODE_ENV=production.
+            BACKEND_CID=$(docker ps --filter "name=${PROJECT_NAME}-backend-api" --format '{{.ID}}' | head -1)
+            if [ -z "$BACKEND_CID" ]; then
+              echo "::error::No hay contenedor backend-api en marcha. Abortado."
+              exit 1
+            fi
+            echo "Sembrando demo en ${PROJECT_NAME} (SEED_MAIN_CLERK_ID=${SEED_MAIN_CLERK_ID:-<por defecto>})…"
+            docker exec -e SEED_MAIN_CLERK_ID="$SEED_MAIN_CLERK_ID" "$BACKEND_CID" bun scripts/seed-demo.ts --force
+            echo "Seed demo completado. La API sirve los datos nuevos sin reiniciar."
