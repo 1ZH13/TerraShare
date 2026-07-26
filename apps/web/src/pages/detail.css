@@ -73,37 +73,125 @@
 .det-photo--img { padding: 0; overflow: hidden; }
 .det-photo--img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* Galería con todas las fotos (#427): portada grande + tira de miniaturas.
-   Antes solo se pintaban 3 huecos fijos y de la 4.ª foto en adelante se perdían. */
-.det-gallery2 { margin-bottom: 32px; }
-.det-hero {
-  height: 440px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #e9e3d3, #dfe4d6);
-}
-.det-thumbs {
-  display: flex;
+/* Galería en mosaico (#447): una foto grande + hasta 4 pequeñas, con visor a
+   pantalla completa para el resto. Recupera el look anterior sin cortar fotos ni
+   estirar/pixelar (object-fit cover, altura fija por aspecto, nunca se amplía). */
+.det-mosaic {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
   gap: 10px;
-  margin-top: 12px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
+  height: 420px;
+  margin-bottom: 32px;
 }
-.det-thumb {
-  flex: 0 0 auto;
-  width: 96px;
-  height: 72px;
-  border-radius: 12px;
-  border: 2px solid transparent;
+.det-mosaic--single { grid-template-columns: 1fr; }
+.det-mosaic__main,
+.det-mosaic__cell {
+  border: 0;
   padding: 0;
   cursor: pointer;
+  border-radius: 16px;
+  overflow: hidden;
   background: linear-gradient(135deg, #e9e3d3, #dfe4d6);
-  transition: border-color 0.15s ease, opacity 0.15s ease;
-  opacity: 0.75;
 }
-.det-thumb:hover { opacity: 1; }
-.det-thumb.is-active { border-color: var(--ts-green); opacity: 1; }
-.det-thumb:focus-visible { outline: 2px solid var(--ts-green); outline-offset: 2px; }
+.det-mosaic__main { height: 100%; border-radius: 18px; }
+.det-mosaic__grid {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 10px;
+  height: 100%;
+}
+.det-mosaic__cell { position: relative; }
+.det-mosaic__main img,
+.det-mosaic__cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.det-mosaic__main:hover img,
+.det-mosaic__cell:hover img { filter: brightness(0.94); }
+.det-mosaic__more {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 36, 30, 0.5);
+  color: #fff;
+  font-family: var(--ts-font-serif);
+  font-weight: 600;
+  font-size: 22px;
+}
+.det-mosaic__all {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--ts-surface);
+  color: var(--ts-text);
+  border: 1px solid var(--ts-beige);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px -10px rgba(36, 49, 42, 0.6);
+}
+.det-mosaic__all:hover { background: var(--ts-paper-tint); }
+
+/* Visor a pantalla completa (#447). */
+.det-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 24, 20, 0.92);
+  padding: 40px;
+}
+.det-lightbox__img {
+  max-width: min(1100px, 92vw);
+  max-height: 86vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.det-lightbox__close {
+  position: absolute;
+  top: 20px;
+  right: 22px;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.det-lightbox__close:hover { opacity: 1; }
+.det-lightbox__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+}
+.det-lightbox__nav:hover { background: rgba(255, 255, 255, 0.26); }
+.det-lightbox__nav--prev { left: 22px; }
+.det-lightbox__nav--next { right: 22px; }
+.det-lightbox__counter {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 13px;
+  opacity: 0.85;
+}
 
 .det-body { display: grid; grid-template-columns: 1.5fr 0.9fr; gap: 44px; align-items: start; }
 
@@ -321,7 +409,13 @@ a.det-btn { text-decoration: none; }
   .det-gallery { grid-template-columns: 1fr; grid-template-rows: 220px 130px; height: auto; }
   .det-photo--main { grid-row: auto; }
   .det-gallery__hide-sm { display: none; }
-  .det-hero { height: 260px; }
+  /* En móvil el mosaico se apila: foto grande arriba y la rejilla debajo (#447). */
+  .det-mosaic { grid-template-columns: 1fr; height: auto; }
+  .det-mosaic__main { height: 240px; }
+  .det-mosaic__grid { height: 150px; }
+  .det-lightbox { padding: 16px; }
+  .det-lightbox__nav--prev { left: 8px; }
+  .det-lightbox__nav--next { right: 8px; }
 }
 /* modal de reporte (moderación por reportes, #250) */
 .det-report {
