@@ -94,5 +94,8 @@ jobs:
               exit 1
             fi
             echo "Sembrando demo en ${PROJECT_NAME} (SEED_MAIN_CLERK_ID=${SEED_MAIN_CLERK_ID:-<por defecto>})…"
-            docker exec -e SEED_MAIN_CLERK_ID="$SEED_MAIN_CLERK_ID" "$BACKEND_CID" bun scripts/seed-demo.ts --force
+            # `-w`: fijamos el directorio del backend explícitamente. Sin esto,
+            # `bun scripts/seed-demo.ts` no resuelve si la imagen en marcha quedó
+            # con WORKDIR distinto (p. ej. `/app` en imágenes antiguas de staging).
+            docker exec -w /app/apps/backend-api -e SEED_MAIN_CLERK_ID="$SEED_MAIN_CLERK_ID" "$BACKEND_CID" bun scripts/seed-demo.ts --force
             echo "Seed demo completado. La API sirve los datos nuevos sin reiniciar."
