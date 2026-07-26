@@ -93,9 +93,15 @@ jobs:
               echo "::error::No hay contenedor backend-api en marcha. Abortado."
               exit 1
             fi
-            echo "Sembrando demo en ${PROJECT_NAME} (SEED_MAIN_CLERK_ID=${SEED_MAIN_CLERK_ID:-<por defecto>})…"
-            # `-w`: fijamos el directorio del backend explícitamente. Sin esto,
-            # `bun scripts/seed-demo.ts` no resuelve si la imagen en marcha quedó
-            # con WORKDIR distinto (p. ej. `/app` en imágenes antiguas de staging).
-            docker exec -w /app/apps/backend-api -e SEED_MAIN_CLERK_ID="$SEED_MAIN_CLERK_ID" "$BACKEND_CID" bun scripts/seed-demo.ts --force
+            # Localiza el script DENTRO del contenedor: la ruta/estructura puede
+            # variar entre imágenes, y un entorno cuyo contenedor no se recreó tras
+            # el último cambio de código puede no tenerlo. bun resuelve los imports
+            # relativos respecto al fichero, así que basta con la ruta absoluta.
+            SCRIPT_PATH=$(docker exec "$BACKEND_CID" sh -c 'for p in /app/apps/backend-api/scripts/seed-demo.ts /app/scripts/seed-demo.ts; do [ -f "$p" ] && echo "$p" && exit 0; done; find /app -name seed-demo.ts -path "*scripts*" 2>/dev/null | head -1')
+            if [ -z "$SCRIPT_PATH" ]; then
+              echo "::error::No se encontró scripts/seed-demo.ts en el contenedor de ${PROJECT_NAME}: su imagen está obsoleta. Vuelve a desplegar ese entorno antes de sembrar. (El respaldo ya quedó guardado; no se tocó ningún dato.)"
+              exit 1
+            fi
+            echo "Sembrando demo en ${PROJECT_NAME} (script: $SCRIPT_PATH, SEED_MAIN_CLERK_ID=${SEED_MAIN_CLERK_ID:-<por defecto>})…"
+            docker exec -e SEED_MAIN_CLERK_ID="$SEED_MAIN_CLERK_ID" "$BACKEND_CID" bun "$SCRIPT_PATH" --force
             echo "Seed demo completado. La API sirve los datos nuevos sin reiniciar."
