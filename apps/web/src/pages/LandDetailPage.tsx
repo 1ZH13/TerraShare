@@ -20,6 +20,9 @@ import {
   Flag,
   Star,
   CalendarClock,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { createChat, getLandById, createReport, getOwnerPublicProfile, photoSrc, getRatingByUser, createVisit } from "../services/api";
 import BackLink from "../components/BackLink";
@@ -115,14 +118,14 @@ export default function LandDetailPage() {
   const [reportReason, setReportReason] = useState<ReportReason>("fraude");
   const [reportDesc, setReportDesc] = useState("");
   const [reportState, setReportState] = useState<"idle" | "sending" | "done" | "error">("idle");
-  // Índice de la foto que se ve en grande; las miniaturas lo cambian (#427).
-  const [activePhoto, setActivePhoto] = useState(0);
+  // Índice de la foto abierta en el visor a pantalla completa; null = cerrado (#447).
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
-    // Al cambiar de terreno se vuelve a la portada; si no, se abriría en la
-    // 4.ª foto del anterior o en un índice que ya no existe.
-    setActivePhoto(0);
+    // Al cambiar de terreno se cierra el visor por si quedó abierto en una foto
+    // del terreno anterior.
+    setLightboxIndex(null);
     getLandById(id!)
       .then((data) => {
         if (!active) return;
@@ -146,6 +149,22 @@ export default function LandDetailPage() {
       active = false;
     };
   }, [id]);
+
+  // Visor a pantalla completa (#447): Escape cierra, flechas navegan. Solo activo
+  // mientras está abierto, para no atrapar el teclado del resto de la página.
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const total = land?.photos?.length ?? 0;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIndex(null);
+      else if (e.key === "ArrowLeft" && total > 0)
+        setLightboxIndex((i) => (i === null ? i : (i - 1 + total) % total));
+      else if (e.key === "ArrowRight" && total > 0)
+        setLightboxIndex((i) => (i === null ? i : (i + 1) % total));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIndex, land]);
 
   // Ocultar los botones no impide la llamada, así que los manejadores también
   // se plantan. El backend es quien manda —ya rechaza ambas cosas—, pero así
@@ -245,9 +264,12 @@ export default function LandDetailPage() {
   const offersRent = operation === "alquiler" || operation === "ambas";
   const offersSale = operation === "venta" || operation === "ambas";
   const monthly = monthlyPrice(land);
-  // Todas las fotos del terreno; la galería las recorre en vez de cortar en 3 (#427).
+  // Todas las fotos del terreno; el mosaico muestra hasta 5 y el visor el resto (#447).
   const photos = land.photos ?? [];
-  const activeIdx = photos.length > 0 ? Math.min(activePhoto, photos.length - 1) : 0;
+  const openLightbox = (index: number) => setLightboxIndex(index);
+  const closeLightbox = () => setLightboxIndex(null);
+  const stepLightbox = (delta: number) =>
+    setLightboxIndex((i) => (i === null ? i : (i + delta + photos.length) % photos.length));
   /** La publicación es mía: no tiene sentido alquilármela ni escribirme (#393). */
   const isOwner = Boolean(isSignedIn && user?.id === land.ownerId);
   const loc = land.location;
@@ -413,31 +435,43 @@ export default function LandDetailPage() {
       )}
 
       <main id="contenido" className="det-wrap">
-        {/* galería (#427): portada grande + tira de miniaturas con TODAS las fotos */}
+        {/* galería (#447): mosaico (1 grande + hasta 4) y visor con TODAS las fotos */}
         {photos.length > 0 ? (
-          <div className="det-gallery2">
-            <div className="det-hero det-photo--img">
-              <img
-                src={photoSrc(photos[activeIdx])}
-                alt={`${land.title} — foto ${activeIdx + 1} de ${photos.length}`}
-              />
-            </div>
+          <div className={`det-mosaic ${photos.length === 1 ? "det-mosaic--single" : ""}`}>
+            <button
+              type="button"
+              className="det-mosaic__main det-photo--img"
+              onClick={() => openLightbox(0)}
+              aria-label={`Ver foto 1 de ${photos.length} a pantalla completa`}
+            >
+              <img src={photoSrc(photos[0])} alt={`${land.title} — foto 1`} />
+            </button>
             {photos.length > 1 && (
-              <div className="det-thumbs" role="list" aria-label="Miniaturas del terreno">
-                {photos.map((photo, i) => (
-                  <button
-                    type="button"
-                    key={photo}
-                    className={`det-thumb det-photo--img ${i === activeIdx ? "is-active" : ""}`}
-                    onClick={() => setActivePhoto(i)}
-                    aria-label={`Ver foto ${i + 1} de ${photos.length}`}
-                    aria-current={i === activeIdx}
-                  >
-                    <img src={photoSrc(photo)} alt="" />
-                  </button>
-                ))}
+              <div
+                className="det-mosaic__grid"
+                style={{ gridTemplateColumns: photos.length >= 4 ? "1fr 1fr" : "1fr" }}
+              >
+                {photos.slice(1, 5).map((photo, i) => {
+                  const idx = i + 1;
+                  const showMore = idx === 4 && photos.length > 5;
+                  return (
+                    <button
+                      type="button"
+                      key={photo}
+                      className="det-mosaic__cell det-photo--img"
+                      onClick={() => openLightbox(idx)}
+                      aria-label={`Ver foto ${idx + 1} de ${photos.length} a pantalla completa`}
+                    >
+                      <img src={photoSrc(photo)} alt={`${land.title} — foto ${idx + 1}`} />
+                      {showMore && <span className="det-mosaic__more">+{photos.length - 5}</span>}
+                    </button>
+                  );
+                })}
               </div>
             )}
+            <button type="button" className="det-mosaic__all" onClick={() => openLightbox(0)}>
+              <ImageIcon size={15} /> Ver todas las fotos
+            </button>
           </div>
         ) : (
           <div className="det-gallery" aria-hidden="true">
@@ -451,6 +485,50 @@ export default function LandDetailPage() {
             <div className="det-photo det-gallery__hide-sm">
               <ImageIcon size={24} strokeWidth={1.4} />
             </div>
+          </div>
+        )}
+
+        {/* visor a pantalla completa (#447) */}
+        {lightboxIndex !== null && photos[lightboxIndex] && (
+          <div
+            className="det-lightbox"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Fotos del terreno"
+            onClick={closeLightbox}
+          >
+            <button type="button" className="det-lightbox__close" onClick={closeLightbox} aria-label="Cerrar">
+              <X size={22} />
+            </button>
+            {photos.length > 1 && (
+              <button
+                type="button"
+                className="det-lightbox__nav det-lightbox__nav--prev"
+                onClick={(e) => { e.stopPropagation(); stepLightbox(-1); }}
+                aria-label="Foto anterior"
+              >
+                <ChevronLeft size={26} />
+              </button>
+            )}
+            <img
+              className="det-lightbox__img"
+              src={photoSrc(photos[lightboxIndex])}
+              alt={`${land.title} — foto ${lightboxIndex + 1} de ${photos.length}`}
+              onClick={(e) => e.stopPropagation()}
+            />
+            {photos.length > 1 && (
+              <button
+                type="button"
+                className="det-lightbox__nav det-lightbox__nav--next"
+                onClick={(e) => { e.stopPropagation(); stepLightbox(1); }}
+                aria-label="Foto siguiente"
+              >
+                <ChevronRight size={26} />
+              </button>
+            )}
+            <span className="det-lightbox__counter">
+              {lightboxIndex + 1} / {photos.length}
+            </span>
           </div>
         )}
 
