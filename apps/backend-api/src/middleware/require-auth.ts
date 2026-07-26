@@ -37,6 +37,29 @@ export async function ensureUserInMongo(user: AuthContextUser): Promise<void> {
       },
       { upsert: true },
     );
+
+    // Hidrata el perfil persistido en Mongo de vuelta al usuario en memoria. El
+    // token de Clerk NO trae teléfono, provincia ni preferencia Busco/Ofrezco, así
+    // que sin esto `/auth/me` (y cualquier consumidor de `authUser`) los ve vacíos
+    // aunque el usuario los guardó en el onboarding o el seed los puso (#460).
+    // Mongo es la fuente de verdad de esos campos; solo rellenamos los ausentes en
+    // memoria, sin pisar `fullName`/`email` que sí vienen frescos de Clerk.
+    const persisted = await User.findOne({ clerkUserId: user.clerkUserId })
+      .select("profile")
+      .lean();
+    const p = persisted?.profile as
+      | { phone?: string; province?: string; marketPreference?: "busco" | "ofrezco" }
+      | undefined;
+    if (p) {
+      const profile = { ...user.profile };
+      if (profile.phone === undefined && p.phone !== undefined) profile.phone = p.phone;
+      if (profile.province === undefined && p.province !== undefined) profile.province = p.province;
+      if (profile.marketPreference === undefined && p.marketPreference !== undefined) {
+        profile.marketPreference = p.marketPreference;
+      }
+      user.profile = profile;
+      getStore().users.set(user.id, user);
+    }
   } catch {
     // No romper la auth si Mongo falla; se reintenta en el próximo proceso.
     mongoSyncedUsers.delete(user.clerkUserId);

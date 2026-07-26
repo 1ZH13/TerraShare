@@ -553,7 +553,12 @@ function OfrezcoHome() {
               return (
                 <Link key={land.id} to="/lands/$id" params={{ id: land.id }} className="hm-pub">
                   <div className="hm-pub__media">
-                    <div className="hm-pub__photo hm-photo" aria-hidden="true" />
+                    <div className="hm-pub__photo hm-photo" aria-hidden="true">
+                      {/* La foto real del terreno; el degradado del div queda de
+                          respaldo si no hay fotos. Antes no se cableaba y las
+                          publicaciones salían sin imagen (#459). */}
+                      {land.photos?.[0] ? <img src={photoSrc(land.photos[0])} alt="" /> : null}
+                    </div>
                     <span className={`hm-pub__badge ${active ? "" : "hm-pub__badge--paused"}`}>
                       {active ? "Publicada" : land.status === "draft" ? "Borrador" : "Pausada"}
                     </span>
