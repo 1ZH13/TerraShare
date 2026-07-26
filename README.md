@@ -1,114 +1,127 @@
-# TerraShare
+# 🌱 TerraShare
 
-Plataforma para alquiler de terrenos (agricultura, ganaderia y otros usos productivos).
+**El marketplace de tierras productivas de Panamá.** Conecta a dueños de terrenos con agricultores y ganaderos: publica, explora en el mapa, solicita en **alquiler o venta**, y cierra el trato con contrato y pago en línea — todo dentro de la plataforma.
 
-## Documentacion base
-- PRD: [docs/PRD.md](docs/PRD.md)
-- Arquitectura tecnica: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Flujo de trabajo (issues + PR): [docs/WORKFLOW.md](docs/WORKFLOW.md)
-- Estructura de repositorio: [docs/REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
-- Setup y comandos: [docs/SETUP_AND_COMMANDS.md](docs/SETUP_AND_COMMANDS.md)
-- Stripe en desarrollo: [docs/STRIPE_DEV_SETUP.md](docs/STRIPE_DEV_SETUP.md)
-- Contratos entre modulos: [docs/MODULE_INTEGRATION_CONTRACTS.md](docs/MODULE_INTEGRATION_CONTRACTS.md)
-- Endpoints / rutas de la API: [docs/ENDPOINTS_RUTAS.md](docs/ENDPOINTS_RUTAS.md)
-- Migracion a MongoDB: [docs/MIGRATION.md](docs/MIGRATION.md)
-- Correcciones de seguridad: [docs/SECURITY_FIXES.md](docs/SECURITY_FIXES.md)
-- Historias de usuario (entregable): [docs/historias-usuario/index.html](docs/historias-usuario/index.html)
-- Notas historicas: [docs/CLERK_TOKENS_REMOVAL.md](docs/CLERK_TOKENS_REMOVAL.md)
+[![CI](https://github.com/1ZH13/TerraShare/actions/workflows/ci.yml/badge.svg)](https://github.com/1ZH13/TerraShare/actions/workflows/ci.yml)
+[![Deploy](https://github.com/1ZH13/TerraShare/actions/workflows/deploy.yml/badge.svg)](https://github.com/1ZH13/TerraShare/actions/workflows/deploy.yml)
 
-## Stack tecnologico
-- Frontend: TanStack Start (React, modo SPA) sobre Vite 7 + Clerk (unificado en `apps/web`). Routing por archivos en `apps/web/src/routes/`.
-- Backend: Bun + Hono + Zod (`apps/backend-api`)
-- Base de datos: MongoDB + Mongoose
-- Testing E2E: Playwright
-- CI/CD: GitHub Actions
-- MCP server propio: planeado (epico #234)
-- Docker: implementado (issue #233)
+### 🔗 Demo en vivo → **[terrashare.duckdns.org](https://terrashare.duckdns.org)**
 
-## Despliegue Local con Docker
+---
 
-Para levantar el ecosistema completo (Frontend, Backend, y MongoDB) de forma unificada:
+## ✨ Qué hace
 
-1. Asegúrate de configurar tu archivo `.env` en la raíz (puedes basarte en `.env.example`).
-2. Ejecuta Docker Compose:
-   ```bash
-   docker compose up --build
-   ```
-El Frontend estará en `http://localhost:80` (o `WEB_PORT`) y la API en `http://localhost:3000` (o `API_PORT`).
+TerraShare cubre el ciclo completo de un trato de tierra, de la búsqueda al pago:
 
-## Despliegue y Rollback (DigitalOcean)
+| | Capacidad |
+|---|---|
+| 🗺️ **Catálogo con mapa** | Explora terrenos sobre el mapa de Panamá, con filtros por provincia, distrito, uso, operación y precio, búsquedas guardadas y comparador. |
+| 🌾 **Alquiler y venta** | Cada terreno se publica en alquiler, venta o ambas; el detalle ofrece «Solicitar alquiler» y/o «Solicitar compra». |
+| 📸 **Publicación guiada** | Asistente por pasos: datos, ubicación (provincia → distrito dependiente), precio y hasta 10 fotos, con galería en mosaico y visor a pantalla completa. |
+| 📩 **Solicitudes y ofertas** | El interesado solicita o hace una oferta; el dueño ve quién, qué uso, periodo o importe, y el mensaje, y aprueba o rechaza. |
+| 📄 **Contratos y pagos** | Contrato generado (descargable en PDF) y pago en línea con **Stripe**, con recibos y reembolsos. |
+| 💬 **Chat y confianza** | Chat entre las partes, reseñas y calificaciones, verificación de propietarios y reporte/moderación. |
+| 🛡️ **Panel de administración** | Usuarios, terrenos, solicitudes, leads, reportes, conciliación de pagos, observabilidad, respaldos y ajustes de seguridad (2FA de admins). |
+| 🤖 **Servidor MCP** | Expone el dominio de TerraShare como herramientas MCP (buscar, publicar, solicitar, contratar, pagar, moderar) para agentes de IA. |
 
-El pipeline de CD (`.github/workflows/deploy.yml`) despliega por SSH al droplet:
-- `main` → `terrashare-prod` (proxy en :80/:443 → web :80 interno, API :3000)
-- `staging` → `terrashare-staging` (proxy en :80/:443 → web :80 interno, API :3001)
+---
 
-El reverse proxy (nginx) corre como container y rutea por dominio:
-- `terrashare.duckdns.org` / `success.terrashare.duckdns.org` → prod
-- `terrashare-test.duckdns.org` / `success.terrashare-test.duckdns.org` → staging
+## 🧱 Stack tecnológico
 
-### Bootstrap del proxy (primera vez)
-```bash
-ssh root@159.223.188.105
-cd /opt/terrashare-proxy
-./scripts/deploy-proxy.sh
+- **Frontend:** TanStack Start (React en modo SPA) sobre Vite 7 + Clerk — enrutado por archivos en `apps/web/src/routes/`.
+- **Backend:** Bun + Hono + Zod (`apps/backend-api`).
+- **Base de datos:** MongoDB + Mongoose.
+- **Pagos:** Stripe (checkout, webhooks, reembolsos).
+- **Servidor MCP:** `apps/mcp-server` (Model Context Protocol).
+- **Tipos compartidos:** `packages/shared` (DTOs y esquemas Zod).
+- **Testing E2E:** Playwright · **CI/CD:** GitHub Actions · **Infra:** Docker + nginx sobre DigitalOcean.
+
+## 📦 Estructura del monorepo
+
+```
+apps/
+  web/           Frontend (landing + dashboard + panel admin)
+  backend-api/   API (auth, lands, solicitudes, contratos, pagos, chat)
+  mcp-server/    Servidor MCP
+packages/
+  shared/        DTOs y tipos compartidos
+docs/            Documentación del proyecto
 ```
 
-Antes de cada deploy se crea un tag local `deploy-pre-<timestamp>-<sha>` en el droplet.
-Si el deploy completa OK, se crea `deploy-good-<timestamp>` y se guarda en `.last-good-deploy`.
+---
 
-### Rollback
-En el droplet:
+## 🚀 Puesta en marcha (local)
+
+Levanta todo el ecosistema (frontend, backend y MongoDB) con Docker:
+
 ```bash
-cd /opt/terrashare-<env>
-./scripts/rollback.sh . main
-# o con tag explicito:
-./scripts/rollback.sh . main deploy-good-20260715-120000
+docker compose up --build
 ```
 
-## Estado actual
-- `apps/web`: frontend unificado (landing + dashboard + admin)
-- `apps/backend-api`: API con auth, lands, rental requests, contracts, payments, chat
-- `packages/shared`: DTOs y tipos compartidos
+Frontend en `http://localhost:80` (o `WEB_PORT`) y API en `http://localhost:3000` (o `API_PORT`). Configura tu `.env` en la raíz partiendo de `.env.example`.
 
-## Rutas de la app web
-| Ruta | Descripcion | Acceso |
-|------|------------|--------|
-| `/` | Landing | Publico |
-| `/login` | Login | Publico |
-| `/register` | Registro | Publico |
-| `/dashboard` | Dashboard usuario | Auth |
-| `/dashboard/admin` | Panel admin | Admin |
+> Detalle de comandos, variables y flujo de trabajo en [docs/SETUP_AND_COMMANDS.md](docs/SETUP_AND_COMMANDS.md).
 
-## Acceso admin
+## ☁️ Despliegue
 
-El panel `/dashboard/admin` esta protegido por rol. Un usuario se considera admin cuando (`isAdminUser`):
+El pipeline de CD (`.github/workflows/deploy.yml`) despliega por SSH al droplet, con **respaldo de la base de datos antes de cada deploy**, verificación HTTPS y auto-rollback:
 
-- su email es `terradmin@gmail.com`, **o**
-- su `publicMetadata.role` en Clerk es `"admin"`.
+- `main` → **producción** (`terrashare.duckdns.org`)
+- `staging` → **staging** (`terrashare-test.duckdns.org`)
 
-Un admin logueado ve la entrada **"Panel admin"** en el menu de usuario de la Navbar (solo visible para admins); un usuario normal no la ve.
+Un reverse proxy (nginx) rutea por dominio. Rollback disponible en el droplet con `./scripts/rollback.sh`.
+
+---
+
+## 🔐 Acceso admin
+
+El panel `/dashboard/admin` está protegido por rol. Un usuario es admin cuando su email es `terradmin@gmail.com` **o** su `publicMetadata.role` en Clerk es `"admin"`. En producción, `/admin/*` exige además **2FA** (`REQUIRE_ADMIN_MFA`), configurable desde la propia página de Seguridad del panel.
+
+> Cómo conceder el rol, cómo llega al backend y el detalle de la 2FA: ver la sección ampliada más abajo.
+
+## 📚 Documentación
+
+- **Producto:** [PRD](docs/PRD.md) · [Historias de usuario](docs/historias-usuario/index.html)
+- **Técnica:** [Arquitectura](docs/ARCHITECTURE.md) · [Estructura del repo](docs/REPOSITORY_STRUCTURE.md) · [Endpoints / rutas](docs/ENDPOINTS_RUTAS.md) · [Contratos entre módulos](docs/MODULE_INTEGRATION_CONTRACTS.md)
+- **Operación:** [Setup y comandos](docs/SETUP_AND_COMMANDS.md) · [Stripe en desarrollo](docs/STRIPE_DEV_SETUP.md) · [Migración a MongoDB](docs/MIGRATION.md) · [Correcciones de seguridad](docs/SECURITY_FIXES.md)
+- **Flujo de trabajo:** [issues + PR](docs/WORKFLOW.md)
+
+## 🗺️ Rutas principales
+
+| Ruta | Descripción | Acceso |
+|------|-------------|--------|
+| `/` | Landing | Público |
+| `/catalog` | Catálogo con mapa | Auth |
+| `/lands/:id` | Detalle de terreno | Público |
+| `/dashboard` | Panel del usuario | Auth |
+| `/dashboard/admin` | Panel de administración | Admin |
+
+---
+
+<details>
+<summary><strong>Detalle: acceso admin, rol y 2FA</strong></summary>
 
 ### Conceder rol admin real
 
-1. **Cuenta semilla:** inicia sesion con `terradmin@gmail.com` (coincide con `ADMIN_SEED_EMAIL` del backend).
-2. **Cualquier cuenta:** en el [Dashboard de Clerk](https://dashboard.clerk.com) → Users → (usuario) → **Metadata → Public**, agrega `{ "role": "admin" }` y guarda. Al re-loguear, el usuario tendra acceso al panel.
+1. **Cuenta semilla:** inicia sesión con `terradmin@gmail.com` (coincide con `ADMIN_SEED_EMAIL` del backend).
+2. **Cualquier cuenta:** en el [Dashboard de Clerk](https://dashboard.clerk.com) → Users → (usuario) → **Metadata → Public**, agrega `{ "role": "admin" }` y guarda. Al re-loguear, tendrá acceso al panel.
 
-> Nota: los usuarios `role:"admin"` creados por `apps/backend-api/src/db/seed.ts` (emails `@terrashare.test`) son datos de relleno para poblar las vistas; **no permiten iniciar sesion** porque no existen como identidades en Clerk.
+> Los usuarios `role:"admin"` creados por `apps/backend-api/src/db/seed.ts` (emails `@terrashare.test`) son datos de relleno; **no permiten iniciar sesión** porque no existen como identidades en Clerk.
 
-### Como llega el rol al backend
+### Cómo llega el rol al backend
 
-El token de sesion por defecto de Clerk **no incluye `public_metadata`**, asi que el backend no puede leer el rol de los claims. Para resolverlo, `resolveClerkAuthUser` consulta la **Clerk Backend API** (con `CLERK_SECRET_KEY`, cacheada 5 min) y obtiene de ahi el rol y el estado de 2FA del usuario.
+El token de sesión por defecto de Clerk **no incluye `public_metadata`**, así que el backend no lee el rol de los claims. `resolveClerkAuthUser` consulta la **Clerk Backend API** (con `CLERK_SECRET_KEY`, cacheada 5 min) para obtener rol y estado de 2FA.
 
-Consecuencias practicas:
-
-- **`CLERK_SECRET_KEY` es obligatoria** para que un admin real sea reconocido por la API. Sin ella, todos los usuarios llegan como `role: "user"` y `/api/v1/admin/*` responde `403`.
-- Si prefieres evitar la llamada a Clerk, puedes anadir un claim `role` (o `public_metadata`) al token mediante una **JWT template / custom session claims** en Clerk; cuando el claim existe, el backend no consulta la API.
+- **`CLERK_SECRET_KEY` es obligatoria** para reconocer a un admin real: sin ella, todos llegan como `role:"user"` y `/api/v1/admin/*` responde `403`.
+- Alternativa: añadir un claim `role` (o `public_metadata`) al token vía **JWT template / custom session claims** en Clerk; con el claim presente, el backend no consulta la API.
 
 ### MFA para admins
 
-`requireAdmin` puede exigir 2FA a los endpoints `/admin/*`, controlado por `REQUIRE_ADMIN_MFA`:
+`requireAdmin` puede exigir 2FA en `/admin/*` según `REQUIRE_ADMIN_MFA`:
 
-- **Produccion:** activo por defecto. Un admin sin 2FA recibe `403 MFA_REQUIRED`.
-- **Fuera de produccion:** desactivado por defecto (las cuentas admin locales rara vez tienen 2FA).
+- **Producción:** activo por defecto — un admin sin 2FA recibe `403 MFA_REQUIRED`.
+- **Fuera de producción:** desactivado por defecto.
 
-El estado de 2FA se lee del usuario real en Clerk (`twoFactorEnabled`), no de un claim que el token nunca emitia.
+El estado de 2FA se lee del usuario real en Clerk (`twoFactorEnabled`), no de un claim.
+
+</details>
