@@ -156,3 +156,42 @@ describe("env CORS helpers", () => {
     });
   });
 });
+
+describe("env auto-seed (#453)", () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalAllow = process.env.ALLOW_AUTO_SEED;
+  const originalForce = process.env.FORCE_SEED;
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv;
+    if (originalAllow === undefined) delete process.env.ALLOW_AUTO_SEED;
+    else process.env.ALLOW_AUTO_SEED = originalAllow;
+    if (originalForce === undefined) delete process.env.FORCE_SEED;
+    else process.env.FORCE_SEED = originalForce;
+  });
+
+  it("allowAutoSeed: DESACTIVADO en producción por defecto", () => {
+    process.env.NODE_ENV = "production";
+    delete process.env.ALLOW_AUTO_SEED;
+    expect(env.allowAutoSeed).toBe(false);
+  });
+
+  it("allowAutoSeed: activo fuera de producción por defecto", () => {
+    process.env.NODE_ENV = "development";
+    delete process.env.ALLOW_AUTO_SEED;
+    expect(env.allowAutoSeed).toBe(true);
+  });
+
+  it("allowAutoSeed: se puede forzar activo en producción de forma explícita", () => {
+    process.env.NODE_ENV = "production";
+    process.env.ALLOW_AUTO_SEED = "true";
+    expect(env.allowAutoSeed).toBe(true);
+  });
+
+  it("forceSeed: false por defecto, true cuando FORCE_SEED=true", () => {
+    delete process.env.FORCE_SEED;
+    expect(env.forceSeed).toBe(false);
+    process.env.FORCE_SEED = "true";
+    expect(env.forceSeed).toBe(true);
+  });
+});
