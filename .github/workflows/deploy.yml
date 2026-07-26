@@ -131,6 +131,27 @@ jobs:
               fi
             fi
 
+            # Respaldo de la BD antes de tocar los contenedores (#453). Vuelca la
+            # Mongo en marcha (la del deploy anterior) a un archivo comprimido en el
+            # host y conserva los últimos 7. Si Mongo aún no está en pie (primer
+            # deploy) o el volcado falla, se avisa y se continúa: el respaldo es una
+            # red de seguridad, no debe bloquear el despliegue.
+            DB_BACKUP_DIR="$TARGET_DIR/db-backups"
+            mkdir -p "$DB_BACKUP_DIR"
+            MONGO_CID=$(docker ps --filter "name=${PROJECT_NAME}-mongo" --format '{{.ID}}' | head -1)
+            if [ -n "$MONGO_CID" ]; then
+              BK_FILE="$DB_BACKUP_DIR/terrashare-$(date +%Y%m%d-%H%M%S).archive.gz"
+              if docker exec "$MONGO_CID" mongodump --username "$MONGO_ROOT_USERNAME" --password "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --db terrashare --archive --gzip > "$BK_FILE" 2>/dev/null && [ -s "$BK_FILE" ]; then
+                echo "Respaldo de BD OK: $BK_FILE ($(du -h "$BK_FILE" | cut -f1))"
+                ls -1t "$DB_BACKUP_DIR"/terrashare-*.archive.gz 2>/dev/null | tail -n +8 | xargs -r rm -f
+              else
+                echo "WARN: no se pudo respaldar la BD (¿Mongo sin datos o sin arrancar?); se continúa."
+                rm -f "$BK_FILE"
+              fi
+            else
+              echo "Respaldo de BD omitido: no hay contenedor Mongo en marcha (primer deploy)."
+            fi
+
             # App: prod usa prod.yml (con proxy/certbot); staging usa staging.yml (sin proxy
             # propio, va tras el proxy compartido). El resultado define si el deploy fue OK.
             if [ "$BRANCH" = "main" ]; then

@@ -39,11 +39,22 @@ async function init() {
     }
 
     const needsSeed = (await Land.estimatedDocumentCount()) === 0;
-    if (needsSeed || process.env.FORCE_SEED === "true") {
-      console.log("[backend-api] Database is empty, running seed...");
+    if (env.forceSeed || (needsSeed && env.allowAutoSeed)) {
+      console.log("[backend-api] Base de datos vacía o siembra forzada: sembrando…");
       await seedDatabase();
+    } else if (needsSeed) {
+      // BD vacía pero el auto-seed está desactivado (producción por defecto).
+      // NO sembramos datos demo encima: una prod vacía casi siempre es un fallo
+      // (volumen de Mongo perdido), y rellenarla en silencio ocultaría la pérdida
+      // de datos reales. Avisamos con fuerza en su lugar (#453).
+      console.error(
+        "[backend-api] La base de datos está VACÍA y el auto-seed está desactivado " +
+          "(ALLOW_AUTO_SEED=false). No se siembran datos demo. Si esto es inesperado, " +
+          "revisa el volumen de Mongo y restaura desde un respaldo antes de continuar. " +
+          "Para sembrar a propósito, arranca con FORCE_SEED=true.",
+      );
     } else {
-      console.log("[backend-api] Database already has data, skipping seed");
+      console.log("[backend-api] La base de datos ya tiene datos; se omite el seed");
     }
   } catch (error) {
     console.warn("[backend-api] Failed to connect to MongoDB:", error);

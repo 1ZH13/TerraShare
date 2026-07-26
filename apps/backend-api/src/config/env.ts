@@ -16,6 +16,7 @@ export const envSchema = z.object({
   CLERK_SECRET_KEY: z.string().optional(),
   WHATSAPP_CONTACT_ENABLED: z.string().default("false"),
   FORCE_SEED: z.string().default("false"),
+  ALLOW_AUTO_SEED: z.string().optional(),
   // Respaldos cifrados de MongoDB (HU-56 #174). La clave (32 bytes en hex o
   // base64) se valida en el momento de uso, no al arrancar, para que la API
   // pueda iniciar aunque los respaldos no estén configurados todavía.
@@ -63,6 +64,22 @@ export const env = {
   stripeWebhookSecret: parsed.STRIPE_WEBHOOK_SECRET,
   platformFeeBps: parsed.STRIPE_PLATFORM_FEE_BPS,
   whatsappContactEnabled: parsed.WHATSAPP_CONTACT_ENABLED === "true",
+  /** Siembra forzada aunque la BD ya tenga datos. Intención explícita del operador. */
+  get forceSeed() {
+    return (process.env.FORCE_SEED ?? "false") === "true";
+  },
+  /**
+   * Permite que la API auto-siembre la BD cuando la encuentra vacía. En
+   * producción va DESACTIVADO por defecto (#453): una prod con la BD vacía casi
+   * siempre significa un fallo (volumen perdido), no una instalación nueva, y
+   * auto-sembrar datos demo encima taparía la pérdida sin avisar. Fuera de
+   * producción va activo para que dev/test arranquen con datos. `FORCE_SEED`
+   * siempre manda por encima de este flag.
+   */
+  get allowAutoSeed() {
+    const fallback = process.env.NODE_ENV === "production" ? "false" : "true";
+    return (process.env.ALLOW_AUTO_SEED ?? fallback) === "true";
+  },
   get isProduction() {
     return process.env.NODE_ENV === "production";
   },
